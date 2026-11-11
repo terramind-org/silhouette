@@ -1,0 +1,1141 @@
+<!doctype html>
+<html lang="en">
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1">
+  <title>Docs: Silhouette</title>
+  <meta name="description" content="How to add skeleton loading states to a SwiftUI app with Silhouette: skeletons from your own views, reveals, theming, accessibility, debugging and the full API.">
+  <meta name="color-scheme" content="light dark">
+  <meta name="theme-color" content="#fbfbfd" media="(prefers-color-scheme: light)">
+  <meta name="theme-color" content="#000000" media="(prefers-color-scheme: dark)">
+  <link rel="icon" href="../assets/mark.svg" type="image/svg+xml">
+  <link rel="stylesheet" href="../assets/site.css">
+</head>
+<body>
+
+<div class="mobile-bar">
+  <a class="brand" href="../" aria-label="Silhouette home">
+    <svg viewBox="0 0 26 26" aria-hidden="true"><circle class="mark-fill" cx="7.5" cy="13" r="5.5"/><rect class="mark-bar" x="15" y="8" width="10" height="3.4" rx="1.7"/><rect class="mark-bar" x="15" y="14.6" width="6.5" height="3.4" rx="1.7"/></svg>
+    Silhouette
+  </a>
+  <button type="button" class="menu-toggle" aria-expanded="false" aria-controls="mobile-menu">Contents</button>
+</div>
+<nav class="mobile-menu" id="mobile-menu" aria-label="Contents"></nav>
+
+<div class="docs-layout">
+  <aside class="sidebar">
+    <a class="brand" href="../" aria-label="Silhouette home">
+      <svg viewBox="0 0 26 26" aria-hidden="true"><circle class="mark-fill" cx="7.5" cy="13" r="5.5"/><rect class="mark-bar" x="15" y="8" width="10" height="3.4" rx="1.7"/><rect class="mark-bar" x="15" y="14.6" width="6.5" height="3.4" rx="1.7"/></svg>
+      Silhouette
+    </a>
+    <p class="tagline">Skeletons for SwiftUI</p>
+    <nav class="toc" aria-label="Contents">
+      <ul><li><a href="#getting-started">Getting started</a></li></ul>
+      <h4>Skeletons</h4>
+      <ul>
+        <li><a href="#from-your-view">From your view and a sample</a></li>
+        <li><a href="#any-view">Any view with a flag</a></li>
+        <li><a href="#your-own">Your own skeleton</a></li>
+        <li><a href="#hints">Hints</a></li>
+        <li><a href="#memory">Memory</a></li>
+      </ul>
+      <h4>Reveals</h4>
+      <ul>
+        <li><a href="#reveal-modes">Reveal modes</a></li>
+        <li><a href="#images">Images</a></li>
+        <li><a href="#changing-size">Changing size</a></li>
+        <li><a href="#your-own-reveal">Your own reveal</a></li>
+        <li><a href="#async-skeleton">AsyncSkeleton</a></li>
+      </ul>
+      <h4>Styling</h4>
+      <ul>
+        <li><a href="#theming">Theming</a></li>
+        <li><a href="#text-metrics">Text metrics</a></li>
+        <li><a href="#shimmer-text">Shimmering text</a></li>
+      </ul>
+      <h4>Reference</h4>
+      <ul>
+        <li><a href="#accessibility">Accessibility</a></li>
+        <li><a href="#debugging">Debugging</a></li>
+        <li><a href="#data-fetching">Data fetching</a></li>
+        <li><a href="#testing">Testing</a></li>
+        <li><a href="#troubleshooting">Troubleshooting</a></li>
+        <li><a href="#api">API</a></li>
+        <li><a href="#platforms">Platform support</a></li>
+        <li><a href="#how-it-works">How it works</a></li>
+        <li><a href="#parity">Parity with Skullet</a></li>
+        <li><a href="#changelog">Changelog</a></li>
+      </ul>
+    </nav>
+    <div class="side-links">
+      <a href="../">Home</a>
+      <a href="https://github.com/terramind-org/silhouette">GitHub</a>
+    </div>
+  </aside>
+
+  <main class="content">
+  <article class="doc">
+
+    <header>
+      <h1>Silhouette</h1>
+      <p>Silhouette draws a skeleton of exactly what is about to load in a SwiftUI app. Your view is laid out out of sight with sample data and traced: a bar for each line of text as it wraps, a block for each image, control and painted shape. When the data arrives it takes the skeleton's place, and nothing on the page moves.</p>
+    </header>
+
+    <!-- ===================== Getting started ===================== -->
+
+    <section id="getting-started">
+      <h2>Getting started</h2>
+      <div class="prose">
+        <h3 id="install">Install</h3>
+        <p>In Xcode, choose <strong>File &rarr; Add Package Dependencies&hellip;</strong>, paste the repository URL and add the <strong>Silhouette</strong> library to your app target. In a package, add it to <code>Package.swift</code>:</p>
+        <div class="code"><pre><code class="swift">
+dependencies: [
+    .package(
+        url: "https://github.com/terramind-org/silhouette.git",
+        from: "0.1.0"
+    ),
+],
+targets: [
+    .target(name: "App", dependencies: [
+        .product(name: "Silhouette", package: "silhouette"),
+    ]),
+]
+</code></pre></div>
+        <p>Silhouette needs iOS 17, macOS 14, tvOS 17, watchOS 10 or visionOS 1, and Swift 6 tools (Xcode 16 or later). See <a href="#platforms">Platform support</a> for what changes on older systems.</p>
+
+        <h3 id="quick-start">The 30-second version</h3>
+        <p>Give your model a sample with typical lengths, then wrap the view that shows it. While <code>user</code> is <code>nil</code>, the card is built from the sample, traced, and shown as a skeleton.</p>
+        <div class="code"><pre><code class="swift">
+import Silhouette
+
+struct User: Codable {
+    var name: String
+    var role: String
+    var bio: String
+
+    static let sample = User(
+        name: "Ada Lovelace",
+        role: "Analyst",
+        bio: "Wrote the first published program, for a machine that was never built."
+    )
+}
+
+struct ProfileScreen: View {
+    @State private var user: User?
+
+    var body: some View {
+        Skeleton(user, sample: .sample) { user in
+            ProfileCard(user: user)
+        }
+        .task { user = try? await api.user() }
+    }
+}
+</code></pre></div>
+        <p>That's it. Every skeleton already follows light and dark mode, Dynamic Type, Reduce Motion and VoiceOver. To change how they look or arrive for the whole app, set a theme and a reveal once near the root:</p>
+        <div class="code"><pre><code class="swift">
+WindowGroup {
+    ContentView()
+        .skeletonTheme { $0.radius = .pill }
+        .skeletonReveal(.smart)   // the default
+}
+</code></pre></div>
+      </div>
+    </section>
+
+    <!-- ===================== Skeletons ===================== -->
+
+    <p class="part">Skeletons</p>
+
+    <section id="from-your-view" class="demo">
+      <h2>From your view and a sample</h2>
+      <figure class="clip">
+        <div class="screen"><video autoplay loop muted playsinline preload="metadata" width="1206" height="2622" src="../media/component.mp4" aria-label="A profile card shimmers as a skeleton traced from its own layout, then the real profile fades in where it was."></video></div>
+      </figure>
+      <div class="prose">
+        <p>The skeleton is your own view. Pass the data, which is <code>nil</code> while it loads, and a sample of it. While the data is missing, your content closure is built from the sample, laid out invisibly and traced in its place. There is no second, hand-made skeleton to keep in step with the real one.</p>
+        <div class="code"><pre><code class="swift">
+Skeleton(user, sample: .sample) { user in
+    ProfileCard(user: user)
+}
+</code></pre></div>
+        <p>The sample is never shown as content: people only ever see it as a skeleton, and the closure only appears on screen with real data. Give the sample typical lengths, a name of a usual length and a bio that wraps like a real one, because the skeleton takes exactly the space the sample does.</p>
+        <p>If you leave the sample out, debug builds log one to paste the first time real data arrives: your type's shape and lengths with every value replaced, so it's safe to commit.</p>
+
+        <h3 id="closest-data">The closest data</h3>
+        <p>A skeleton is drawn from the closest data Silhouette has, in this order: the data already on screen, the data last shown under the same <code>id</code> in this launch, a shape remembered from an earlier launch, then your sample. With none of those, it draws three placeholder lines and logs a warning.</p>
+
+        <h3 id="empty-and-failure">Empty and failed loads</h3>
+        <p>Show something else once the data has arrived empty, or when loading failed. Chain these straight after the <code>Skeleton</code>, before any other modifier.</p>
+        <div class="code"><pre><code class="swift">
+Skeleton(messages, sample: Message.samples) { messages in
+    Inbox(messages: messages)
+}
+.empty(messages?.isEmpty == true) {
+    ContentUnavailableView("No messages yet", systemImage: "tray")
+}
+.failure(loadError) { error in
+    RetryBanner(error: error)
+}
+</code></pre></div>
+
+        <h3 id="loading-over-data">Loading over data</h3>
+        <p>Pass <code>isLoading: true</code> to show the skeleton even though you have data, for example while a refetch replaces it. The skeleton is drawn from what's on screen, so it's exact.</p>
+        <div class="code"><pre><code class="swift">
+Skeleton(model.user, sample: .sample, isLoading: model.isRefreshing) {
+    ProfileCard(user: $0)
+}
+</code></pre></div>
+      </div>
+    </section>
+
+    <section id="any-view" class="demo">
+      <h2>Any view with a flag</h2>
+      <figure class="clip">
+        <div class="screen"><video autoplay loop muted playsinline preload="metadata" width="1206" height="2622" src="../media/plain.mp4" aria-label="A view built with placeholder strings shows as a skeleton while a flag is on, then shows its real text."></video></div>
+      </figure>
+      <div class="prose">
+        <p>When a view doesn't fit the one-value shape, build it however you like and say when it's loading. The view is traced as it is, so give missing values a stand-in of typical length.</p>
+        <div class="code"><pre><code class="swift">
+VStack(alignment: .leading, spacing: 6) {
+    Text(user?.name ?? "Placeholder name")
+        .font(.title2.bold())
+    Text(user?.bio ?? String(repeating: "Placeholder text ", count: 6))
+}
+.skeleton(isLoading: user == nil, label: Text("Loading profile"))
+</code></pre></div>
+        <p>Regions nest. Put the modifier on just the part that loads for partial loading: a header can be ready while the list below it still shimmers. An inner region starts its own loading once the region around it has revealed.</p>
+        <div class="note"><p>Prefer <code>Skeleton(data, sample:)</code> when you can. Its content only ever receives real data, and it remembers shapes by <code>id</code>. Use <code>.skeleton(isLoading:)</code> for views assembled from several sources, or ones you can't restructure.</p></div>
+      </div>
+    </section>
+
+    <section id="your-own" class="demo">
+      <h2>Your own skeleton</h2>
+      <figure class="clip">
+        <div class="screen"><video autoplay loop muted playsinline preload="metadata" width="1206" height="2622" poster="../media/own.png" src="../media/own.mp4" aria-label="A chart drawn as twelve skeleton bars of rising height, and a round placeholder beside two lines."></video></div>
+      </figure>
+      <div class="prose">
+        <p>Some views don't trace well: a chart, a map, a cluster of tiny icons. Draw their skeleton yourself. Build it from <code>SkeletonBox</code> or any shape, and it joins the shared shimmer, follows the theme and quiets down under Reduce Motion like every traced skeleton.</p>
+
+        <h3 id="skeleton-box">SkeletonBox</h3>
+        <p>One placeholder shape. By default it is 60% of the width on offer and one line of body text tall, with the theme's radius.</p>
+        <div class="code"><pre><code class="swift">
+SkeletonBox()                                        // 60% wide, one line tall
+SkeletonBox(width: 40, height: 40, radius: .pill)    // a round avatar
+SkeletonBox(width: .fraction(1), height: .em(4), radius: .points(12))
+</code></pre></div>
+        <div class="table"><table>
+          <thead><tr><th>SkeletonLength</th><th>Meaning</th></tr></thead>
+          <tbody>
+            <tr><td><code>.points(_:)</code></td><td>A fixed size. A plain number literal means points.</td></tr>
+            <tr><td><code>.fraction(_:)</code></td><td>A share of the width or height on offer, from 0 to 1.</td></tr>
+            <tr><td><code>.em(_:)</code></td><td>A multiple of the body font's size, so it grows with Dynamic Type.</td></tr>
+          </tbody>
+        </table></div>
+
+        <h3 id="skeleton-shape">skeletonShape</h3>
+        <p>Replace one view's traced skeleton with your own, drawn in that view's frame:</p>
+        <div class="code"><pre><code class="swift">
+Avatar(user: user)
+    .skeletonShape { Circle() }
+
+WeeklyChart(days: days)
+    .skeletonShape {
+        HStack(alignment: .bottom, spacing: 6) {
+            ForEach([0.4, 0.7, 0.5, 0.9, 0.6, 0.8, 0.3], id: \.self) { height in
+                SkeletonBox(width: .fraction(1), height: .fraction(height), radius: .points(4))
+            }
+        }
+    }
+</code></pre></div>
+
+        <h3 id="placeholder">placeholder</h3>
+        <p>Replace a whole <code>Skeleton</code>'s traced shape. The region still takes its size from your content laid out from the sample, so keep passing one; the placeholder is drawn in that frame.</p>
+        <div class="code"><pre><code class="swift">
+Skeleton(forecast, sample: .sample) { WeatherMap(forecast: $0) }
+    .placeholder {
+        SkeletonBox(width: .fraction(1), height: .fraction(1), radius: .points(16))
+    }
+</code></pre></div>
+      </div>
+    </section>
+
+    <section id="hints" class="demo">
+      <h2>Hints</h2>
+      <figure class="clip">
+        <div class="screen"><video autoplay loop muted playsinline preload="metadata" width="1206" height="2622" poster="../media/hints.png" src="../media/hints.mp4" aria-label="A card whose chart is drawn as one block and whose badge is left out of the skeleton."></video></div>
+      </figure>
+      <div class="prose">
+        <p>Tracing gets most views right. Where it doesn't, mark the view.</p>
+        <div class="table"><table>
+          <thead><tr><th>Hint</th><th>Use it for</th></tr></thead>
+          <tbody>
+            <tr><td><code>.skeletonBlock(cornerRadius:)</code></td><td>Things that trace into noise, such as a chart, a map, a video or a row of tiny glyphs. Draws one block filling the frame.</td></tr>
+            <tr><td><code>.skeletonIgnored()</code></td><td>Decoration that shouldn't shimmer, such as a "New" badge or a divider, and container backgrounds. The view still takes its space.</td></tr>
+            <tr><td><code>.skeletonShape { }</code></td><td>Anything that needs a specific outline, such as a round avatar or a chart's bars. See <a href="#your-own">Your own skeleton</a>.</td></tr>
+          </tbody>
+        </table></div>
+        <div class="code"><pre><code class="swift">
+Map(position: $position).skeletonBlock(cornerRadius: 12)
+Text("New").skeletonIgnored()
+Avatar(user: user).skeletonShape { Circle() }
+</code></pre></div>
+
+        <h3 id="containers">Containers</h3>
+        <p>A surface in the page's own colour, such as a white card in light mode or a black one in dark, counts as a container: the card traces as its lines and pictures, not as one block. Any other background would be traced as a solid shape, so mark it:</p>
+        <div class="code"><pre><code class="swift">
+CardContent(item: item)
+    .padding()
+    .background {
+        RoundedRectangle(cornerRadius: 20)
+            .fill(.cardBackground)
+            .skeletonIgnored()
+    }
+</code></pre></div>
+
+        <h3 id="side-effects">Side effects</h3>
+        <p>To trace your view, Silhouette lays out a second copy of it. Work started in <code>.task</code> or <code>.onAppear</code> inside the skeleton would run for that copy too. Skip it there:</p>
+        <div class="code"><pre><code class="swift">
+@Environment(\.isDrawingSkeleton) private var isDrawingSkeleton
+
+var body: some View {
+    DetailView(item: item)
+        .task {
+            guard !isDrawingSkeleton else { return }
+            await model.loadComments()
+        }
+}
+</code></pre></div>
+        <p>Images are covered on <a href="#images">their own</a>: give each one a frame or an aspect ratio, since an image has no size until it loads.</p>
+      </div>
+    </section>
+
+    <section id="memory" class="demo">
+      <h2>Memory</h2>
+      <figure class="clip">
+        <div class="screen"><video autoplay loop muted playsinline preload="metadata" width="1206" height="2622" src="../media/memory.mp4" aria-label="An inbox reloads, and its skeleton now matches the messages it showed last time exactly."></video></div>
+      </figure>
+      <div class="prose">
+        <p>Give a <code>Skeleton</code> an <code>id</code> and it remembers what it showed, so the next skeleton under that id is exact rather than drawn from the sample.</p>
+        <div class="code"><pre><code class="swift">
+Skeleton(messages, sample: Message.samples, id: "inbox") { messages in
+    Inbox(messages: messages)
+}
+</code></pre></div>
+        <ul>
+          <li><strong>Within a launch</strong> it keeps the real data last shown under the id, in memory.</li>
+          <li><strong>Across launches</strong>, for <code>Codable</code> data, it keeps only the layout, in <code>UserDefaults</code>: a copy where every letter becomes <code>n</code> or <code>N</code>, every digit <code>0</code>, and every number a run of 8s with the same digit count. Spaces, punctuation and booleans stay, so the copy wraps like the original. A copy that no longer decodes is dropped.</li>
+        </ul>
+        <p>Even a scrubbed shape gives away the outline of someone's data. Clear every remembered shape on sign-out:</p>
+        <div class="code"><pre><code class="swift">
+func signOut() async {
+    await session.end()
+    forgetSkeletonShapes()
+}
+</code></pre></div>
+      </div>
+    </section>
+
+    <!-- ===================== Reveals ===================== -->
+
+    <p class="part">Reveals</p>
+
+    <section id="reveal-modes" class="demo">
+      <h2>Reveal modes</h2>
+      <figure class="clip">
+        <div class="screen"><video autoplay loop muted playsinline preload="metadata" width="1206" height="2622" src="../media/reveals.mp4" aria-label="The same feed revealing four ways: all at once, piece by piece, row by row and behind a diagonal sweep."></video></div>
+      </figure>
+      <div class="prose">
+        <p>A reveal is the moment content replaces its skeleton. Set one for every skeleton below a view:</p>
+        <div class="code"><pre><code class="swift">
+ContentView()
+    .skeletonReveal(.smart)
+</code></pre></div>
+        <div class="table"><table>
+          <thead><tr><th>Reveal</th><th>What it does</th></tr></thead>
+          <tbody>
+            <tr><td><code>.smart</code></td><td>The default. Picks one of the others as each reveal lands; see below.</td></tr>
+            <tr><td><code>.together</code></td><td>Crossfades the whole skeleton into the content in 0.2 s.</td></tr>
+            <tr><td><code>.sequence</code></td><td>Each piece fades in where its skeleton was, by position: mostly top to bottom, a little left to right, spread over 320 ms.</td></tr>
+            <tr><td><code>.sweep</code></td><td>Uncovers the content behind one diagonal front, at the shimmer's slant and pace. Content taller than one and a half screens crossfades instead.</td></tr>
+            <tr><td><code>.instant</code></td><td>Swaps at once.</td></tr>
+          </tbody>
+        </table></div>
+
+        <h3 id="smart">What smart decides</h3>
+        <ul>
+          <li>A skeleton waits 150 ms before it shows. If the data beats that, there's never a skeleton, and the content simply appears.</li>
+          <li>If someone scrolled in the last 400 ms, content appears at once rather than animating under their thumb.</li>
+          <li>A refetch, content that had loaded before, gets a quick 120 ms crossfade.</li>
+          <li>Something small, under 72 points tall or with three pieces or fewer, crossfades whole.</li>
+          <li>Anything else arrives row by row in screen order over 320 ms. Smaller text, such as a caption under a name, comes 60 ms behind its row, and rows off screen appear at once. Regions landing within 150 ms of each other share one cascade down the screen, so a page of cards reads as one motion.</li>
+        </ul>
+        <p>Pieces fade in over 0.2 s each by default. A reveal never moves the page: the content was laid out in its skeleton's place all along. Under Reduce Motion, every reveal is instant.</p>
+
+        <h3 id="tracks-scrolling">Scrolling</h3>
+        <p>For smart to know someone is scrolling, mark your scroll views. It needs iOS 18, macOS 15, tvOS 18, watchOS 11 or visionOS 2, and does nothing earlier.</p>
+        <div class="code"><pre><code class="swift">
+ScrollView {
+    Feed(posts: posts)
+}
+.skeletonTracksScrolling()
+</code></pre></div>
+      </div>
+    </section>
+
+    <section id="images" class="demo">
+      <h2>Images</h2>
+      <figure class="clip">
+        <div class="screen"><video autoplay loop muted playsinline preload="metadata" width="1206" height="2622" src="../media/images.mp4" aria-label="A gallery's text reveals while each photo keeps shimmering in its frame until it has downloaded, then fades in."></video></div>
+      </figure>
+      <div class="prose">
+        <p>Images never hold a reveal back. Use <code>SkeletonAsyncImage</code> for remote images: the text around it reveals as soon as its data is there, and each image still downloading keeps shimmering in its own frame, then fades in.</p>
+        <div class="code"><pre><code class="swift">
+SkeletonAsyncImage(url: photo.url) { image in
+    image.resizable().scaledToFill()
+}
+.frame(width: 120, height: 120)
+.clipShape(.rect(cornerRadius: 12))
+</code></pre></div>
+        <ul>
+          <li><strong>Give it a size.</strong> An image has no size until it loads, so without a frame or an aspect ratio its skeleton has no room and the page moves when it arrives.</li>
+          <li>The tracing copy draws it as one block and never downloads anything.</li>
+          <li>A failed download leaves a quiet, still placeholder, since nothing more is coming.</li>
+          <li>Images keep their own corner radius; the theme's radius is for lines of text and boxes.</li>
+        </ul>
+      </div>
+    </section>
+
+    <section id="changing-size" class="demo">
+      <h2>Changing size</h2>
+      <figure class="clip">
+        <div class="screen"><video autoplay loop muted playsinline preload="metadata" width="1206" height="2622" src="../media/size.mp4" aria-label="A profile card's sample bio is shorter than the real one; when it loads the card eases to its taller height."></video></div>
+      </figure>
+      <div class="prose">
+        <p>A skeleton drawn from a sample or from old data won't always match the new data's shape. When the real content is a different height, the region eases to it over 280 ms instead of snapping.</p>
+        <p>Easing is a fallback, not the goal. Each time it happens, a debug build logs how many points the skeleton was off, and the <a href="#debugging">debug overlay</a> labels the region in red with the distance. Fix it with a sample of typical length, or an <code>id</code> so the next skeleton is drawn from what was really shown.</p>
+      </div>
+    </section>
+
+    <section id="your-own-reveal" class="demo">
+      <h2>Your own reveal</h2>
+      <figure class="clip">
+        <div class="screen"><video autoplay loop muted playsinline preload="metadata" width="1206" height="2622" src="../media/ownReveal.mp4" aria-label="Custom reveals: content blurring into focus piece by piece, a wipe down the card, and a slight zoom."></video></div>
+      </figure>
+      <div class="prose">
+        <p>Every built-in is a <code>SkeletonReveal</code>. Start from one and change what you need:</p>
+        <div class="code"><pre><code class="swift">
+var blurIn = SkeletonReveal.sequence
+blurIn.enter = .blur
+
+ContentView()
+    .skeletonReveal(blurIn)
+</code></pre></div>
+        <div class="table"><table>
+          <thead><tr><th>Field</th><th>Meaning</th></tr></thead>
+          <tbody>
+            <tr><td><code>order</code></td><td>When each piece arrives: <code>.together</code>, <code>.byPosition</code> (sequence's), <code>.byRow</code> (smart's) or <code>.custom</code> with your own delay per piece.</td></tr>
+            <tr><td><code>enter</code></td><td>Where content starts as it fades in: <code>blur</code>, <code>offset</code>, <code>scale</code> and <code>rotation</code>. Presets <code>.none</code>, <code>.blur</code>, <code>.rise</code>, <code>.zoom</code>.</td></tr>
+            <tr><td><code>wipe</code></td><td>A mask across the content for each moment of the reveal: <code>.sweep</code> or <code>.custom</code>. Replaces <code>order</code>; the outgoing skeleton gets its inverse.</td></tr>
+            <tr><td><code>delay</code></td><td>Seconds before the reveal starts.</td></tr>
+            <tr><td><code>duration</code></td><td>Seconds each piece takes to fade in, or the whole content for a reveal that comes in together. 0.2 by default; <code>0</code> is instant.</td></tr>
+            <tr><td><code>hold</code></td><td>Seconds a skeleton waits before it shows at all, so fast data never shows one.</td></tr>
+            <tr><td><code>choose</code></td><td>Decides as content lands, from a <code>RevealContext</code>. Return a reveal to use, or <code>nil</code> to keep this one.</td></tr>
+          </tbody>
+        </table></div>
+
+        <h3 id="custom-order">A custom order</h3>
+        <p>A <code>.custom</code> order gets each <code>RevealPiece</code>, one bar, image, control or shape, and returns its delay in seconds, or <code>nil</code> to show it at once. A piece knows its rect, the region's rect, its row, whether it's smaller text than the rest of its row, how late its reveal joined the cascade, and the screen. The built-in orders are exported, so you can build on them:</p>
+        <div class="code"><pre><code class="swift">
+// Bottom to top.
+let rising = SkeletonReveal(order: .custom { piece in
+    let up = (piece.reveal.maxY - piece.rect.maxY) / max(piece.reveal.height, 1)
+    return min(max(up, 0), 1) * 0.32
+})
+
+// Smart's row-by-row cascade, at half the pace.
+let unhurried = SkeletonReveal(order: .custom { piece in
+    RevealPiece.byRow(piece).map { $0 * 2 }
+}, duration: 0.3)
+</code></pre></div>
+
+        <h3 id="custom-wipe">A custom wipe</h3>
+        <p>A wipe returns a gradient mask for each moment, from progress 0 to 1. Opaque stops show the content.</p>
+        <div class="code"><pre><code class="swift">
+let wipeDown = SkeletonReveal(wipe: .custom { progress in
+    let at = progress * 1.2
+    return SkeletonReveal.WipeMask(stops: [
+        .init(color: .black, location: max(0, at - 0.2)),
+        .init(color: .clear, location: max(at, 0.001)),
+    ])
+}, duration: 0.4)
+</code></pre></div>
+
+        <h3 id="choose">Deciding as it lands</h3>
+        <div class="code"><pre><code class="swift">
+let calm = SkeletonReveal(hold: 0.15, choose: { context in
+    if context.skeletonShownFor == nil { return .instant }   // never showed
+    if context.isRefetch { return .together }
+    return context.size.height > 400 ? .sweep : nil          // nil keeps this reveal
+})
+</code></pre></div>
+        <p>The reveal you return keeps the outer reveal's <code>hold</code>. Whatever you build, delays and durations stop at one second, the page never moves, and Reduce Motion makes it instant.</p>
+      </div>
+    </section>
+
+    <section id="async-skeleton" class="demo">
+      <h2>AsyncSkeleton</h2>
+      <figure class="clip">
+        <div class="screen"><video autoplay loop muted playsinline preload="metadata" width="1206" height="2622" src="../media/async.mp4" aria-label="A quote card shimmers while its async work runs, then reveals in place; reloading keeps the old quote on screen."></video></div>
+      </figure>
+      <div class="prose">
+        <p>Give <code>AsyncSkeleton</code> the async work and the view. It runs the work when it appears, shows the skeleton while it waits, and reveals the content in place.</p>
+        <div class="code"><pre><code class="swift">
+AsyncSkeleton(sample: Quote.sample, id: "quote", trigger: day) {
+    try await api.quote(for: day)
+} content: { quote in
+    QuoteCard(quote: quote)
+}
+</code></pre></div>
+        <ul>
+          <li>Change <code>trigger</code> to load again. While it reloads, the old content stays on screen.</li>
+          <li>With an <code>id</code> and no sample, the skeleton is the shape last shown under that id.</li>
+          <li>A tracing copy inside another skeleton never starts the work.</li>
+          <li>A thrown error shows its <code>localizedDescription</code> in a quiet callout. For your own error view, hold the value yourself and use <code>Skeleton</code> with <code>.failure</code>.</li>
+        </ul>
+      </div>
+    </section>
+
+    <!-- ===================== Styling ===================== -->
+
+    <p class="part">Styling</p>
+
+    <section id="theming" class="demo">
+      <h2>Theming</h2>
+      <figure class="clip">
+        <div class="screen"><video autoplay loop muted playsinline preload="metadata" width="1206" height="2622" poster="../media/theming.png" src="../media/theming.mp4" aria-label="One dashboard switching between skeleton themes: tinted colours, pill-shaped lines, a pulse and a faster shimmer."></video></div>
+      </figure>
+      <div class="prose">
+        <p>A <code>SkeletonTheme</code> sets how every skeleton below a view looks and moves. Set one near the root, and change single options for one part of the screen with the closure form.</p>
+        <div class="code"><pre><code class="swift">
+ContentView()
+    .skeletonTheme(SkeletonTheme(
+        animation: .shimmer,
+        speed: .slow,
+        radius: .pill,
+        text: SkeletonTextMetrics(top: .capHeight, bottom: .descender)
+    ))
+
+Sidebar()
+    .skeletonTheme { $0.speed = .fast }
+</code></pre></div>
+        <p>Try the options below on a card drawn the way Silhouette draws it, at the same pace and slant. The code underneath updates to match, listing only what differs from the defaults.</p>
+      </div>
+    </section>
+
+    <div class="playground" id="playground" aria-label="Theme playground">
+      <div class="pg-body">
+        <div class="pg-stage light">
+          <canvas width="400" height="334" role="img" aria-label="A profile card drawn as a skeleton with the chosen theme."></canvas>
+        </div>
+        <div class="pg-controls">
+          <div class="pg-row">
+            <span class="lbl">Preview</span>
+            <div class="seg" data-key="preview"><button type="button" value="light">Light</button><button type="button" value="dark">Dark</button></div>
+          </div>
+          <div class="pg-row">
+            <span class="lbl">Colour</span>
+            <div class="pg-colour">
+              <div class="seg" data-key="mode"><button type="button" value="neutral">Neutral</button><button type="button" value="tint">Tinted</button></div>
+              <input type="color" data-key="tint" aria-label="Tint colour">
+            </div>
+          </div>
+          <div class="pg-row">
+            <label for="pg-base">Base <output data-for="base"></output></label>
+            <input id="pg-base" type="range" min="2" max="30" step="1" data-key="base">
+          </div>
+          <div class="pg-row">
+            <label for="pg-highlight">Highlight <output data-for="highlight"></output></label>
+            <input id="pg-highlight" type="range" min="0" max="100" step="1" data-key="highlight">
+          </div>
+          <div class="pg-row">
+            <span class="lbl">Radius</span>
+            <div class="seg" data-key="radius"><button type="button" value="auto">Auto</button><button type="button" value="points">Points</button><button type="button" value="pill">Pill</button></div>
+          </div>
+          <div class="pg-row pg-points">
+            <label for="pg-points">Points <output data-for="points"></output></label>
+            <input id="pg-points" type="range" min="0" max="12" step="1" data-key="points">
+          </div>
+          <div class="pg-row">
+            <span class="lbl">Text top</span>
+            <div class="seg" data-key="top"><button type="button" value="ascender">Ascender</button><button type="button" value="capHeight">Cap height</button><button type="button" value="xHeight">x-height</button></div>
+          </div>
+          <div class="pg-row">
+            <span class="lbl">Text bottom</span>
+            <div class="seg" data-key="bottom"><button type="button" value="descender">Descender</button><button type="button" value="baseline">Baseline</button></div>
+          </div>
+          <div class="pg-row">
+            <span class="lbl">Animation</span>
+            <div class="seg" data-key="animation"><button type="button" value="shimmer">Shimmer</button><button type="button" value="groupShimmer">Group</button><button type="button" value="pulse">Pulse</button><button type="button" value="none">None</button></div>
+          </div>
+          <div class="pg-row">
+            <span class="lbl">Speed</span>
+            <div class="seg" data-key="speed"><button type="button" value="slow">Slow</button><button type="button" value="normal">Normal</button><button type="button" value="fast">Fast</button></div>
+          </div>
+          <div class="pg-row">
+            <label for="pg-angle">Direction <output data-for="angle"></output></label>
+            <input id="pg-angle" type="range" min="0" max="90" step="5" data-key="angle">
+          </div>
+          <label class="pg-check"><input type="checkbox" data-key="xray"> Show the text under the bars</label>
+        </div>
+      </div>
+      <div class="code pg-code"><pre><code class="swift"></code></pre></div>
+      <div class="pg-foot"><button type="button" class="pg-reset">Reset to defaults</button></div>
+    </div>
+
+    <section id="theme-options" aria-label="Theme options">
+      <div class="prose">
+        <div class="table"><table>
+          <thead><tr><th>Option</th><th>Values</th></tr></thead>
+          <tbody>
+            <tr><td><code>light</code>, <code>dark</code></td><td>A <code>SkeletonColors(base:highlight:)</code> for each colour scheme. Light is black at 7% with a white highlight at 60%; dark is white at 8% with white at 10%, which suits a true-black page. <code>SkeletonColors.tinted(_:base:highlight:)</code> builds both from one colour.</td></tr>
+            <tr><td><code>colorScheme</code></td><td>Forces light or dark skeleton colours. <code>nil</code>, the default, follows the system.</td></tr>
+            <tr><td><code>animation</code></td><td><code>.shimmer</code> (one band across the whole screen), <code>.groupShimmer</code> (a band across each region, edge to edge), <code>.pulse</code> or <code>.none</code>.</td></tr>
+            <tr><td><code>speed</code></td><td><code>.slow</code> (default), <code>.normal</code>, <code>.fast</code> or <code>.seconds(_:)</code>. A shimmer loop takes 4, 3 or 2 seconds across a 1280-point screen and keeps that pace on any width; a pulse takes 2.4, 1.8 or 1.2 seconds.</td></tr>
+            <tr><td><code>direction</code></td><td><code>.angle(.degrees(20))</code> by default, measured clockwise from left to right. Also <code>.leadingToTrailing</code>, <code>.trailingToLeading</code>, <code>.topToBottom</code>, <code>.bottomToTop</code>. Mirrored in right-to-left languages.</td></tr>
+            <tr><td><code>bandWidth</code></td><td>The highlight's width in points. <code>nil</code> takes 40% of the screen's width, kept between 80 and 320 points.</td></tr>
+            <tr><td><code>radius</code></td><td>How round lines of text and boxes are: <code>.auto</code> (in proportion to the height), <code>.points(_:)</code> or <code>.pill</code>. Images and chips keep their own shape.</td></tr>
+            <tr><td><code>text</code></td><td>A <code>SkeletonTextMetrics</code>; see <a href="#text-metrics">Text metrics</a>.</td></tr>
+          </tbody>
+        </table></div>
+      </div>
+    </section>
+
+    <section id="text-metrics">
+      <h2>Text metrics</h2>
+      <div class="prose">
+        <p>Each line of text becomes one bar, from its first glyph to its last. <code>SkeletonTextMetrics</code> sets how tall the bar is: from a top edge, the <code>ascender</code>, <code>capHeight</code> or <code>xHeight</code>, down to the <code>descender</code> or the <code>baseline</code>.</p>
+        <svg viewBox="0 0 640 170" role="img" aria-label="The word Hxgly with lines marking the ascender, cap height, x-height, baseline and descender." style="width:100%;max-width:640px;margin:8px 0 20px;display:block">
+          <g fill="none" stroke="currentColor" stroke-width="1" style="color:var(--ink-3)">
+            <line x1="0" x2="470" y1="33" y2="33" stroke-dasharray="3 4"/>
+            <line x1="0" x2="470" y1="57" y2="57"/>
+            <line x1="0" x2="470" y1="77" y2="77" stroke-dasharray="3 4"/>
+            <line x1="0" x2="470" y1="125" y2="125"/>
+            <line x1="0" x2="470" y1="149" y2="149" stroke-dasharray="3 4"/>
+          </g>
+          <rect x="14" y="57" width="270" height="92" rx="10" style="fill:var(--accent-soft)"/>
+          <text x="24" y="125" style="font:500 100px var(--font-display);fill:var(--ink)">Hxgly</text>
+          <g style="font:13px var(--font);fill:var(--ink-2)">
+            <text x="484" y="37">ascender</text>
+            <text x="484" y="61">cap height</text>
+            <text x="484" y="81">x-height</text>
+            <text x="484" y="129">baseline</text>
+            <text x="484" y="153">descender</text>
+          </g>
+        </svg>
+        <p>The default is cap height to descender, the shaded area above. SwiftUI sets lines with no extra leading, so bars from ascender to descender would touch the next line's and the lines would merge into one slab. For tight lists, try x-height to baseline.</p>
+        <div class="code"><pre><code class="swift">
+CompactList()
+    .skeletonText(SkeletonTextMetrics(top: .xHeight, bottom: .baseline))
+</code></pre></div>
+        <p><code>.skeletonText</code> sets just the metrics for everything below a view, whatever the theme says. Bars are cut from the real glyph metrics on iOS 18, macOS 15, tvOS 18, watchOS 11 and visionOS 2 and later; earlier systems draw each line the way SwiftUI's own redaction does.</p>
+      </div>
+    </section>
+
+    <section id="shimmer-text" class="demo">
+      <h2>Shimmering text</h2>
+      <figure class="clip">
+        <div class="screen"><video autoplay loop muted playsinline preload="metadata" width="1206" height="2622" src="../media/shimmerText.mp4" aria-label="A line reading Looking at your sleep with a highlight passing over its letters while the work runs."></video></div>
+      </figure>
+      <div class="prose">
+        <p>For work that's under way rather than content that's missing, such as an AI tool call that's running, shimmer the line itself. The text rests at a quiet tone and a band of it at full strength passes over, on the same clock as every skeleton.</p>
+        <div class="code"><pre><code class="swift">
+ShimmerText("Looking at your sleep")
+
+ShimmerText(isActive: call.isRunning) {
+    Label(call.title, systemImage: "sparkle")
+}
+
+Text(call.title)
+    .shimmer(call.isRunning)
+</code></pre></div>
+        <p><code>.shimmer(_:)</code> works on any view, not only text. Under Reduce Motion it breathes gently instead of sweeping.</p>
+      </div>
+    </section>
+
+    <!-- ===================== Reference ===================== -->
+
+    <p class="part">Reference</p>
+
+    <section id="accessibility" class="demo">
+      <h2>Accessibility</h2>
+      <figure class="clip">
+        <div class="screen"><video autoplay loop muted playsinline preload="metadata" width="1206" height="2622" src="../media/accessibility.mp4" aria-label="VoiceOver reading Loading profile for a skeleton, then the profile once it arrives; text scales with Dynamic Type and the skeleton follows."></video></div>
+      </figure>
+      <div class="prose">
+        <ul>
+          <li>While loading, a region is one VoiceOver element that reads its label, "Loading" by default, and never the sample. Pass <code>label:</code> to say what's loading: <code>label: Text("Loading profile")</code>.</li>
+          <li>Skeletons are hidden from VoiceOver and from hit testing, and the hidden content can't be tapped.</li>
+          <li>Once content has come in, Silhouette posts a layout-changed notification. Use <code>onReveal</code> to move focus yourself, for example with <code>@AccessibilityFocusState</code>.</li>
+          <li>Under Reduce Motion the shimmer becomes a slower, gentler pulse, and every reveal is instant.</li>
+          <li>Skeletons follow Dynamic Type, because they are traced from your text as it's laid out at the current size. <code>SkeletonBox</code> heights in <code>.em</code> scale too.</li>
+          <li>Right-to-left layouts mirror, and so does the shimmer's direction.</li>
+        </ul>
+        <div class="code"><pre><code class="swift">
+@AccessibilityFocusState private var profileFocused: Bool
+
+Skeleton(user, sample: .sample, label: Text("Loading profile"),
+         onReveal: { profileFocused = true }) { user in
+    ProfileCard(user: user)
+        .accessibilityFocused($profileFocused)
+}
+</code></pre></div>
+      </div>
+    </section>
+
+    <section id="debugging" class="demo">
+      <h2>Debugging</h2>
+      <figure class="clip">
+        <div class="screen"><video autoplay loop muted playsinline preload="metadata" width="1206" height="2622" poster="../media/debug.png" src="../media/debug.mp4" aria-label="The debug overlay: loading regions outlined in blue, then one in green labelled no move and one in red labelled moved 66 points."></video></div>
+      </figure>
+      <div class="prose">
+        <p>A skeleton that doesn't match its content makes the page jump. The debug overlay finds those. Each loading region is outlined in blue, labelled with where its skeleton came from (<code>sample</code>, <code>last shown</code>, <code>remembered</code>, <code>on screen</code>, <code>custom</code>, <code>content</code> or <code>fallback</code>). When the content arrives the outline turns green if nothing moved, or red with how far it moved.</p>
+        <div class="code"><pre><code class="swift">
+ContentView()
+    .skeletonDebug(.outlines)   // or .all to add x-ray
+
+setSkeletonDebug(.all)          // the whole app, from code
+</code></pre></div>
+        <p>Or add <code>-SilhouetteDebug YES</code> to the scheme's launch arguments, or <code>-SilhouetteDebug xray</code> for x-ray too. X-ray shows the hidden content faintly through its skeleton, so you can see what was traced.</p>
+        <p>Debug builds also log to the console, under the subsystem <code>Silhouette</code>: a sample to paste when a <code>Skeleton</code> has none, a warning when there was nothing to measure, how far a skeleton was off when the page moved, and when a skeleton has no size at all.</p>
+      </div>
+    </section>
+
+    <section id="data-fetching">
+      <h2>Data fetching</h2>
+      <div class="prose">
+        <h3 id="observation">With Observation</h3>
+        <p>Keep the value optional in your model and pass it straight through. The skeleton shows until the first value lands.</p>
+        <div class="code"><pre><code class="swift">
+@Observable final class ProfileModel {
+    var user: User?
+    var isRefreshing = false
+
+    func load() async {
+        user = try? await api.user()
+    }
+
+    func refresh() async {
+        isRefreshing = true
+        defer { isRefreshing = false }
+        user = try? await api.user()
+    }
+}
+
+struct ProfileScreen: View {
+    @State private var model = ProfileModel()
+
+    var body: some View {
+        ScrollView {
+            Skeleton(model.user, sample: .sample, id: "profile",
+                     isLoading: model.isRefreshing) { user in
+                ProfileCard(user: user)
+            }
+        }
+        .skeletonTracksScrolling()
+        .task { await model.load() }
+        .refreshable { await model.refresh() }
+    }
+}
+</code></pre></div>
+        <h3 id="refetch">Refetching</h3>
+        <p>Decide what a refetch should look like. Leave <code>isLoading</code> out and the old content stays on screen until the new data replaces it. Pass <code>isLoading:</code> and the content goes straight back to its skeleton, drawn from what's on screen, then <code>.smart</code> brings the new data in with a quick crossfade.</p>
+        <h3 id="tasks">Where to start work</h3>
+        <p>Start loading from a <code>.task</code> outside the skeleton, as above. If the work has to live inside the content, guard it with <code>\.isDrawingSkeleton</code>, or the traced copy starts it too.</p>
+        <h3 id="lists">Lists</h3>
+        <p>Put skeletons on rows, not around a <code>List</code>. A list lays its rows out lazily, so there's no whole list to trace. Show sample rows while loading, each with its own region:</p>
+        <div class="code"><pre><code class="swift">
+List(model.messages ?? Message.samples) { message in
+    MessageRow(message: message)
+        .skeleton(isLoading: model.messages == nil)
+}
+</code></pre></div>
+        <p>Give the samples distinct ids. Smart reveals still read as one cascade down the screen, because rows that land together share one order.</p>
+      </div>
+    </section>
+
+    <section id="testing">
+      <h2>Testing</h2>
+      <div class="prose">
+        <h3 id="ui-tests">UI tests</h3>
+        <p>Skeletons are hidden from accessibility, and while a region loads its content is hidden too, behind one element labelled "Loading" (or your label). So queries by label or identifier never find the sample. Wait for the real content instead:</p>
+        <div class="code"><pre><code class="swift">
+let name = app.staticTexts["Ada Lovelace"]
+XCTAssertTrue(name.waitForExistence(timeout: 5))
+</code></pre></div>
+        <p>To skip reveal animations, set the instant reveal when the app runs under UI tests:</p>
+        <div class="code"><pre><code class="swift">
+ContentView()
+    .skeletonReveal(ProcessInfo.processInfo.arguments.contains("-UITests") ? .instant : .smart)
+</code></pre></div>
+        <h3 id="snapshot-tests">Snapshot tests</h3>
+        <p>The shimmer is timed by the wall clock, so a snapshot of a loading state changes from run to run. Hold it still for snapshots with <code>.skeletonTheme { $0.animation = .none }</code>.</p>
+        <h3 id="custom-orders">Custom orders</h3>
+        <p><code>RevealPiece</code> and <code>RevealContext</code> have public initialisers, so you can unit-test your own order or <code>choose</code> without any views: build a piece, call your closure, check the delay.</p>
+      </div>
+    </section>
+
+    <section id="troubleshooting">
+      <h2>Troubleshooting</h2>
+      <div class="prose">
+        <details><summary>The page jumps when content arrives</summary><div>
+          <p>Turn on <a href="#debugging">debugging</a> to see where the skeleton came from and how far the content moved. Most often the sample is shorter or longer than real data: give it typical lengths. An <code>id</code> makes the next skeleton exact.</p>
+        </div></details>
+        <details><summary>A whole card is one solid block</summary><div>
+          <p>Its background isn't the page's colour, so it was traced as a shape. Add <code>.skeletonIgnored()</code> to the background view, inside <code>.background { }</code>, not to the card.</p>
+        </div></details>
+        <details><summary>Three grey lines and a warning in the console</summary><div>
+          <p>There was nothing to measure: no sample, no remembered shape, no data on screen. Pass a <code>sample:</code>, or an <code>id</code> so the shape is remembered after the first load. For a single placeholder, use <code>SkeletonBox</code>.</p>
+        </div></details>
+        <details><summary>An image has no skeleton, or moves when it loads</summary><div>
+          <p>It had no size until it loaded. Give it a <code>.frame</code> or an <code>.aspectRatio</code>. Debug builds log when a skeleton has no size.</p>
+        </div></details>
+        <details><summary>Network requests run twice</summary><div>
+          <p>The traced copy of your view ran a <code>.task</code> or <code>.onAppear</code>. Start work outside the skeleton, or guard it with <code>\.isDrawingSkeleton</code>.</p>
+        </div></details>
+        <details><summary>A chart, map or icon row shimmers as noise</summary><div>
+          <p>Mark it with <code>.skeletonBlock(cornerRadius:)</code>, or draw its outline with <code>.skeletonShape { }</code>. Maps, web views and video players are drawn by the system, not SwiftUI, and need a block.</p>
+        </div></details>
+        <details><summary>Lines of text merge into one slab</summary><div>
+          <p>The bars are too tall for the line spacing. Keep the default cap height to descender, or try <code>.skeletonText(SkeletonTextMetrics(top: .xHeight, bottom: .baseline))</code>.</p>
+        </div></details>
+        <details><summary>Text bars look like plain redaction</summary><div>
+          <p>Bars are cut from the font's metrics on iOS 18, macOS 15, tvOS 18, watchOS 11 and visionOS 2 and later. On earlier systems they follow SwiftUI's own redaction.</p>
+        </div></details>
+        <details><summary>Content animates in while I'm scrolling</summary><div>
+          <p>Add <code>.skeletonTracksScrolling()</code> to the scroll view so <code>.smart</code> can see the scroll and reveal at once. It needs iOS 18 or the matching releases.</p>
+        </div></details>
+        <details><summary>The shimmer is a pulse, and reveals don't animate</summary><div>
+          <p>Reduce Motion is on. That's deliberate: the band becomes a gentle pulse and reveals are instant.</p>
+        </div></details>
+      </div>
+    </section>
+
+    <!-- ===================== API ===================== -->
+
+    <section id="api" class="api">
+      <h2>API</h2>
+      <div class="prose">
+
+        <h3 id="api-skeleton"><code>Skeleton</code></h3>
+        <div class="table"><table>
+          <thead><tr><th>Parameter</th><th>Type</th><th>Meaning</th></tr></thead>
+          <tbody>
+            <tr><td><code>_ data</code></td><td><code>Value?</code></td><td>The data to show. The skeleton shows while it's <code>nil</code>.</td></tr>
+            <tr><td><code>sample</code></td><td><code>Value?</code></td><td>Stands in for the data to draw the first skeleton.</td></tr>
+            <tr><td><code>id</code></td><td><code>String?</code></td><td>Remembers the shape last shown under this key; across launches for <code>Codable</code> data.</td></tr>
+            <tr><td><code>isLoading</code></td><td><code>Bool</code></td><td>Shows the skeleton even over data. <code>false</code> by default.</td></tr>
+            <tr><td><code>label</code></td><td><code>Text?</code></td><td>Read by VoiceOver while loading. "Loading" by default.</td></tr>
+            <tr><td><code>onReveal</code></td><td><code>(() -&gt; Void)?</code></td><td>Called once the content has come in over a skeleton.</td></tr>
+            <tr><td><code>content</code></td><td><code>(Value) -&gt; Content</code></td><td>Your view, built from the data.</td></tr>
+          </tbody>
+        </table></div>
+        <div class="table"><table>
+          <thead><tr><th>Option</th><th>Meaning</th></tr></thead>
+          <tbody>
+            <tr><td><code>.placeholder { }</code></td><td>Draws this instead of the traced skeleton.</td></tr>
+            <tr><td><code>.empty(_:message:)</code></td><td>Shows the message in place of the content when the data has arrived and the flag is true.</td></tr>
+            <tr><td><code>.failure(_:content:)</code></td><td>Shows your view for a non-<code>nil</code> error in place of everything else.</td></tr>
+          </tbody>
+        </table></div>
+
+        <h3 id="api-modifier"><code>.skeleton(isLoading:label:onReveal:)</code></h3>
+        <div class="table"><table>
+          <thead><tr><th>Parameter</th><th>Type</th><th>Meaning</th></tr></thead>
+          <tbody>
+            <tr><td><code>isLoading</code></td><td><code>Bool</code></td><td>Whether to show the skeleton of this view.</td></tr>
+            <tr><td><code>label</code></td><td><code>Text?</code></td><td>Read by VoiceOver while loading.</td></tr>
+            <tr><td><code>onReveal</code></td><td><code>(() -&gt; Void)?</code></td><td>Called once the content has come in.</td></tr>
+          </tbody>
+        </table></div>
+
+        <h3 id="api-async"><code>AsyncSkeleton</code></h3>
+        <div class="table"><table>
+          <thead><tr><th>Parameter</th><th>Type</th><th>Meaning</th></tr></thead>
+          <tbody>
+            <tr><td><code>sample</code></td><td><code>Value?</code></td><td>Draws the skeleton while the work runs.</td></tr>
+            <tr><td><code>id</code></td><td><code>String?</code></td><td>Remembers the shape under this key.</td></tr>
+            <tr><td><code>trigger</code></td><td><code>AnyHashable?</code></td><td>Change it to run the work again.</td></tr>
+            <tr><td><code>label</code></td><td><code>Text?</code></td><td>Read by VoiceOver while loading.</td></tr>
+            <tr><td><code>onReveal</code></td><td><code>(() -&gt; Void)?</code></td><td>Called once the content has come in.</td></tr>
+            <tr><td><code>load</code></td><td><code>@Sendable () async throws -&gt; Value</code></td><td>The work. <code>Value</code> must be <code>Sendable</code>.</td></tr>
+            <tr><td><code>content</code></td><td><code>(Value) -&gt; Content</code></td><td>Your view, built from the result.</td></tr>
+          </tbody>
+        </table></div>
+
+        <h3 id="api-box"><code>SkeletonBox</code></h3>
+        <div class="table"><table>
+          <thead><tr><th>Parameter</th><th>Type</th><th>Default</th></tr></thead>
+          <tbody>
+            <tr><td><code>width</code></td><td><code>SkeletonLength</code></td><td><code>.fraction(0.6)</code></td></tr>
+            <tr><td><code>height</code></td><td><code>SkeletonLength</code></td><td><code>.em(1)</code>, one line of body text</td></tr>
+            <tr><td><code>radius</code></td><td><code>SkeletonRadius?</code></td><td><code>nil</code>, the theme's radius</td></tr>
+          </tbody>
+        </table></div>
+
+        <h3 id="api-image"><code>SkeletonAsyncImage</code></h3>
+        <div class="table"><table>
+          <thead><tr><th>Parameter</th><th>Type</th><th>Meaning</th></tr></thead>
+          <tbody>
+            <tr><td><code>url</code></td><td><code>URL?</code></td><td>The image to load.</td></tr>
+            <tr><td><code>scale</code></td><td><code>CGFloat</code></td><td>The image's scale. 1 by default.</td></tr>
+            <tr><td><code>content</code></td><td><code>(Image) -&gt; Content</code></td><td>Your view of the loaded image. Leave it out to show the image as it is.</td></tr>
+          </tbody>
+        </table></div>
+
+        <h3 id="api-shimmer"><code>ShimmerText</code> and <code>.shimmer(_:)</code></h3>
+        <div class="table"><table>
+          <thead><tr><th>Form</th><th>Meaning</th></tr></thead>
+          <tbody>
+            <tr><td><code>ShimmerText(_:isActive:)</code></td><td>A line of text from a string or localized key.</td></tr>
+            <tr><td><code>ShimmerText(isActive:label:)</code></td><td>Any view.</td></tr>
+            <tr><td><code>.shimmer(_ isActive: Bool = true)</code></td><td>Passes the shimmer over a view's own pixels.</td></tr>
+          </tbody>
+        </table></div>
+
+        <h3 id="api-modifiers">Modifiers</h3>
+        <div class="table"><table>
+          <thead><tr><th>Modifier</th><th>Meaning</th></tr></thead>
+          <tbody>
+            <tr><td><code>.skeletonBlock(cornerRadius:)</code></td><td>One block for this view instead of tracing it.</td></tr>
+            <tr><td><code>.skeletonIgnored()</code></td><td>Leaves this view out of the skeleton; it keeps its space.</td></tr>
+            <tr><td><code>.skeletonShape { }</code></td><td>Your own skeleton for this view, in its frame.</td></tr>
+            <tr><td><code>.skeletonTheme(_:)</code></td><td>Sets the theme below this view.</td></tr>
+            <tr><td><code>.skeletonTheme { $0.x = … }</code></td><td>Changes part of the theme below this view.</td></tr>
+            <tr><td><code>.skeletonText(_:)</code></td><td>Sets the text metrics below this view, whatever the theme says.</td></tr>
+            <tr><td><code>.skeletonReveal(_:)</code></td><td>Sets how content replaces its skeleton below this view.</td></tr>
+            <tr><td><code>.skeletonTracksScrolling()</code></td><td>Lets <code>.smart</code> see scrolling in this scroll view. iOS 18 and matching releases.</td></tr>
+            <tr><td><code>.skeletonDebug(_:)</code></td><td>The debug overlay below this view: <code>.outlines</code> (default), <code>.xray</code> or <code>.all</code>.</td></tr>
+          </tbody>
+        </table></div>
+
+        <h3 id="api-functions">Functions and environment</h3>
+        <div class="table"><table>
+          <thead><tr><th>Name</th><th>Meaning</th></tr></thead>
+          <tbody>
+            <tr><td><code>forgetSkeletonShapes()</code></td><td>Clears every remembered shape, in memory and on disk. Main actor.</td></tr>
+            <tr><td><code>setSkeletonDebug(_:)</code></td><td>Turns the debug overlay on for the whole app. Main actor.</td></tr>
+            <tr><td><code>\.isDrawingSkeleton</code></td><td><code>true</code> in the copy of your view being traced.</td></tr>
+            <tr><td><code>\.skeletonTheme</code></td><td>The current <code>SkeletonTheme</code>.</td></tr>
+            <tr><td><code>\.skeletonReveal</code></td><td>The current <code>SkeletonReveal</code>.</td></tr>
+            <tr><td><code>\.skeletonDebug</code></td><td>The current <code>SkeletonDebugOptions</code>.</td></tr>
+          </tbody>
+        </table></div>
+
+        <h3 id="api-theme"><code>SkeletonTheme</code></h3>
+        <div class="table"><table>
+          <thead><tr><th>Property</th><th>Type</th><th>Default</th></tr></thead>
+          <tbody>
+            <tr><td><code>light</code></td><td><code>SkeletonColors</code></td><td><code>.defaultLight</code>: black 7%, white 60%</td></tr>
+            <tr><td><code>dark</code></td><td><code>SkeletonColors</code></td><td><code>.defaultDark</code>: white 8%, white 10%</td></tr>
+            <tr><td><code>animation</code></td><td><code>SkeletonAnimation</code></td><td><code>.shimmer</code></td></tr>
+            <tr><td><code>speed</code></td><td><code>SkeletonSpeed</code></td><td><code>.slow</code></td></tr>
+            <tr><td><code>direction</code></td><td><code>ShimmerDirection</code></td><td><code>.angle(.degrees(20))</code></td></tr>
+            <tr><td><code>bandWidth</code></td><td><code>CGFloat?</code></td><td><code>nil</code>: 40% of the screen, 80 to 320 pt</td></tr>
+            <tr><td><code>radius</code></td><td><code>SkeletonRadius</code></td><td><code>.auto</code></td></tr>
+            <tr><td><code>text</code></td><td><code>SkeletonTextMetrics</code></td><td>cap height to descender</td></tr>
+            <tr><td><code>colorScheme</code></td><td><code>ColorScheme?</code></td><td><code>nil</code>: follows the system</td></tr>
+          </tbody>
+        </table></div>
+        <div class="table"><table>
+          <thead><tr><th>Type</th><th>Cases and members</th></tr></thead>
+          <tbody>
+            <tr><td><code>SkeletonColors</code></td><td class="wrapcode"><code>base</code>, <code>highlight</code>, <code>.defaultLight</code>, <code>.defaultDark</code>, <code>.tinted(_:base:highlight:)</code> (0.08 and 0.10 by default)</td></tr>
+            <tr><td><code>SkeletonAnimation</code></td><td class="wrapcode"><code>.shimmer</code>, <code>.groupShimmer</code>, <code>.pulse</code>, <code>.none</code></td></tr>
+            <tr><td><code>SkeletonSpeed</code></td><td class="wrapcode"><code>.slow</code>, <code>.normal</code>, <code>.fast</code>, <code>.seconds(_:)</code>; <code>shimmerLoop</code>, <code>pulseLoop</code></td></tr>
+            <tr><td><code>ShimmerDirection</code></td><td class="wrapcode"><code>.leadingToTrailing</code>, <code>.trailingToLeading</code>, <code>.topToBottom</code>, <code>.bottomToTop</code>, <code>.angle(_:)</code></td></tr>
+            <tr><td><code>SkeletonRadius</code></td><td class="wrapcode"><code>.auto</code>, <code>.points(_:)</code>, <code>.pill</code></td></tr>
+            <tr><td><code>SkeletonTextMetrics</code></td><td class="wrapcode"><code>top</code>: <code>.ascender</code>, <code>.capHeight</code>, <code>.xHeight</code>; <code>bottom</code>: <code>.descender</code>, <code>.baseline</code></td></tr>
+            <tr><td><code>SkeletonLength</code></td><td class="wrapcode"><code>.points(_:)</code>, <code>.fraction(_:)</code>, <code>.em(_:)</code>; number literals are points</td></tr>
+            <tr><td><code>SkeletonDebugOptions</code></td><td class="wrapcode"><code>.outlines</code>, <code>.xray</code>, <code>.all</code></td></tr>
+            <tr><td><code>SkeletonSource</code></td><td class="wrapcode"><code>.onScreen</code>, <code>.lastShown</code>, <code>.remembered</code>, <code>.sample</code>, <code>.custom</code>, <code>.content</code>, <code>.fallback</code></td></tr>
+          </tbody>
+        </table></div>
+
+        <h3 id="api-reveal"><code>SkeletonReveal</code></h3>
+        <div class="table"><table>
+          <thead><tr><th>Property</th><th>Type</th><th>Default</th></tr></thead>
+          <tbody>
+            <tr><td><code>order</code></td><td><code>Order</code></td><td><code>.together</code></td></tr>
+            <tr><td><code>enter</code></td><td><code>Enter</code></td><td><code>.none</code></td></tr>
+            <tr><td><code>wipe</code></td><td><code>Wipe?</code></td><td><code>nil</code></td></tr>
+            <tr><td><code>delay</code></td><td><code>Double</code></td><td><code>0</code>, capped at 1 s</td></tr>
+            <tr><td><code>duration</code></td><td><code>Double</code></td><td><code>0.2</code> per piece, capped at 1 s</td></tr>
+            <tr><td><code>hold</code></td><td><code>Double</code></td><td><code>0</code> (<code>.smart</code> holds 0.15)</td></tr>
+            <tr><td><code>choose</code></td><td><code>(@Sendable (RevealContext) -&gt; SkeletonReveal?)?</code></td><td><code>nil</code></td></tr>
+          </tbody>
+        </table></div>
+        <div class="table"><table>
+          <thead><tr><th>Type</th><th>Cases and members</th></tr></thead>
+          <tbody>
+            <tr><td>Built-ins</td><td class="wrapcode"><code>.smart</code>, <code>.together</code>, <code>.sequence</code>, <code>.sweep</code> (0.6 s), <code>.instant</code></td></tr>
+            <tr><td><code>Order</code></td><td class="wrapcode"><code>.together</code>, <code>.custom((RevealPiece) -&gt; Double?)</code>, <code>.byPosition</code>, <code>.byRow</code></td></tr>
+            <tr><td><code>Enter</code></td><td class="wrapcode"><code>blur</code>, <code>offset</code>, <code>scale</code>, <code>rotation</code>; <code>.none</code>, <code>.blur</code> (6), <code>.rise</code> (6 pt), <code>.zoom</code> (0.97)</td></tr>
+            <tr><td><code>Wipe</code></td><td class="wrapcode"><code>.sweep</code>, <code>.custom((Double) -&gt; WipeMask)</code></td></tr>
+            <tr><td><code>WipeMask</code></td><td class="wrapcode"><code>stops</code>, <code>startPoint</code> (<code>.top</code>), <code>endPoint</code> (<code>.bottom</code>)</td></tr>
+          </tbody>
+        </table></div>
+
+        <h3 id="api-piece"><code>RevealPiece</code></h3>
+        <div class="table"><table>
+          <thead><tr><th>Member</th><th>Meaning</th></tr></thead>
+          <tbody>
+            <tr><td><code>rect</code></td><td>The piece, in screen coordinates.</td></tr>
+            <tr><td><code>reveal</code></td><td>The whole region being revealed.</td></tr>
+            <tr><td><code>unit</code></td><td>The piece's row: the pieces that sit together with it. <code>nil</code> if alone.</td></tr>
+            <tr><td><code>isSecondary</code></td><td>Smaller text than the largest in its row.</td></tr>
+            <tr><td><code>late</code></td><td>Seconds since the first reveal of its cascade began.</td></tr>
+            <tr><td><code>screen</code></td><td>The screen the reveal is on.</td></tr>
+            <tr><td><code>byPosition(_:)</code>, <code>byRow(_:)</code></td><td>The built-in orders, to build on.</td></tr>
+            <tr><td><code>cascadeSpread</code>, <code>secondaryDelay</code></td><td>0.32 s and 0.06 s.</td></tr>
+          </tbody>
+        </table></div>
+
+        <h3 id="api-context"><code>RevealContext</code></h3>
+        <div class="table"><table>
+          <thead><tr><th>Member</th><th>Meaning</th></tr></thead>
+          <tbody>
+            <tr><td><code>skeletonShownFor</code></td><td>Seconds the skeleton was up, or <code>nil</code> if the data beat the hold.</td></tr>
+            <tr><td><code>size</code></td><td>The size of the content arriving.</td></tr>
+            <tr><td><code>pieces</code></td><td>How many pieces the skeleton had.</td></tr>
+            <tr><td><code>isRefetch</code></td><td>The content had loaded before.</td></tr>
+            <tr><td><code>isInteracting</code></td><td>Someone scrolled in the last 400 ms.</td></tr>
+            <tr><td><code>reduceMotion</code></td><td>Reduce Motion is on.</td></tr>
+          </tbody>
+        </table></div>
+      </div>
+    </section>
+
+    <section id="platforms">
+      <h2>Platform support</h2>
+      <div class="prose">
+        <div class="table"><table>
+          <thead><tr><th>Platform</th><th>Minimum</th><th>Glyph-exact text and scroll tracking</th></tr></thead>
+          <tbody>
+            <tr><td>iOS and iPadOS</td><td>17</td><td>18</td></tr>
+            <tr><td>macOS</td><td>14</td><td>15</td></tr>
+            <tr><td>tvOS</td><td>17</td><td>18</td></tr>
+            <tr><td>watchOS</td><td>10</td><td>11</td></tr>
+            <tr><td>visionOS</td><td>1</td><td>2</td></tr>
+          </tbody>
+        </table></div>
+        <p>Below the second column, each line of text is drawn the way SwiftUI redacts it rather than cut from the font's metrics, and <code>.skeletonTracksScrolling()</code> does nothing. Everything else works the same. The package uses Swift 6 tools and language mode, so you need Xcode 16 or later.</p>
+      </div>
+    </section>
+
+    <section id="how-it-works">
+      <h2>How it works</h2>
+      <div class="prose">
+        <p>Silhouette doesn't guess at sizes. It lets SwiftUI lay out the real view, then reads the result.</p>
+        <ol class="steps">
+          <li><strong>Laid out by SwiftUI.</strong> Your content renders in place from the closest data there is, at zero opacity, so every size and line break is SwiftUI's own.</li>
+          <li><strong>A traced copy.</strong> A second copy, with <code>\.isDrawingSkeleton</code> set, is laid out in the same space and drawn into a canvas. A text renderer turns each line into one bar trimmed to the font's metrics; images, controls and painted shapes draw as they are.</li>
+          <li><strong>Coverage.</strong> Each pixel is measured by how far it is from the page's colour, so anything painted becomes solid and page-coloured surfaces drop out. That shape masks the skeleton fill.</li>
+          <li><strong>One clock.</strong> The highlight's position comes from the wall clock and the skeleton's place on screen, so every skeleton shimmers as one, however late it appeared.</li>
+          <li><strong>Pieces.</strong> For an ordered reveal, the traced shape is drawn again offscreen and split into connected areas: each bar, image, control and shape is one piece, grouped into rows.</li>
+          <li><strong>The reveal.</strong> The content fades, wipes or rises in over its skeleton, piece by piece, in the space it already held.</li>
+        </ol>
+      </div>
+    </section>
+
+    <section id="parity">
+      <h2>Parity with Skullet</h2>
+      <div class="prose">
+        <p>Silhouette follows <a href="https://skullet.lochie.me/docs">Skullet</a>'s design closely and shares no code with it. Here is every Skullet feature and where it stands.</p>
+        <div class="table loose"><table>
+          <thead><tr><th>Skullet</th><th>Silhouette</th><th>Status</th></tr></thead>
+          <tbody>
+            <tr><td><code>&lt;Skeleton data sample&gt;</code></td><td><code>Skeleton(data, sample:)</code></td><td><span class="status full">Full</span></td></tr>
+            <tr><td><code>&lt;Skeleton loading&gt;</code></td><td><code>.skeleton(isLoading:)</code></td><td><span class="status full">Full</span></td></tr>
+            <tr><td>A sample logged in development</td><td>Logged in debug builds</td><td><span class="status full">Full</span></td></tr>
+            <tr><td>Component <code>.Skeleton</code>, <code>skeleton</code> prop</td><td><code>.skeletonShape { }</code>, <code>.placeholder { }</code></td><td><span class="status full">Full</span></td></tr>
+            <tr><td><code>&lt;SkeletonBox&gt;</code></td><td><code>SkeletonBox</code> with points, fractions and em</td><td><span class="status full">Full</span></td></tr>
+            <tr><td><code>skullet-block</code>, <code>skullet-ignore</code></td><td><code>.skeletonBlock()</code>, <code>.skeletonIgnored()</code></td><td><span class="status full">Full</span></td></tr>
+            <tr><td><code>empty</code>, <code>emptyMessage</code>, <code>error</code></td><td><code>.empty(_:message:)</code>, <code>.failure(_:content:)</code></td><td><span class="status full">Full</span></td></tr>
+            <tr><td><code>label</code>, <code>onReveal</code></td><td><code>label:</code>, <code>onReveal:</code></td><td><span class="status full">Full</span></td></tr>
+            <tr><td>Memory by <code>id</code></td><td><code>id:</code>, in memory and <code>UserDefaults</code></td><td><span class="status partial">Partial</span><br>Needs an <code>id</code>; there's no page and markup to key by. Across launches only for <code>Codable</code> data.</td></tr>
+            <tr><td><code>forgetShapes()</code></td><td><code>forgetSkeletonShapes()</code></td><td><span class="status full">Full</span></td></tr>
+            <tr><td>Reveals: smart, together, sequence, sweep</td><td><code>.smart</code>, <code>.together</code>, <code>.sequence</code>, <code>.sweep</code></td><td><span class="status full">Full</span></td></tr>
+            <tr><td><code>RevealSpec</code> <code>order</code> function</td><td><code>.custom((RevealPiece) -&gt; Double?)</code>, with <code>byPosition</code> and <code>byRow</code> exported</td><td><span class="status full">Full</span></td></tr>
+            <tr><td><code>enter</code></td><td><code>Enter</code>: blur, offset, scale, rotation</td><td><span class="status partial">Partial</span><br>No arbitrary filters or clip paths.</td></tr>
+            <tr><td><code>wipe</code> with <code>mask</code>, <code>out</code>, <code>effect</code></td><td><code>Wipe.custom</code> returning a gradient <code>WipeMask</code></td><td><span class="status partial">Partial</span><br>Gradient masks only; the outgoing mask is always the inverse.</td></tr>
+            <tr><td><code>delay</code>, <code>duration</code>, <code>hold</code>, <code>choose</code></td><td>The same fields, in seconds</td><td><span class="status full">Full</span></td></tr>
+            <tr><td>Images never hold a reveal</td><td><code>SkeletonAsyncImage</code></td><td><span class="status partial">Partial</span><br>Needs the wrapper; plain <code>AsyncImage</code> isn't tracked.</td></tr>
+            <tr><td>Changing size eases</td><td>Eases over 280 ms</td><td><span class="status full">Full</span></td></tr>
+            <tr><td><code>SkeletonSuspense</code></td><td><code>AsyncSkeleton</code></td><td><span class="status partial">Partial</span><br>Runs the work itself; its error view isn't customisable.</td></tr>
+            <tr><td><code>SkulletProvider</code> theme and reveal</td><td><code>.skeletonTheme</code>, <code>.skeletonReveal</code></td><td><span class="status full">Full</span></td></tr>
+            <tr><td><code>mode</code> light, dark, system</td><td><code>colorScheme</code></td><td><span class="status full">Full</span></td></tr>
+            <tr><td>Provider <code>text</code></td><td><code>.skeletonText(_:)</code></td><td><span class="status full">Full</span></td></tr>
+            <tr><td>Animation: shimmer, group-shimmer, pulse, none</td><td><code>SkeletonAnimation</code></td><td><span class="status full">Full</span></td></tr>
+            <tr><td>Speed: slow, fast</td><td><code>.slow</code>, <code>.normal</code>, <code>.fast</code>, <code>.seconds</code></td><td><span class="status full">Full</span></td></tr>
+            <tr><td><code>radius</code> as any CSS length</td><td><code>.auto</code>, <code>.points</code>, <code>.pill</code></td><td><span class="status partial">Partial</span><br>No percentages or other units.</td></tr>
+            <tr><td>Text top and bottom</td><td><code>SkeletonTextMetrics</code></td><td><span class="status full">Full</span><br>Glyph-exact from iOS 18.</td></tr>
+            <tr><td>Custom properties per element</td><td><code>.skeletonTheme { }</code> on any view</td><td><span class="status full">Full</span></td></tr>
+            <tr><td>Debug overlay, x-ray, <code>setDebug</code>, <code>?skullet-debug</code></td><td><code>.skeletonDebug</code>, <code>setSkeletonDebug</code>, <code>-SilhouetteDebug</code></td><td><span class="status full">Full</span></td></tr>
+            <tr><td><code>aria-busy</code>, hidden skeleton, label</td><td>One VoiceOver element, skeleton hidden</td><td><span class="status full">Full</span></td></tr>
+            <tr><td>Reduced motion: skeletons hold still, reveals instant</td><td>A gentle pulse; reveals instant</td><td><span class="status partial">Partial</span><br>A slow pulse instead of stillness, by choice.</td></tr>
+            <tr><td><code>useReveal()</code></td><td><code>@Environment(\.skeletonReveal)</code></td><td><span class="status full">Full</span></td></tr>
+            <tr><td>Testing in jsdom</td><td>XCUITest and snapshot guidance</td><td><span class="status full">Full</span></td></tr>
+            <tr><td>Server rendering</td><td>&mdash;</td><td><span class="status web">Web-only</span><br>There's no server HTML in a SwiftUI app.</td></tr>
+            <tr><td>CSP <code>nonce</code></td><td>&mdash;</td><td><span class="status web">Web-only</span><br>No inline scripts.</td></tr>
+            <tr><td>Web component, <code>new Reveal()</code>, <code>createSkeletonBox</code></td><td>&mdash;</td><td><span class="status web">Web-only</span><br>DOM APIs; SwiftUI views cover it.</td></tr>
+            <tr><td>Vue and Svelte wrappers, Nuxt, SvelteKit</td><td>&mdash;</td><td><span class="status web">Web-only</span></td></tr>
+            <tr><td><code>applyTheme</code>, <code>themeVariables</code>, <code>skulletCSS</code></td><td>&mdash;</td><td><span class="status web">Web-only</span><br>CSS output; the environment does this natively.</td></tr>
+            <tr><td>Re-measure when web fonts load</td><td>&mdash;</td><td><span class="status web">Web-only</span><br>SwiftUI lays out again on any change.</td></tr>
+            <tr><td>&mdash;</td><td><code>ShimmerText</code>, <code>.shimmer(_:)</code></td><td><span class="status extra">Native extra</span></td></tr>
+            <tr><td>&mdash;</td><td><code>.instant</code> reveal</td><td><span class="status extra">Native extra</span></td></tr>
+            <tr><td>&mdash;</td><td><code>.skeletonTracksScrolling()</code></td><td><span class="status extra">Native extra</span></td></tr>
+            <tr><td>&mdash;</td><td><code>direction</code> and <code>bandWidth</code></td><td><span class="status extra">Native extra</span></td></tr>
+            <tr><td>&mdash;</td><td><code>SkeletonColors.tinted</code></td><td><span class="status extra">Native extra</span></td></tr>
+            <tr><td>&mdash;</td><td>Dynamic Type and right-to-left shimmer</td><td><span class="status extra">Native extra</span></td></tr>
+          </tbody>
+        </table></div>
+      </div>
+    </section>
+
+    <section id="changelog">
+      <h2>Changelog</h2>
+      <div class="prose">
+        <div class="release">
+          <div><h3>Unreleased</h3><div class="date">November 2026</div></div>
+          <ul>
+            <li>Reveals cascade piece by piece: rows in screen order across every region that lands together, smaller text a beat behind. New orders <code>.byPosition</code>, <code>.byRow</code> and <code>.custom</code>.</li>
+            <li>The shimmer keeps one pace on any screen width, slanted at 20 degrees by default.</li>
+            <li><code>.skeletonTracksScrolling()</code>, so content landing mid-scroll appears at once.</li>
+            <li>Reloading content goes straight to its skeleton, with no blank beat.</li>
+            <li>Under Reduce Motion every reveal is instant.</li>
+          </ul>
+        </div>
+        <div class="release">
+          <div><h3>First version</h3><div class="date">November 2026</div></div>
+          <ul>
+            <li>Skeletons traced from your real layout: <code>Skeleton</code>, <code>.skeleton(isLoading:)</code>, <code>AsyncSkeleton</code>, <code>SkeletonBox</code>, <code>SkeletonAsyncImage</code>, <code>ShimmerText</code>.</li>
+            <li>Hints, memory by id, themes, reveals and the debug overlay.</li>
+          </ul>
+        </div>
+      </div>
+    </section>
+
+  </article>
+
+  <footer class="footer" style="margin-top:72px">
+    <div>
+      <span>Silhouette is a native take on <a href="https://skullet.lochie.me">Skullet</a> by Lochie Axon. MIT licence.</span>
+    </div>
+  </footer>
+  </main>
+</div>
+
+<script src="../assets/site.js"></script>
+<script src="../assets/playground.js"></script>
+</body>
+</html>

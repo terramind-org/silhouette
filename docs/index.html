@@ -1,0 +1,131 @@
+<!doctype html>
+<html lang="en">
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1">
+  <title>Silhouette: skeleton loading states for SwiftUI</title>
+  <meta name="description" content="Silhouette draws a skeleton of exactly what is about to load in your SwiftUI app, traced from your real layout, so nothing on the page moves when the data arrives.">
+  <meta name="color-scheme" content="light dark">
+  <meta name="theme-color" content="#fbfbfd" media="(prefers-color-scheme: light)">
+  <meta name="theme-color" content="#000000" media="(prefers-color-scheme: dark)">
+  <link rel="icon" href="assets/mark.svg" type="image/svg+xml">
+  <link rel="stylesheet" href="assets/site.css">
+</head>
+<body>
+  <header class="top">
+    <div class="wrap">
+      <a class="brand" href="./" aria-label="Silhouette home">
+        <svg viewBox="0 0 26 26" aria-hidden="true"><circle class="mark-fill" cx="7.5" cy="13" r="5.5"/><rect class="mark-bar" x="15" y="8" width="10" height="3.4" rx="1.7"/><rect class="mark-bar" x="15" y="14.6" width="6.5" height="3.4" rx="1.7"/></svg>
+        Silhouette
+      </a>
+      <nav>
+        <a href="docs/">Docs</a>
+        <a href="docs/#api">API</a>
+        <a href="https://github.com/terramind-org/silhouette">GitHub</a>
+      </nav>
+    </div>
+  </header>
+
+  <main>
+    <section class="hero">
+      <div class="wrap">
+        <div>
+          <h1>Silhouette</h1>
+          <p class="pitch">Skeleton loading states for SwiftUI, traced from the view you already have. Nothing to draw twice, and nothing on the page moves when the data lands.</p>
+          <div class="install">
+            <span class="via">Swift Package</span>
+            <code>https://github.com/terramind-org/silhouette.git</code>
+          </div>
+          <div class="actions">
+            <a class="button primary" href="docs/">Read the docs</a>
+            <a class="button" href="https://github.com/terramind-org/silhouette">View on GitHub</a>
+          </div>
+        </div>
+        <figure class="clip">
+          <div class="screen">
+            <video autoplay loop muted playsinline preload="metadata" width="1206" height="2622" src="media/showcase.mp4" aria-label="A feed of cards shimmering as skeletons in their exact shape, then each card's content arriving in place."></video>
+          </div>
+        </figure>
+      </div>
+    </section>
+
+    <section class="features">
+      <div class="wrap">
+        <h2>The skeleton is your view.</h2>
+        <p class="lede">Silhouette lays out your own view with sample data, out of sight, and shimmers in its exact outline until the real data arrives.</p>
+        <div class="grid">
+          <div class="feature">
+            <span class="glyph" aria-hidden="true"><i class="dot"></i><span class="lines"><i style="width:70%"></i><i style="width:45%"></i></span></span>
+            <h3>Traced, not hand-drawn</h3>
+            <p>A bar for every line of text as it actually wraps, a block for each image, control and painted shape. Change the view and the skeleton follows.</p>
+          </div>
+          <div class="feature">
+            <span class="glyph" aria-hidden="true"><span class="lines"><i style="width:90%"></i><i class="accent" style="width:90%"></i><i style="width:90%"></i></span></span>
+            <h3>No layout jump</h3>
+            <p>The content has held its space the whole time, so it fades in where its skeleton was. New data of a different height eases into place.</p>
+          </div>
+          <div class="feature">
+            <span class="glyph" aria-hidden="true"><span class="lines"><i style="width:40%"></i><i style="width:80%"></i><i style="width:60%"></i></span></span>
+            <h3>One shimmer</h3>
+            <p>Every skeleton keeps time by the same clock and its place on screen, so a card that appears late joins the band already in step.</p>
+          </div>
+          <div class="feature">
+            <span class="glyph" aria-hidden="true"><span class="lines"><i style="width:30%"></i><i style="width:55%"></i><i style="width:80%"></i></span></span>
+            <h3>Reveals that read well</h3>
+            <p>Fast data never shows a skeleton. Slower data comes in row by row down the screen, and a refetch is a quick crossfade.</p>
+          </div>
+          <div class="feature">
+            <span class="glyph" aria-hidden="true"><span class="lines"><i style="width:75%"></i><i style="width:75%"></i><i style="width:35%"></i></span></span>
+            <h3>Remembers the shape</h3>
+            <p>Give a skeleton an id and the next one is drawn from what was shown last time, even after a relaunch, keeping only the layout.</p>
+          </div>
+          <div class="feature">
+            <span class="glyph" aria-hidden="true"><i class="dot"></i><span class="lines"><i style="width:50%"></i><i style="width:65%"></i></span></span>
+            <h3>At home on Apple platforms</h3>
+            <p>Dynamic Type, dark mode, VoiceOver, Reduce Motion and right-to-left layouts, on iOS, macOS, tvOS, watchOS and visionOS.</p>
+          </div>
+        </div>
+      </div>
+    </section>
+
+    <section class="snippet">
+      <div class="wrap">
+        <h2>Wrap it once.</h2>
+        <p class="lede">Pass the data, which is <code>nil</code> while it loads, and a sample of it. That is the whole integration.</p>
+        <div class="pair">
+          <div class="code">
+            <pre><code class="swift">
+import Silhouette
+
+struct ProfileScreen: View {
+    @State private var user: User?
+
+    var body: some View {
+        Skeleton(user, sample: .sample) { user in
+            ProfileCard(user: user)
+        }
+        .task { user = try? await api.user() }
+    }
+}
+</code></pre>
+          </div>
+          <ol>
+            <li><strong>Your view is built from the sample</strong>laid out where the real one will go, at full size but never seen.</li>
+            <li><strong>A copy is traced</strong>each line of text becomes a bar trimmed to the font, everything else keeps its shape.</li>
+            <li><strong>The real data lands</strong>and the content replaces its skeleton in the space it already held.</li>
+          </ol>
+        </div>
+      </div>
+    </section>
+  </main>
+
+  <footer class="footer">
+    <div class="wrap">
+      <span>Silhouette is a native take on the ideas in <a href="https://skullet.lochie.me">Skullet</a> by Lochie Axon. It shares no code with it.</span>
+      <span><a href="docs/">Docs</a> &middot; <a href="https://github.com/terramind-org/silhouette">GitHub</a> &middot; MIT licence</span>
+    </div>
+  </footer>
+
+  <script src="assets/site.js"></script>
+</body>
+</html>
