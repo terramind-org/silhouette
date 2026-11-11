@@ -16,10 +16,18 @@ final class ThemeAndClockTests: XCTestCase {
         XCTAssertEqual(SkeletonClock.pulse(at: Date(timeIntervalSinceReferenceDate: 1), period: 2), 1, accuracy: 1e-9)
     }
 
-    func testSpeedsGetFaster() {
-        XCTAssertGreaterThan(SkeletonSpeed.slow.period, SkeletonSpeed.normal.period)
-        XCTAssertGreaterThan(SkeletonSpeed.normal.period, SkeletonSpeed.fast.period)
-        XCTAssertEqual(SkeletonSpeed.seconds(0.01).period, 0.2, "a period never collapses to nothing")
+    func testSpeedsMatchSkullet() {
+        XCTAssertEqual(SkeletonSpeed.slow.shimmerLoop, 4)
+        XCTAssertEqual(SkeletonSpeed.fast.shimmerLoop, 2)
+        XCTAssertEqual(SkeletonSpeed.slow.pulseLoop, 2.4)
+        XCTAssertEqual(SkeletonSpeed.fast.pulseLoop, 1.2)
+        XCTAssertEqual(SkeletonSpeed.seconds(0.01).shimmerLoop, 0.2, "a loop never collapses to nothing")
+    }
+
+    func testShimmerKeepsOnePaceOnAnyWidth() {
+        // One loop crosses a 1280-point screen in 70% of its time, whatever the screen's width.
+        XCTAssertEqual(ShimmerFill.pace(speed: .slow), 1280 / (0.7 * 4), accuracy: 1e-6)
+        XCTAssertEqual(ShimmerFill.pace(speed: .fast), 2 * ShimmerFill.pace(speed: .slow), accuracy: 1e-6)
     }
 
     func testDirectionsFollowTheLayoutDirection() {

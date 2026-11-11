@@ -15,9 +15,9 @@ import SwiftUI
 ///
 /// Whatever you choose, a reveal never moves the page: the content was laid out in the
 /// skeleton's place all along. Delays and durations stop at one second. Under Reduce Motion
-/// every reveal is a short crossfade, with no movement, blur or wipe.
+/// every reveal is instant.
 public struct SkeletonReveal: Sendable {
-    /// When each part of the content arrives.
+    /// When each piece of the content arrives.
     public var order: Order
     /// Where the content starts from as it fades in.
     public var enter: Enter
@@ -25,7 +25,8 @@ public struct SkeletonReveal: Sendable {
     public var wipe: Wipe?
     /// Seconds to wait before the reveal starts.
     public var delay: Double
-    /// Seconds the reveal takes. `0` is instant.
+    /// Seconds each piece takes to fade in, or the whole content for a reveal that comes in
+    /// together. `0` is instant.
     public var duration: Double
     /// Seconds a skeleton waits before it shows at all, so data that arrives quickly never
     /// shows one.
@@ -38,7 +39,7 @@ public struct SkeletonReveal: Sendable {
         enter: Enter = .none,
         wipe: Wipe? = nil,
         delay: Double = 0,
-        duration: Double = 0.35,
+        duration: Double = 0.2,
         hold: Double = 0,
         choose: (@Sendable (RevealContext) -> SkeletonReveal?)? = nil
     ) {
@@ -53,41 +54,52 @@ public struct SkeletonReveal: Sendable {
 
     // MARK: Built-in reveals
 
-    /// The default. Instant when the data lands within 150 ms (the skeleton never shows), a
-    /// crossfade for something small or a refetch, and a top-to-bottom sequence for the rest.
+    /// The default. Decides for each reveal as it lands:
+    ///
+    /// - at once if the data beat the 150 ms hold (no skeleton ever showed) or someone is
+    ///   scrolling,
+    /// - a quick crossfade for a refetch,
+    /// - whole for something small (under 72 points tall, or three pieces or fewer),
+    /// - otherwise row by row, in screen order: rows arrive whole, smaller text a beat behind,
+    ///   rows off screen at once. Regions that land together share one cascade down the screen.
     public static let smart = SkeletonReveal(hold: 0.15, choose: { context in
-        if context.skeletonShownFor == nil { return .instant }
-        if context.isRefetch || context.size.height < 160 { return .together }
-        return .sequence
+        if context.isInteracting || context.skeletonShownFor == nil { return .instant }
+        if context.isRefetch { return SkeletonReveal(duration: 0.12) }
+        if context.size.height < 72 || context.pieces <= 3 { return .together }
+        return SkeletonReveal(order: .byRow)
     })
 
     /// Crossfades the whole skeleton into the content.
-    public static let together = SkeletonReveal(duration: 0.3)
+    public static let together = SkeletonReveal()
 
-    /// Brings the content in where its skeleton was, top to bottom, each part rising slightly.
-    public static let sequence = SkeletonReveal(
-        order: .sequence(),
-        enter: .rise,
-        duration: 0.6
-    )
+    /// Brings each piece in where its skeleton was, top to bottom, then a little left to right.
+    public static let sequence = SkeletonReveal(order: .byPosition)
 
-    /// Uncovers the content behind the shimmer's front, in the shimmer's direction.
-    public static let sweep = SkeletonReveal(wipe: .sweep, duration: 0.55)
+    /// Carries the content in behind one diagonal front, at the shimmer's slant and pace.
+    /// Content taller than one and a half screens crossfades instead.
+    public static let sweep = SkeletonReveal(wipe: .sweep, duration: 0.6)
 
     /// Swaps the skeleton for the content at once.
     public static let instant = SkeletonReveal(duration: 0)
 
     // MARK: Parts
 
-    /// When each part of the content arrives.
+    /// When each piece of the content arrives.
+    ///
+    /// A piece is one bar of text, one image, one control or one painted shape. Ordered reveals
+    /// fade each piece in where its skeleton was, starting at the delay the order gives it.
     public enum Order: Sendable {
         /// Everything at once.
         case together
-        /// Along an axis, each position arriving `spread` of the duration after the first.
-        case sequence(axis: Axis = .vertical, spread: Double = 0.55)
-        /// Along an axis, with your own delay for each position. The function takes a position
-        /// from 0 (top or leading) to 1 and returns its delay as a fraction of `spread`.
-        case custom(axis: Axis = .vertical, spread: Double = 0.55, delay: @Sendable (Double) -> Double)
+        /// Your own timing: seconds from the start of the reveal for each piece, or `nil` to show
+        /// it at once. Delays stop at one second.
+        case custom(@Sendable (RevealPiece) -> Double?)
+
+        /// Top to bottom, then a little left to right, over 320 ms across the region.
+        public static let byPosition = Order.custom(RevealPiece.byPosition)
+        /// Row by row in screen order, over 320 ms down the screen; smaller text 60 ms behind;
+        /// rows off screen at once.
+        public static let byRow = Order.custom(RevealPiece.byRow)
     }
 
     /// Where content starts from as it fades in. Only what paints: blur, offset, scale and
@@ -116,7 +128,7 @@ public struct SkeletonReveal: Sendable {
 
     /// A mask that uncovers content across its frame as the reveal runs.
     public enum Wipe: Sendable {
-        /// Follows the shimmer: the content appears behind its front, in the theme's direction.
+        /// Follows the shimmer: the content appears behind its front, at its slant and pace.
         case sweep
         /// Your own mask for each moment of the reveal, from progress 0 to 1. Opaque stops show
         /// the content; the outgoing skeleton gets the inverse.
@@ -138,8 +150,14 @@ public struct SkeletonReveal: Sendable {
 
     // MARK: Resolving
 
+    var isOrdered: Bool {
+        if wipe != nil { return false }
+        if case .custom = order { return true }
+        return false
+    }
+
     /// The reveal to run for this context: `choose` applied, times capped at one second, and
-    /// Reduce Motion turned into a short crossfade.
+    /// Reduce Motion made instant.
     func resolved(for context: RevealContext) -> SkeletonReveal {
         var spec = self
         if let choose, let chosen = choose(context) {
@@ -149,10 +167,64 @@ public struct SkeletonReveal: Sendable {
         spec.choose = nil
         spec.delay = min(max(spec.delay, 0), 1)
         spec.duration = min(max(spec.duration, 0), 1)
-        if context.reduceMotion, spec.duration > 0 {
-            spec = SkeletonReveal(duration: 0.2)
-        }
+        if context.reduceMotion { spec = .instant }
         return spec
+    }
+}
+
+/// One piece of a reveal, for an ``SkeletonReveal/Order/custom(_:)`` order.
+///
+/// Rects are in screen coordinates.
+public struct RevealPiece: Sendable, Equatable {
+    /// The piece: one bar of text, one image, control or painted shape.
+    public var rect: CGRect
+    /// The whole region being revealed.
+    public var reveal: CGRect
+    /// The piece's row: the pieces around it that sit together vertically. `nil` if alone.
+    public var unit: CGRect?
+    /// Whether this is smaller text than the largest in its row, such as a caption under a name.
+    public var isSecondary: Bool
+    /// Seconds since the first of the reveals landing alongside this one began.
+    public var late: Double
+    /// The screen the reveal is on.
+    public var screen: CGRect
+
+    public init(rect: CGRect, reveal: CGRect, unit: CGRect?, isSecondary: Bool, late: Double, screen: CGRect) {
+        self.rect = rect
+        self.reveal = reveal
+        self.unit = unit
+        self.isSecondary = isSecondary
+        self.late = late
+        self.screen = screen
+    }
+
+    /// From the first piece of a cascade to the last.
+    public static let cascadeSpread = 0.32
+    /// How far behind its row smaller text arrives.
+    public static let secondaryDelay = 0.06
+
+    /// `sequence`'s order: each piece by its place in the reveal, top to bottom, then a little
+    /// left to right.
+    @Sendable public static func byPosition(_ piece: RevealPiece) -> Double? {
+        let down = (piece.rect.minY - piece.reveal.minY) / max(piece.reveal.height, 1)
+        let across = (piece.rect.minX - piece.reveal.minX) / max(piece.reveal.width, 1)
+        return min(max(down * 0.8 + across * 0.2, 0), 1) * cascadeSpread
+    }
+
+    /// `smart`'s order: rows arrive whole, in screen order, on screen only, main text first.
+    ///
+    /// Timed against the screen rather than the region, so regions that land together read as
+    /// one page cascading down.
+    @Sendable public static func byRow(_ piece: RevealPiece) -> Double? {
+        let screen = piece.screen
+        guard let unit = piece.unit else { return onScreen(piece.rect, screen) ? 0 : nil }
+        guard onScreen(unit, screen) else { return nil }
+        let at = min(max((unit.minY - screen.minY) / max(screen.height, 1), 0), 1) * cascadeSpread
+        return max(at - piece.late, 0) + (piece.isSecondary ? secondaryDelay : 0)
+    }
+
+    static func onScreen(_ rect: CGRect, _ screen: CGRect) -> Bool {
+        rect.maxY > screen.minY && rect.minY < screen.maxY
     }
 }
 
@@ -162,15 +234,21 @@ public struct RevealContext: Sendable, Equatable {
     public var skeletonShownFor: Double?
     /// The size of the content arriving.
     public var size: CGSize
+    /// How many pieces the skeleton had: bars, images, controls and shapes.
+    public var pieces: Int
     /// Whether this content had loaded before and is loading again.
     public var isRefetch: Bool
+    /// Whether someone scrolled in the last 400 ms. See ``SwiftUICore/View/skeletonTracksScrolling()``.
+    public var isInteracting: Bool
     /// Whether Reduce Motion is on.
     public var reduceMotion: Bool
 
-    public init(skeletonShownFor: Double?, size: CGSize, isRefetch: Bool, reduceMotion: Bool) {
+    public init(skeletonShownFor: Double?, size: CGSize, pieces: Int = 0, isRefetch: Bool, isInteracting: Bool = false, reduceMotion: Bool) {
         self.skeletonShownFor = skeletonShownFor
         self.size = size
+        self.pieces = pieces
         self.isRefetch = isRefetch
+        self.isInteracting = isInteracting
         self.reduceMotion = reduceMotion
     }
 }
@@ -184,107 +262,5 @@ extension View {
     /// Sets how content replaces its skeleton, for every skeleton below this view.
     public func skeletonReveal(_ reveal: SkeletonReveal) -> some View {
         environment(\.skeletonReveal, reveal)
-    }
-}
-
-// MARK: - Drawing a reveal
-
-/// Which side of a reveal a view is on.
-enum RevealRole { case incoming, outgoing }
-
-/// Animates one side of a reveal from `progress` 0 (all skeleton) to 1 (all content).
-struct RevealEffect: ViewModifier, Animatable {
-    var progress: Double
-    var spec: SkeletonReveal
-    var role: RevealRole
-    var shimmerAxis: CGVector
-
-    nonisolated var animatableData: Double {
-        get { progress }
-        set { progress = newValue }
-    }
-
-    func body(content: Content) -> some View {
-        let p = min(max(progress, 0), 1)
-        if let mask = Self.mask(spec: spec, progress: p, role: role, shimmerAxis: shimmerAxis) {
-            entered(content, p)
-                .mask { LinearGradient(stops: mask.stops, startPoint: mask.startPoint, endPoint: mask.endPoint) }
-        } else {
-            entered(content, p).opacity(role == .incoming ? p : 1 - p)
-        }
-    }
-
-    @ViewBuilder
-    private func entered(_ content: Content, _ p: Double) -> some View {
-        if role == .incoming, spec.enter != .none {
-            let rest = 1 - p
-            content
-                .blur(radius: spec.enter.blur * rest)
-                .scaleEffect(1 + (spec.enter.scale - 1) * rest)
-                .rotationEffect(spec.enter.rotation * rest)
-                .offset(x: spec.enter.offset.width * rest, y: spec.enter.offset.height * rest)
-        } else {
-            content
-        }
-    }
-
-    /// The gradient mask for this moment, or `nil` for a plain crossfade.
-    static func mask(spec: SkeletonReveal, progress p: Double, role: RevealRole, shimmerAxis: CGVector) -> SkeletonReveal.WipeMask? {
-        var mask: SkeletonReveal.WipeMask
-        switch spec.wipe {
-        case .sweep:
-            mask = sweep(progress: p, axis: shimmerAxis)
-        case .custom(let make):
-            mask = make(p)
-        case nil:
-            switch spec.order {
-            case .together:
-                return nil
-            case .sequence(let axis, let spread):
-                mask = ordered(progress: p, axis: axis, spread: spread) { $0 }
-            case .custom(let axis, let spread, let delay):
-                mask = ordered(progress: p, axis: axis, spread: spread, delay: delay)
-            }
-        }
-        if role == .outgoing {
-            mask.stops = mask.stops.map { Gradient.Stop(color: .black.opacity(1 - $0.color.opacityComponent), location: $0.location) }
-        }
-        return mask
-    }
-
-    static let samples = 24
-
-    static func ordered(progress p: Double, axis: Axis, spread: Double, delay: (Double) -> Double) -> SkeletonReveal.WipeMask {
-        let spread = min(max(spread, 0), 0.95)
-        let stops = (0...samples).map { i -> Gradient.Stop in
-            let x = Double(i) / Double(samples)
-            let d = min(max(delay(x), 0), 1) * spread
-            let local = min(max((p - d) / (1 - spread), 0), 1)
-            return Gradient.Stop(color: .black.opacity(local), location: x)
-        }
-        return axis == .vertical
-            ? SkeletonReveal.WipeMask(stops: stops, startPoint: .top, endPoint: .bottom)
-            : SkeletonReveal.WipeMask(stops: stops, startPoint: .leading, endPoint: .trailing)
-    }
-
-    static func sweep(progress p: Double, axis: CGVector) -> SkeletonReveal.WipeMask {
-        let feather = 0.3
-        let front = p * (1 + feather)
-        let stops = (0...samples).map { i -> Gradient.Stop in
-            let x = Double(i) / Double(samples)
-            return Gradient.Stop(color: .black.opacity(min(max((front - x) / feather, 0), 1)), location: x)
-        }
-        return SkeletonReveal.WipeMask(
-            stops: stops,
-            startPoint: UnitPoint(x: 0.5 - axis.dx / 2, y: 0.5 - axis.dy / 2),
-            endPoint: UnitPoint(x: 0.5 + axis.dx / 2, y: 0.5 + axis.dy / 2)
-        )
-    }
-}
-
-private extension Color {
-    /// The alpha of a colour built by `RevealEffect`, which are always black with an opacity.
-    var opacityComponent: Double {
-        Double(resolve(in: EnvironmentValues()).opacity)
     }
 }

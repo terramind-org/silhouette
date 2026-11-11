@@ -123,20 +123,20 @@ public struct Skeleton<Value, Content: View>: View {
     @ViewBuilder
     private var loadingRegion: some View {
         let standIn = closestData
-        Group {
-            if let shown = loading ? (standIn?.value ?? data) : data {
-                content(shown)
-            } else {
-                FallbackLines()
-            }
-        }
-        .modifier(SkeletonRegion(
-            isLoading: loading,
+        SkeletonRegion(
+            content: Group {
+                if let shown = loading ? (standIn?.value ?? data) : data {
+                    content(shown)
+                } else {
+                    FallbackLines()
+                }
+            },
             placeholder: placeholder(standIn: standIn?.value),
+            isLoading: loading,
             source: customSkeleton != nil ? .custom : (standIn?.source ?? .fallback),
             label: label,
             onReveal: onReveal
-        ))
+        )
         .onAppear {
             if standIn == nil, loading { SampleTemplate.warnNothingToMeasure(Value.self) }
             if let data { remember(data) }

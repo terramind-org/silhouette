@@ -21,19 +21,21 @@ extension View {
     ///   - onReveal: Called once the content has come in over a skeleton, for example to move
     ///     accessibility focus to it.
     public func skeleton(isLoading: Bool, label: Text? = nil, onReveal: (() -> Void)? = nil) -> some View {
-        modifier(SkeletonRegion(isLoading: isLoading, placeholder: Optional<EmptyView>.none, source: .content, label: label, onReveal: onReveal))
+        SkeletonRegion(content: self, placeholder: Optional<EmptyView>.none, isLoading: isLoading, source: .content, label: label, onReveal: onReveal)
     }
 }
 
 /// A region of the screen that shows a skeleton while it loads and reveals its content after.
-struct SkeletonRegion<Placeholder: View>: ViewModifier {
-    var isLoading: Bool
+struct SkeletonRegion<Content: View, Placeholder: View>: View {
+    var content: Content
     /// Drawn as the skeleton's shape instead of the content, when given.
     var placeholder: Placeholder?
+    var isLoading: Bool
     var source: SkeletonSource
     var label: Text?
     var onReveal: (() -> Void)?
 
+    @Environment(\.self) private var environment
     @Environment(\.isDrawingSkeleton) private var isDrawingSkeleton
     @Environment(\.skeletonReveal) private var reveal
     @Environment(\.skeletonTheme) private var theme
@@ -41,30 +43,33 @@ struct SkeletonRegion<Placeholder: View>: ViewModifier {
     @Environment(\.layoutDirection) private var layoutDirection
     @Environment(\.accessibilityReduceMotion) private var reduceMotion
 
-    /// 0 shows the skeleton, 1 the content. Animated during a reveal.
+    /// 0 shows the skeleton, 1 the content. Animated for crossfades and wipes.
     @State private var progress: Double
+    /// 1 at the start of an entrance, 0 once arrived.
+    @State private var enterRest: Double = 0
     /// Whether the skeleton has waited out the reveal's hold and is showing.
     @State private var held = false
-    @State private var loadingSince: Date?
     @State private var heldSince: Date?
     @State private var hasRevealed = false
     @State private var isRevealing = false
     @State private var spec = SkeletonReveal.together
+    @State private var plan: RevealPlan?
     @State private var frame: CGRect = .zero
     @State private var sizeWhileLoading: CGSize?
     @State private var moved: CGFloat?
+    @State private var revealID = 0
 
-    init(isLoading: Bool, placeholder: Placeholder?, source: SkeletonSource, label: Text?, onReveal: (() -> Void)?) {
-        self.isLoading = isLoading
+    init(content: Content, placeholder: Placeholder?, isLoading: Bool, source: SkeletonSource, label: Text?, onReveal: (() -> Void)?) {
+        self.content = content
         self.placeholder = placeholder
+        self.isLoading = isLoading
         self.source = source
         self.label = label
         self.onReveal = onReveal
         _progress = State(initialValue: isLoading ? 0 : 1)
-        _loadingSince = State(initialValue: isLoading ? Date() : nil)
     }
 
-    func body(content: Content) -> some View {
+    var body: some View {
         if isDrawingSkeleton {
             // Inside another region's skeleton: be part of its shape, nothing more.
             if let placeholder {
@@ -73,7 +78,7 @@ struct SkeletonRegion<Placeholder: View>: ViewModifier {
                 content
             }
         } else {
-            region(content)
+            region
         }
     }
 
@@ -96,19 +101,19 @@ struct SkeletonRegion<Placeholder: View>: ViewModifier {
         (isLoading && held) || isRevealing
     }
 
-    @ViewBuilder
-    private func region(_ content: Content) -> some View {
+    private var region: some View {
         content
             // New data of a different size eases to its new height. Scoped to the content, so it
             // never retimes the reveal around it.
-            .animation(reduceMotion ? nil : .smooth(duration: 0.35), value: isLoading)
-            .modifier(RevealEffect(progress: incomingProgress, spec: spec, role: .incoming, shimmerAxis: shimmerAxis))
+            .animation(reduceMotion ? nil : .timingCurve(0.2, 0, 0, 1, duration: 0.28), value: isLoading)
+            .modifier(EnterEffect(enter: spec.enter, rest: enterRest))
+            .modifier(RevealLayer(progress: incomingProgress, role: .incoming, spec: spec, plan: isLoading ? nil : plan, shimmerAxis: shimmerAxis))
             .accessibilityHidden(isLoading)
             .allowsHitTesting(!isLoading)
             .overlay(alignment: .topLeading) {
                 if showsSkeleton {
-                    skeletonLayer(content)
-                        .modifier(RevealEffect(progress: progress, spec: spec, role: .outgoing, shimmerAxis: shimmerAxis))
+                    skeletonLayer
+                        .modifier(RevealLayer(progress: progress, role: .outgoing, spec: spec, plan: plan, shimmerAxis: shimmerAxis))
                         .transition(hasRevealed ? .identity : .opacity.animation(.easeOut(duration: 0.2)))
                 }
             }
@@ -137,7 +142,7 @@ struct SkeletonRegion<Placeholder: View>: ViewModifier {
     }
 
     @ViewBuilder
-    private func skeletonLayer(_ content: Content) -> some View {
+    private var skeletonLayer: some View {
         ShimmerFill(groupFrame: frame)
             .mask {
                 if let placeholder {
@@ -162,16 +167,19 @@ struct SkeletonRegion<Placeholder: View>: ViewModifier {
         held = true
         heldSince = Date()
         sizeWhileLoading = frame.size
+        warnIfUnsized()
     }
 
     private func startLoading() {
-        loadingSince = Date()
         moved = nil
+        revealID += 1
         var transaction = Transaction()
         transaction.disablesAnimations = true
         withTransaction(transaction) {
             isRevealing = false
+            plan = nil
             progress = 0
+            enterRest = 0
             // Content that was on screen goes straight to its skeleton, with no blank beat.
             held = hasRevealed
         }
@@ -182,21 +190,32 @@ struct SkeletonRegion<Placeholder: View>: ViewModifier {
     }
 
     private func finishLoading() {
+        let wasShowing = held
+        let screen = ScreenBounds.current
+        // The pieces the skeleton showed, and the pieces of what replaces it.
+        let skeletonPieces: [CGRect] = wasShowing ? tracePieces(of: placeholder.map { AnyView($0) } ?? AnyView(content), size: sizeWhileLoading ?? frame.size) : []
         let context = RevealContext(
-            skeletonShownFor: held ? heldSince.map { Date().timeIntervalSince($0) } : nil,
+            skeletonShownFor: wasShowing ? heldSince.map { Date().timeIntervalSince($0) } : nil,
             size: frame.size,
+            pieces: skeletonPieces.count,
             isRefetch: hasRevealed,
+            isInteracting: SkeletonInput.isInteracting,
             reduceMotion: reduceMotion
         )
         let resolved = reveal.resolved(for: context)
-        let wasShowing = held
-        spec = resolved
         hasRevealed = true
+        revealID += 1
+        let id = revealID
 
         let done = {
+            guard id == revealID else { return }
             isRevealing = false
             held = false
-            if let before = sizeWhileLoading { moved = frame.size.height - before.height }
+            plan = nil
+            if let before = sizeWhileLoading {
+                moved = frame.size.height - before.height
+                warnIfMoved(by: moved ?? 0)
+            }
             if wasShowing {
                 onReveal?()
                 AccessibilityNotification.LayoutChanged().post()
@@ -206,15 +225,99 @@ struct SkeletonRegion<Placeholder: View>: ViewModifier {
         guard wasShowing, resolved.duration > 0 else {
             var transaction = Transaction()
             transaction.disablesAnimations = true
-            withTransaction(transaction) { progress = 1 }
+            withTransaction(transaction) {
+                spec = resolved
+                progress = 1
+                enterRest = 0
+            }
             done()
             return
         }
-        isRevealing = true
-        withAnimation(.timingCurve(0.25, 0.1, 0.25, 1, duration: resolved.duration).delay(resolved.delay)) {
+
+        if case .custom(let order) = resolved.order, resolved.wipe == nil {
+            // Ordered: each piece fades in where its skeleton was, on the shared clock.
+            let contentPieces = tracePieces(of: content, size: frame.size)
+            let next = RevealPlan.make(
+                order: order,
+                content: contentPieces,
+                skeleton: skeletonPieces,
+                region: frame,
+                screen: screen,
+                late: RevealBatch.join(),
+                delay: resolved.delay,
+                fade: resolved.duration
+            )
+            var transaction = Transaction()
+            transaction.disablesAnimations = true
+            withTransaction(transaction) {
+                spec = resolved
+                plan = next
+                progress = 1
+                enterRest = resolved.enter == .none ? 0 : 1
+                isRevealing = true
+            }
+            if resolved.enter != .none {
+                withAnimation(.timingCurve(0.25, 0.1, 0.25, 1, duration: next.end)) { enterRest = 0 }
+            }
+            Task { @MainActor in
+                try? await Task.sleep(for: .seconds(next.end + 0.05))
+                done()
+            }
+            return
+        }
+
+        // Together, or a wipe: one animated progress.
+        var duration = resolved.duration
+        if case .sweep = resolved.wipe {
+            // At the shimmer's pace; content taller than a screen and a half crossfades instead.
+            if frame.height > screen.height * 1.5 {
+                var crossfade = resolved
+                crossfade.wipe = nil
+                crossfade.order = .together
+                return run(crossfade, duration: 0.2, done: done)
+            }
+            let pace = ShimmerFill.pace(speed: theme.speed)
+            duration = min(max(ShimmerFill.extent(of: frame.size, along: shimmerAxis) / pace, 0.25), 1)
+        }
+        run(resolved, duration: duration, done: done)
+    }
+
+    private func run(_ resolved: SkeletonReveal, duration: Double, done: @escaping () -> Void) {
+        var transaction = Transaction()
+        transaction.disablesAnimations = true
+        withTransaction(transaction) {
+            spec = resolved
+            plan = nil
+            enterRest = resolved.enter == .none ? 0 : 1
+            isRevealing = true
+        }
+        let curve = Animation.timingCurve(0.25, 0.1, 0.25, 1, duration: duration).delay(resolved.delay)
+        withAnimation(curve) {
             progress = 1
+            enterRest = 0
         } completion: {
             done()
         }
+    }
+
+    private func tracePieces<V: View>(of view: V, size: CGSize) -> [CGRect] {
+        PieceTracer.pieces(of: view, size: size, environment: environment)
+    }
+
+    // MARK: Development warnings
+
+    private func warnIfMoved(by moved: CGFloat) {
+        #if DEBUG
+        guard abs(moved) >= 1 else { return }
+        SampleTemplate.logger.notice("A skeleton (\(source.rawValue, privacy: .public)) was \(Int(abs(moved)), privacy: .public)pt \(moved > 0 ? "shorter" : "taller", privacy: .public) than its content, so the page moved when it arrived. Give the sample typical lengths.")
+        #endif
+    }
+
+    private func warnIfUnsized() {
+        #if DEBUG
+        if frame.height < 1 || frame.width < 1 {
+            SampleTemplate.logger.notice("A skeleton has no size while loading, so there's nothing to draw. Give images and empty views a frame or an aspect ratio.")
+        }
+        #endif
     }
 }

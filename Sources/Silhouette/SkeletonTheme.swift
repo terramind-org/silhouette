@@ -23,8 +23,9 @@ public struct SkeletonTheme: Sendable, Equatable {
     public var speed: SkeletonSpeed
     /// Which way the shimmer travels.
     public var direction: ShimmerDirection
-    /// The width of the shimmer's highlight, in points.
-    public var bandWidth: CGFloat
+    /// The width of the shimmer's highlight, in points. `nil` takes 40% of the screen's width,
+    /// between 80 and 320 points, so it doesn't grow heavier on a wide screen.
+    public var bandWidth: CGFloat?
     /// How round each line of text is drawn.
     public var radius: SkeletonRadius
     /// How much of each line of text is drawn.
@@ -36,9 +37,9 @@ public struct SkeletonTheme: Sendable, Equatable {
         light: SkeletonColors = .defaultLight,
         dark: SkeletonColors = .defaultDark,
         animation: SkeletonAnimation = .shimmer,
-        speed: SkeletonSpeed = .normal,
+        speed: SkeletonSpeed = .slow,
         direction: ShimmerDirection = .angle(.degrees(20)),
-        bandWidth: CGFloat = 220,
+        bandWidth: CGFloat? = nil,
         radius: SkeletonRadius = .auto,
         text: SkeletonTextMetrics = SkeletonTextMetrics(),
         colorScheme: ColorScheme? = nil
@@ -75,10 +76,10 @@ public struct SkeletonColors: Sendable, Equatable {
         self.highlight = highlight
     }
 
-    /// Ink at 8% with a paler sheen, for light backgrounds.
-    public static let defaultLight = SkeletonColors(base: .black.opacity(0.08), highlight: .white.opacity(0.55))
-    /// White at 10% with a brighter sheen, for dark and true-black backgrounds.
-    public static let defaultDark = SkeletonColors(base: .white.opacity(0.10), highlight: .white.opacity(0.10))
+    /// Ink at 7% with a paler sheen, for light backgrounds.
+    public static let defaultLight = SkeletonColors(base: .black.opacity(0.07), highlight: .white.opacity(0.6))
+    /// White at 8% with a brighter sheen, for dark and true-black backgrounds.
+    public static let defaultDark = SkeletonColors(base: .white.opacity(0.08), highlight: .white.opacity(0.10))
 
     /// Builds colours from one tint: the base at `base` opacity and the highlight `highlight` brighter.
     public static func tinted(_ color: Color, base: Double = 0.08, highlight: Double = 0.10) -> SkeletonColors {
@@ -100,20 +101,34 @@ public enum SkeletonAnimation: Sendable, Equatable, CaseIterable {
     case none
 }
 
-/// How long one shimmer pass, or one pulse, takes.
+/// How fast skeletons move.
+///
+/// A shimmer keeps the pace it has across a 1280-point screen on any width, so a wide window
+/// doesn't make it race: one loop takes 4 s when slow and 2 s when fast. A pulse breathes in
+/// 2.4 s or 1.2 s.
 public enum SkeletonSpeed: Sendable, Equatable, Hashable {
     case slow
     case normal
     case fast
-    /// A pass of this many seconds.
+    /// One shimmer loop across a 1280-point screen, or one pulse, in this many seconds.
     case seconds(Double)
 
-    /// The length of one cycle, in seconds.
-    public var period: Double {
+    /// One shimmer loop across a 1280-point screen, in seconds.
+    public var shimmerLoop: Double {
+        switch self {
+        case .slow: 4
+        case .normal: 3
+        case .fast: 2
+        case .seconds(let s): max(0.2, s)
+        }
+    }
+
+    /// One pulse, in seconds.
+    public var pulseLoop: Double {
         switch self {
         case .slow: 2.4
-        case .normal: 1.7
-        case .fast: 1.1
+        case .normal: 1.8
+        case .fast: 1.2
         case .seconds(let s): max(0.2, s)
         }
     }
@@ -212,5 +227,15 @@ extension View {
     /// ```
     public func skeletonTheme(_ transform: @escaping (inout SkeletonTheme) -> Void) -> some View {
         transformEnvironment(\.skeletonTheme, transform: transform)
+    }
+
+    /// Sets how much of each line of text is drawn, for every skeleton below this view,
+    /// whatever the theme says.
+    ///
+    /// ```swift
+    /// CompactList().skeletonText(SkeletonTextMetrics(top: .xHeight, bottom: .baseline))
+    /// ```
+    public func skeletonText(_ text: SkeletonTextMetrics) -> some View {
+        transformEnvironment(\.skeletonTheme) { $0.text = text }
     }
 }

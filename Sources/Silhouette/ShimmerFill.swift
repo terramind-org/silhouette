@@ -11,10 +11,6 @@ enum SkeletonClock {
         return t.truncatingRemainder(dividingBy: period) / period
     }
 
-    /// The distance between two shimmer bands on screen, in points. Wide enough that a phone
-    /// sees one band at a time; a wide window sees more, all moving at one pace.
-    static func span(bandWidth: CGFloat) -> CGFloat { 900 + bandWidth }
-
     /// The pulse's brightness at `date`, from 0 to 1, easing in and out.
     static func pulse(at date: Date, period: Double) -> Double {
         0.5 - 0.5 * cos(2 * .pi * phase(at: date, period: period))
@@ -31,9 +27,9 @@ enum ShimmerPaint: Equatable {
 
 /// Fills its frame with the theme's base and the shared moving highlight.
 ///
-/// Every skeleton draws through this view. The highlight's position comes from the shared clock
-/// and the view's place on screen, so neighbouring skeletons read as one band passing over all
-/// of them.
+/// Every skeleton draws through this view. Highlights travel in one stream across the screen:
+/// each band's position comes from the shared clock and the view's place on screen, so
+/// neighbouring skeletons read as one band passing over all of them.
 struct ShimmerFill: View {
     var paint: ShimmerPaint = .skeleton
     /// The frame the band sweeps across for `.groupShimmer`, in global coordinates.
@@ -43,6 +39,18 @@ struct ShimmerFill: View {
     @Environment(\.colorScheme) private var colorScheme
     @Environment(\.layoutDirection) private var layoutDirection
     @Environment(\.accessibilityReduceMotion) private var reduceMotion
+
+    /// A shimmer's loop is measured across a screen this wide; any other width keeps its pace.
+    static let referenceWidth: CGFloat = 1280
+    /// The share of a loop a band takes to cross the reference width; the rest is the gap.
+    static let sweepShare: CGFloat = 0.7
+    /// Bands follow each other this many band-widths apart, start to start.
+    static let spacing: CGFloat = 2.5
+
+    /// Points per second the band travels at this speed.
+    static func pace(speed: SkeletonSpeed) -> CGFloat {
+        referenceWidth / (sweepShare * speed.shimmerLoop)
+    }
 
     var body: some View {
         let animation = effectiveAnimation
@@ -66,6 +74,11 @@ struct ShimmerFill: View {
         }
     }
 
+    private var bandWidth: CGFloat {
+        if let width = theme.bandWidth { return max(1, width) }
+        return min(max(ScreenWidth.current * 0.4, 80), 320)
+    }
+
     private func draw(in context: inout GraphicsContext, size: CGSize, frame: CGRect, date: Date, animation: SkeletonAnimation) {
         let colors = theme.colors(for: colorScheme)
         let rect = CGRect(origin: .zero, size: size)
@@ -83,44 +96,41 @@ struct ShimmerFill: View {
             return
         case .pulse:
             // Reduce Motion asks for a quieter, slower breath.
-            let period = theme.speed.period * (reduceMotion ? 1.6 : 1.2)
+            let period = theme.speed.pulseLoop * (reduceMotion ? 1.5 : 1)
             let amount = SkeletonClock.pulse(at: date, period: period) * (reduceMotion ? 0.7 : 1)
             context.fill(Path(rect), with: .color(highlight.opacity(amount)))
         case .shimmer, .groupShimmer:
             let axis = theme.direction.unitVector(layoutDirection: layoutDirection)
-            let band = theme.bandWidth
-            let phase = SkeletonClock.phase(at: date, period: theme.speed.period)
+            let band = bandWidth
+            let pace = Self.pace(speed: theme.speed)
 
             // Positions along the band's axis, measured from a fixed origin: the screen for a
-            // shared shimmer, the region for a group shimmer.
+            // shared stream, the region for a group shimmer.
             let reference: CGRect
-            let span: CGFloat
+            let period: CGFloat
             if animation == .groupShimmer, let groupFrame {
                 reference = groupFrame
-                span = Self.extent(of: groupFrame.size, along: axis) + band * 2
+                period = Self.extent(of: groupFrame.size, along: axis) + band * 2
             } else {
                 reference = .zero
-                span = SkeletonClock.span(bandWidth: band)
+                period = band * Self.spacing
             }
+            let loop = Double(period / pace)
+            let phase = CGFloat(SkeletonClock.phase(at: date, period: max(loop, 0.05)))
             let origin = CGPoint(x: frame.minX - reference.minX, y: frame.minY - reference.minY)
             let offset = origin.x * axis.dx + origin.y * axis.dy
-            // The extent of this view along the axis, in reference coordinates.
             let corners = [CGPoint(x: 0, y: 0), CGPoint(x: size.width, y: 0), CGPoint(x: 0, y: size.height), CGPoint(x: size.width, y: size.height)]
             let along = corners.map { offset + $0.x * axis.dx + $0.y * axis.dy }
             let low = along.min() ?? 0, high = along.max() ?? 0
-            // For a group shimmer the axis starts at the region's near edge.
             let start = animation == .groupShimmer ? Self.nearEdge(of: reference.size, along: axis) - band : 0
-            let head = start + CGFloat(phase) * span
+            let head = start + phase * period
 
-            let gradient = Gradient(stops: [
-                .init(color: highlight.opacity(0), location: 0),
-                .init(color: highlight, location: 0.5),
-                .init(color: highlight.opacity(0), location: 1),
-            ])
-            // Every copy of the band that crosses this view.
-            var k = ((low - band - head) / span).rounded(.down)
-            while head + k * span <= high + band {
-                let center = head + k * span
+            // A soft ramp either side of the peak, so no stop reads as a line.
+            let ramp: [(Double, Double)] = [(0, 0), (0.18, 0.12), (0.34, 0.45), (0.5, 1), (0.66, 0.45), (0.82, 0.12), (1, 0)]
+            let gradient = Gradient(stops: ramp.map { Gradient.Stop(color: highlight.opacity($0.1), location: $0.0) })
+            var k = ((low - band - head) / period).rounded(.down)
+            while head + k * period <= high + band {
+                let center = head + k * period
                 let from = center - band / 2 - offset
                 let to = center + band / 2 - offset
                 context.fill(
@@ -144,4 +154,10 @@ struct ShimmerFill: View {
     static func nearEdge(of size: CGSize, along axis: CGVector) -> CGFloat {
         min(0, size.width * axis.dx) + min(0, size.height * axis.dy)
     }
+}
+
+/// The width of the screen, for sizing the shimmer's band.
+@MainActor
+enum ScreenWidth {
+    static var current: CGFloat { ScreenBounds.current.width }
 }

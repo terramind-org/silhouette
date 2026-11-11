@@ -62,7 +62,7 @@ private struct Shimmering: ViewModifier {
                     content
                         .mask {
                             ShimmerFill(paint: .highlightOnly(.black))
-                                .skeletonTheme { $0.bandWidth = min($0.bandWidth, 140) }
+                                .skeletonTheme { $0.bandWidth = min($0.bandWidth ?? 140, 140) }
                         }
                         .accessibilityHidden(true)
                 }
