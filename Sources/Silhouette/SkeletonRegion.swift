@@ -58,6 +58,9 @@ struct SkeletonRegion<Content: View, Placeholder: View>: View {
     @State private var sizeWhileLoading: CGSize?
     @State private var moved: CGFloat?
     @State private var revealID = 0
+    /// Holds the region at the skeleton's height for a moment, so new content of another size
+    /// eases to its height instead of snapping.
+    @State private var heldHeight: CGFloat?
 
     init(content: Content, placeholder: Placeholder?, isLoading: Bool, source: SkeletonSource, label: Text?, onReveal: (() -> Void)?) {
         self.content = content
@@ -103,13 +106,13 @@ struct SkeletonRegion<Content: View, Placeholder: View>: View {
 
     private var region: some View {
         content
-            // New data of a different size eases to its new height. Scoped to the content, so it
-            // never retimes the reveal around it.
-            .animation(reduceMotion ? nil : .timingCurve(0.2, 0, 0, 1, duration: 0.28), value: isLoading)
             .modifier(EnterEffect(enter: spec.enter, rest: enterRest))
             .modifier(RevealLayer(progress: incomingProgress, role: .incoming, spec: spec, plan: isLoading ? nil : plan, shimmerAxis: shimmerAxis))
             .accessibilityHidden(isLoading)
             .allowsHitTesting(!isLoading)
+            // Only the height animates; what's inside changes at once, unseen, so the sample
+            // never crossfades into the real content.
+            .frame(height: heldHeight, alignment: .top)
             .overlay(alignment: .topLeading) {
                 if showsSkeleton {
                     skeletonLayer
@@ -206,6 +209,7 @@ struct SkeletonRegion<Content: View, Placeholder: View>: View {
         hasRevealed = true
         revealID += 1
         let id = revealID
+        easeToNewHeight(from: wasShowing ? sizeWhileLoading?.height : nil)
 
         let done = {
             guard id == revealID else { return }
@@ -297,6 +301,17 @@ struct SkeletonRegion<Content: View, Placeholder: View>: View {
             enterRest = 0
         } completion: {
             done()
+        }
+    }
+
+    /// Pins the region at the skeleton's height, then lets it go, eased, to the content's own.
+    private func easeToNewHeight(from height: CGFloat?) {
+        guard let height, !reduceMotion else { return }
+        var transaction = Transaction()
+        transaction.disablesAnimations = true
+        withTransaction(transaction) { heldHeight = height }
+        Task { @MainActor in
+            withAnimation(.timingCurve(0.2, 0, 0, 1, duration: 0.28)) { heldHeight = nil }
         }
     }
 
