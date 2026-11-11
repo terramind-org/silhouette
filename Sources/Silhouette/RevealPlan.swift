@@ -21,6 +21,70 @@ enum PieceTracer {
         return pieces(in: image, pointSize: size)
     }
 
+    /// Where the content puts ink, as an alpha mask in the region's coordinates: its letters,
+    /// images and shapes, and none of the surfaces behind them, grown a couple of pixels so soft
+    /// edges count too. A reveal hides only this while a piece waits.
+    ///
+    /// The content is drawn plainly over the page's colour, then each pixel is measured by how far
+    /// it is from that colour. Drawn plainly, it shares nothing with the live skeleton.
+    @MainActor
+    static func ink<V: View>(of view: V, size: CGSize, environment: EnvironmentValues, scale: CGFloat) -> Image? {
+        guard size.width >= 1, size.height >= 1, size.width * size.height < 6_000_000 else { return nil }
+        var env = environment
+        env.isDrawingSkeleton = true
+        let dark = env.colorScheme == .dark
+        let renderer = ImageRenderer(content: view
+            .environment(\.self, env)
+            .environment(\.colorScheme, env.colorScheme)
+            .frame(width: size.width, height: size.height, alignment: .topLeading)
+            .background(dark ? Color.black : Color.white))
+        renderer.proposedSize = ProposedViewSize(size)
+        renderer.scale = scale
+        guard let image = renderer.cgImage, let mask = coverage(of: image, page: dark ? 0 : 1) else { return nil }
+        return Image(decorative: mask, scale: scale)
+    }
+
+    /// Alpha for every pixel by how far its luminance is from the page's, grown by two pixels.
+    static func coverage(of image: CGImage, page: Double) -> CGImage? {
+        let width = image.width, height = image.height
+        var rgba = [UInt8](repeating: 0, count: width * height * 4)
+        guard let context = CGContext(
+            data: &rgba, width: width, height: height, bitsPerComponent: 8, bytesPerRow: width * 4,
+            space: CGColorSpaceCreateDeviceRGB(), bitmapInfo: CGImageAlphaInfo.premultipliedLast.rawValue
+        ) else { return nil }
+        context.draw(image, in: CGRect(x: 0, y: 0, width: width, height: height))
+        var alpha = [UInt8](repeating: 0, count: width * height)
+        for i in 0..<(width * height) {
+            let r = Double(rgba[i * 4]), g = Double(rgba[i * 4 + 1]), b = Double(rgba[i * 4 + 2])
+            let lum = (0.2126 * r + 0.7152 * g + 0.0722 * b) / 255
+            // A faint surface (a card a shade off the page) stays out; anything clearly drawn is in.
+            alpha[i] = UInt8(min(max((abs(lum - page) * 16 - 1.2) * 255, 0), 255))
+        }
+        // Grow by two pixels, so the letters' soft edges are covered.
+        for _ in 0..<2 {
+            var grown = alpha
+            for y in 0..<height {
+                for x in 0..<width {
+                    var m = alpha[y * width + x]
+                    if x > 0 { m = max(m, alpha[y * width + x - 1]) }
+                    if x < width - 1 { m = max(m, alpha[y * width + x + 1]) }
+                    if y > 0 { m = max(m, alpha[(y - 1) * width + x]) }
+                    if y < height - 1 { m = max(m, alpha[(y + 1) * width + x]) }
+                    grown[y * width + x] = m
+                }
+            }
+            alpha = grown
+        }
+        var black = [UInt8](repeating: 0, count: width * height * 4)
+        for i in 0..<(width * height) { black[i * 4 + 3] = alpha[i] }
+        return black.withUnsafeMutableBytes { bytes -> CGImage? in
+            CGContext(
+                data: bytes.baseAddress, width: width, height: height, bitsPerComponent: 8, bytesPerRow: width * 4,
+                space: CGColorSpaceCreateDeviceRGB(), bitmapInfo: CGImageAlphaInfo.premultipliedLast.rawValue
+            )?.makeImage()
+        }
+    }
+
     @MainActor
     private static func shape<V: View>(of view: V, size: CGSize, environment: EnvironmentValues, scale: CGFloat, textAsBars: Bool = true) -> CGImage? {
         guard size.width >= 1, size.height >= 1, size.width * size.height < 6_000_000 else { return nil }
@@ -144,6 +208,10 @@ struct RevealPlan {
     var start: Date
     /// Wipes run right to left in a right-to-left layout.
     var rightToLeft = false
+    /// The content as drawn, over the page's colour, in the region's coordinates: where its ink
+    /// is, for a waiting piece to hide just that. Without it, a waiting piece's whole area is.
+    var ink: Image?
+    var inkSize: CGSize = .zero
 
     /// When the last piece has finished, in seconds from the start.
     var end: Double {
@@ -305,32 +373,17 @@ struct RevealMask: View {
     var spec: SkeletonReveal
     var plan: RevealPlan?
     var shimmerAxis: CGVector
-    /// The content, traced live with its letters as letters: what a waiting line hides. Without
-    /// it, a waiting piece's whole area is hidden.
-    var ink: AnyView? = nil
+    @Environment(\.colorScheme) private var colorScheme
 
     var body: some View {
-        if let plan, role == .incoming, let ink {
+        if let plan, role == .incoming, plan.ink != nil {
             // Everything shows except the letters, images and shapes of what hasn't wiped in yet:
             // a waiting line hides its own ink, never the card behind it.
-            ZStack {
-                // Black, not the primary colour: on macOS that's only 85% opaque.
-                Rectangle().fill(.black)
-                SkeletonShape(content: ink, textAsBars: false, spread: 1.2)
-                    .mask {
-                        TimelineView(.animation) { timeline in
-                            Canvas(opaque: false, rendersAsynchronously: false) { context, _ in
-                                let t = timeline.date.timeIntervalSince(plan.start)
-                                for piece in plan.incoming {
-                                    let area = Self.area(of: piece.rect)
-                                    context.fill(Path(area), with: Self.wipe(area: area, shown: plan.amount(piece, at: t), rightToLeft: plan.rightToLeft, showing: false))
-                                }
-                            }
-                        }
-                    }
-                    .blendMode(.destinationOut)
+            TimelineView(.animation) { timeline in
+                Canvas(opaque: false, rendersAsynchronously: false) { context, size in
+                    drawWaitingInk(plan, at: timeline.date.timeIntervalSince(plan.start), in: &context, size: size)
+                }
             }
-            .compositingGroup()
         } else if let plan {
             TimelineView(.animation) { timeline in
                 Canvas(opaque: false, rendersAsynchronously: false) { context, size in
@@ -341,6 +394,30 @@ struct RevealMask: View {
             LinearGradient(stops: mask.stops, startPoint: mask.startPoint, endPoint: mask.endPoint)
         } else {
             Rectangle().fill(.black).opacity(role == .incoming ? progress : 1 - progress)
+        }
+    }
+
+    private func drawWaitingInk(_ plan: RevealPlan, at t: Double, in context: inout GraphicsContext, size: CGSize) {
+        let full = CGRect(origin: .zero, size: size)
+        let areas = plan.incoming.map { Self.area(of: $0.rect) }
+        context.fill(Path(full), with: .color(.black))
+        guard let ink = plan.ink else { return }
+        context.blendMode = .destinationOut
+        context.drawLayer { hide in
+            // The ink: the content over the page's colour, measured by how far each pixel is from
+            // it, grown a point or so so soft edges count too.
+            hide.draw(ink, in: CGRect(origin: .zero, size: plan.inkSize))
+            // Less everything outside a piece, and each piece's revealed side.
+            hide.blendMode = .destinationOut
+            hide.drawLayer { revealed in
+                revealed.fill(Path(full), with: .color(.black))
+                revealed.blendMode = .clear
+                for area in areas { revealed.fill(Path(area), with: .color(.black)) }
+                revealed.blendMode = .normal
+                for (piece, area) in zip(plan.incoming, areas) {
+                    revealed.fill(Path(area), with: Self.wipe(area: area, shown: plan.amount(piece, at: t), rightToLeft: plan.rightToLeft, showing: true))
+                }
+            }
         }
     }
 
@@ -424,7 +501,6 @@ struct RevealLayer: ViewModifier, Animatable {
     var spec: SkeletonReveal
     var plan: RevealPlan?
     var shimmerAxis: CGVector
-    var ink: AnyView? = nil
 
     nonisolated var animatableData: Double {
         get { progress }
@@ -433,7 +509,7 @@ struct RevealLayer: ViewModifier, Animatable {
 
     func body(content: Content) -> some View {
         content.mask {
-            RevealMask(role: role, progress: min(max(progress, 0), 1), spec: spec, plan: plan, shimmerAxis: shimmerAxis, ink: ink)
+            RevealMask(role: role, progress: min(max(progress, 0), 1), spec: spec, plan: plan, shimmerAxis: shimmerAxis)
         }
     }
 }

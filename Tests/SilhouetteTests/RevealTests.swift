@@ -149,11 +149,15 @@ final class RevealTests: XCTestCase {
         let line = CGRect(x: 20, y: 20, width: 200, height: 16)
         let inkRect = CGRect(x: 20, y: 24, width: 200, height: 8)
         let size = CGSize(width: 240, height: 56)
-        let ink = AnyView(Canvas { context, _ in context.fill(Path(inkRect), with: .color(.black)) })
+        let content = Canvas { context, _ in context.fill(Path(inkRect), with: .color(.black)) }
         var plan = RevealPlan.make(order: { _ in 5 }, content: [line], skeleton: [line], region: CGRect(origin: .zero, size: size),
                                    screen: screen, pageRows: [line], delay: 0, fade: 0.25)
+        var env = EnvironmentValues()
+        env.colorScheme = .light
+        plan.ink = PieceTracer.ink(of: content, size: size, environment: env, scale: 2)
+        plan.inkSize = size
         plan.start = Date()
-        let mask = try Rendered(RevealMask(role: .incoming, progress: 1, spec: .sequence, plan: plan, shimmerAxis: CGVector(dx: 1, dy: 0), ink: ink).padding(0.02), size: size)
+        let mask = try Rendered(RevealMask(role: .incoming, progress: 1, spec: .sequence, plan: plan, shimmerAxis: CGVector(dx: 1, dy: 0)).padding(0.02), size: size)
         XCTAssertLessThan(mask.alpha(at: CGPoint(x: 100, y: 28)), 0.05, "the waiting ink is hidden")
         XCTAssertGreaterThan(mask.alpha(at: CGPoint(x: 100, y: 17)), 0.95, "the surface around it isn't")
     }

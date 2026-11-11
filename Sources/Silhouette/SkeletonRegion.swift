@@ -117,8 +117,7 @@ struct SkeletonRegion<Content: View, Placeholder: View>: View {
                 if isLoading { pinnedHeight = height }
             }
             .modifier(EnterEffect(enter: spec.enter, rest: enterRest))
-            .modifier(RevealLayer(progress: incomingProgress, role: .incoming, spec: spec, plan: isLoading ? nil : plan, shimmerAxis: shimmerAxis,
-                                  ink: plan == nil || isLoading ? nil : AnyView(content)))
+            .modifier(RevealLayer(progress: incomingProgress, role: .incoming, spec: spec, plan: isLoading ? nil : plan, shimmerAxis: shimmerAxis))
             .accessibilityHidden(isLoading)
             .allowsHitTesting(!isLoading)
             // The content changes at once, unseen; only this frame eases from the skeleton's
@@ -258,6 +257,7 @@ struct SkeletonRegion<Content: View, Placeholder: View>: View {
             // then each piece wipes in on one cascade down the page.
             let region = frame
             let contentPieces = tracePieces(of: content, size: frame.size)
+            let ink = PieceTracer.ink(of: content, size: frame.size, environment: environment, scale: min(environment.displayScale, 2))
             var transaction = Transaction()
             transaction.disablesAnimations = true
             withTransaction(transaction) {
@@ -269,7 +269,7 @@ struct SkeletonRegion<Content: View, Placeholder: View>: View {
             Task { @MainActor in
                 let pageRows = await RevealBatch.join(global)
                 guard id == revealID else { return }
-                let next = RevealPlan.make(
+                var next = RevealPlan.make(
                     order: order,
                     content: contentPieces,
                     skeleton: skeletonPieces,
@@ -280,6 +280,8 @@ struct SkeletonRegion<Content: View, Placeholder: View>: View {
                     fade: resolved.duration,
                     rightToLeft: layoutDirection == .rightToLeft
                 )
+                next.ink = ink
+                next.inkSize = region.size
                 withTransaction(transaction) {
                     plan = next
                     progress = 1
