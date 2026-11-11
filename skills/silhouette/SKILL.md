@@ -152,7 +152,7 @@ Turn it on while adopting: `.skeletonDebug(.outlines)` on the root, `setSkeleton
 - Adding `.skeletonIgnored()` to the card instead of its background view: the whole card disappears from the skeleton.
 - No `forgetSkeletonShapes()` on sign-out: the next person sees the outline of the last one's data.
 - One `Skeleton` inside a `ForEach` without per-item `id:`: every row shares the last-shown shape.
-- Expecting `AsyncSkeleton` to take a custom error view: it shows `localizedDescription`. Use `Skeleton` + `.failure` for your own.
+- Leaving `AsyncSkeleton`'s error as the default quiet `localizedDescription` line: give it `.failure { error in ... }` with a real retry.
 - Text bars look like plain redaction on iOS 17 / macOS 14: expected; glyph-exact bars need iOS 18+.
 
 ## Checklist

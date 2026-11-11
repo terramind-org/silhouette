@@ -347,7 +347,9 @@ enum WipeEffect {
         var mask: SkeletonReveal.WipeMask
         switch spec.wipe {
         case .sweep: mask = sweep(progress: p, axis: shimmerAxis)
-        case .custom(let make): mask = make(p)
+        case .custom(let make, let outgoing):
+            if role == .outgoing, let outgoing { return outgoing(p) }
+            mask = make(p)
         case nil: return nil
         }
         if role == .outgoing {

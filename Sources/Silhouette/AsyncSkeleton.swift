@@ -25,8 +25,18 @@ public struct AsyncSkeleton<Value: Sendable, Content: View>: View {
     private let content: (Value) -> Content
     private let codec: ShapeCodec<Value>?
 
+    private var errorContent: ((any Error) -> AnyView)?
+
     @State private var value: Value?
     @State private var error: (any Error)?
+
+    /// Shows your view in place of the content when the work throws. The error's description
+    /// in a quiet line by default.
+    public func failure<F: View>(@ViewBuilder _ content: @escaping (any Error) -> F) -> Self {
+        var copy = self
+        copy.errorContent = { AnyView(content($0)) }
+        return copy
+    }
 
     public init(
         sample: Value? = nil,
@@ -76,10 +86,14 @@ public struct AsyncSkeleton<Value: Sendable, Content: View>: View {
     public var body: some View {
         Skeleton(value, sample: sample, id: id, isLoading: false, label: label, onReveal: onReveal, codec: codec, content: content)
             .failure(error) { error in
-                Text(error.localizedDescription)
-                    .font(.callout)
-                    .foregroundStyle(.secondary)
-                    .frame(maxWidth: .infinity, alignment: .leading)
+                if let errorContent {
+                    errorContent(error)
+                } else {
+                    Text(error.localizedDescription)
+                        .font(.callout)
+                        .foregroundStyle(.secondary)
+                        .frame(maxWidth: .infinity, alignment: .leading)
+                }
             }
             .task(id: trigger) {
                 // A tracing copy inside another skeleton never starts work.

@@ -165,12 +165,15 @@ public enum SkeletonRadius: Sendable, Equatable, Hashable {
     case points(CGFloat)
     /// Fully round ends.
     case pill
+    /// A share of the shape's height, like a percentage radius: `0.5` is a pill.
+    case fraction(CGFloat)
 
     func value(forHeight height: CGFloat) -> CGFloat {
         switch self {
         case .auto: min(height / 2, max(2, height * 0.28))
         case .points(let r): min(height / 2, max(0, r))
         case .pill: height / 2
+        case .fraction(let f): min(height / 2, max(0, height * f))
         }
     }
 }

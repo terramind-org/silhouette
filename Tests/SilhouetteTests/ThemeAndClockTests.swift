@@ -41,6 +41,8 @@ final class ThemeAndClockTests: XCTestCase {
     func testRadii() {
         XCTAssertEqual(SkeletonRadius.pill.value(forHeight: 20), 10)
         XCTAssertEqual(SkeletonRadius.points(30).value(forHeight: 20), 10, "never rounder than a pill")
+        XCTAssertEqual(SkeletonRadius.fraction(0.25).value(forHeight: 20), 5)
+        XCTAssertEqual(SkeletonRadius.fraction(0.9).value(forHeight: 20), 10, "a share past a pill is a pill")
         XCTAssertGreaterThan(SkeletonRadius.auto.value(forHeight: 20), 0)
         XCTAssertLessThan(SkeletonRadius.auto.value(forHeight: 20), 10)
     }

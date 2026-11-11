@@ -163,6 +163,13 @@ final class RevealTests: XCTestCase {
     }
 
     @MainActor
+    func testACustomWipeCanGiveTheSkeletonItsOwnMask() throws {
+        let spec = SkeletonReveal(wipe: .custom({ _ in .init(stops: [.init(color: .black, location: 0)]) }, outgoing: { _ in .init(stops: [.init(color: .clear, location: 0.5)]) }))
+        let out = try XCTUnwrap(WipeEffect.mask(spec: spec, progress: 0.3, role: .outgoing, shimmerAxis: CGVector(dx: 1, dy: 0)))
+        XCTAssertEqual(out.stops.first?.location, 0.5)
+    }
+
+    @MainActor
     func testTogetherHasNoWipe() {
         XCTAssertNil(WipeEffect.mask(spec: .together, progress: 0.5, role: .incoming, shimmerAxis: CGVector(dx: 1, dy: 0)))
     }

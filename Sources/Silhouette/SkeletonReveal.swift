@@ -131,8 +131,8 @@ public struct SkeletonReveal: Sendable {
         /// Follows the shimmer: the content appears behind its front, at its slant and pace.
         case sweep
         /// Your own mask for each moment of the reveal, from progress 0 to 1. Opaque stops show
-        /// the content; the outgoing skeleton gets the inverse.
-        case custom(@Sendable (Double) -> WipeMask)
+        /// the content. The outgoing skeleton gets the inverse, or its own mask if you give one.
+        case custom(@Sendable (Double) -> WipeMask, outgoing: (@Sendable (Double) -> WipeMask)? = nil)
     }
 
     /// One frame of a wipe: a gradient across the content.
