@@ -41,14 +41,14 @@ struct ShimmerFill: View {
     @Environment(\.accessibilityReduceMotion) private var reduceMotion
 
     /// A shimmer's loop is measured across a screen this wide; any other width keeps its pace.
-    static let referenceWidth: CGFloat = 1280
+    nonisolated static let referenceWidth: CGFloat = 1280
     /// The share of a loop a band takes to cross the reference width; the rest is the gap.
-    static let sweepShare: CGFloat = 0.7
+    nonisolated static let sweepShare: CGFloat = 0.7
     /// Bands follow each other this many band-widths apart, start to start.
-    static let spacing: CGFloat = 2.5
+    nonisolated static let spacing: CGFloat = 2.5
 
     /// Points per second the band travels at this speed.
-    static func pace(speed: SkeletonSpeed) -> CGFloat {
+    nonisolated static func pace(speed: SkeletonSpeed) -> CGFloat {
         referenceWidth / (sweepShare * speed.shimmerLoop)
     }
 
@@ -146,12 +146,12 @@ struct ShimmerFill: View {
         }
     }
 
-    static func extent(of size: CGSize, along axis: CGVector) -> CGFloat {
+    nonisolated static func extent(of size: CGSize, along axis: CGVector) -> CGFloat {
         abs(size.width * axis.dx) + abs(size.height * axis.dy)
     }
 
     /// The smallest axis coordinate of a rect at the origin with this size.
-    static func nearEdge(of size: CGSize, along axis: CGVector) -> CGFloat {
+    nonisolated static func nearEdge(of size: CGSize, along axis: CGVector) -> CGFloat {
         min(0, size.width * axis.dx) + min(0, size.height * axis.dy)
     }
 }
