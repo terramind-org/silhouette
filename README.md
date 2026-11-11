@@ -5,7 +5,7 @@ Skeleton loading states for SwiftUI, traced from your real layout.
 While your data loads, Silhouette lays out your own view with sample data, unseen, and draws a skeleton in exactly its shape: a bar for each line of text as it wraps, a block for each image, control and painted shape. Every skeleton on screen shimmers in step. When the data arrives, the content replaces its skeleton in place, so nothing on the page moves.
 
 <p align="center">
-  <img src="docs/media/loading-to-loaded.gif" width="300" alt="A profile card and an article shimmer as skeletons in their exact shape, then their content fades in where the skeletons were.">
+  <img src="docs/media/loading-to-loaded.gif" width="300" alt="A page of cards shimmers as skeletons in their exact shape, then their content wipes in line by line, top to bottom, where the skeletons were.">
   <img src="docs/media/loading-to-loaded-dark.gif" width="300" alt="The same cards loading in dark mode.">
 </p>
 
@@ -118,7 +118,7 @@ Avatar(user).skeletonShape { Circle() }       // your own skeleton shape
 SkeletonBox(width: 40, height: 40, radius: .pill)  // a standalone placeholder
 ```
 
-Surfaces in the page's own colour, such as a white card in light mode or a black one in dark, are treated as containers: a card traces as its lines and pictures, not as one block. For a container with any other background, mark the background with `skeletonIgnored()`:
+Surfaces in or near the page's own colour, such as a white card in light mode or a black one in dark, and dark mode's raised greys up to about 11 % white, are treated as containers: a card traces as its lines and pictures, not as one block. Containers stay on screen under the skeleton while it loads, so a card keeps its shape and only what's on it wipes in. For a container with any other background, mark the background with `skeletonIgnored()`:
 
 ```swift
 content
@@ -143,7 +143,7 @@ ContentView().skeletonReveal(.smart)
 
 | Reveal | What it does |
 | --- | --- |
-| `.smart` | The default. A skeleton waits 150 ms before it shows, so fast data never shows one, and content appears at once if someone is scrolling. Otherwise it comes in row by row down the screen, 60 ms apart (tighter on a long page, so the last row starts within 0.9 s), each line wiping in from its leading edge where its bar was, and the bar wiping out with it. Regions landing within 150 ms of each other wait for one another and share one cascade; rows off screen appear at once. |
+| `.smart` | The default. A skeleton waits 150 ms before it shows, so fast data never shows one, and content appears at once if someone is scrolling. Otherwise it comes in row by row down the screen, 60 ms apart (tighter on a long page, so the last row starts within 0.9 s), each line wiping in from its leading edge where its bar was, and the bar wiping out with it. Regions landing within 150 ms of each other wait for one another and share one cascade, and a region landing later waits for the lines above it, so the page always reads top to bottom. Rows off screen appear at once. The cascade keeps time by the frames it draws, so if the app stalls it waits rather than jumping ahead. |
 | `.together` | Crossfades the whole skeleton into the content. |
 | `.sequence` | The same wipe, row by row down its own region rather than the page. |
 | `.sweep` | Uncovers the content behind one diagonal front at the shimmer's slant and pace. Content taller than one and a half screens crossfades instead. |
@@ -254,7 +254,7 @@ Skeletons are hidden from accessibility, so UI tests that query by accessibility
 
 1. **Layout by SwiftUI.** Your content renders in place from the closest data there is, at opacity 0, so every size and line break is SwiftUI's own.
 2. **A traced copy.** A second copy is laid out in the same space and drawn into a canvas. Text is drawn by a `TextRenderer` as one bar per line, trimmed to the font's metrics; everything else draws as it is.
-3. **Coverage.** The canvas measures how far each pixel is from the page's colour, so anything painted becomes solid and page-coloured surfaces drop out. That shape masks the skeleton fill.
+3. **Coverage.** The canvas measures how far each pixel is from the page's colour, so anything painted becomes solid and surfaces near the page's colour drop out. That shape masks the skeleton fill.
 4. **One clock.** The fill's highlight is positioned by the wall clock and the skeleton's place on screen, so every skeleton shimmers as one.
 5. **The reveal.** The content fades, wipes or rises in over the skeleton in the space it already held.
 

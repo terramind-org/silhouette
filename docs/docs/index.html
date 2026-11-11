@@ -281,7 +281,7 @@ Avatar(user: user).skeletonShape { Circle() }
 </code></pre></div>
 
         <h3 id="containers">Containers</h3>
-        <p>A surface in the page's own colour, such as a white card in light mode or a black one in dark, counts as a container: the card traces as its lines and pictures, not as one block. Any other background would be traced as a solid shape, so mark it:</p>
+        <p>A surface in or near the page's own colour, such as a white card in light mode or a black one in dark, and dark mode's raised greys up to about 11&nbsp;% white, counts as a container: the card traces as its lines and pictures, not as one block, and stays on screen under the skeleton while it loads, so only what's on it wipes in. Any other background would be traced as a solid shape, so mark it:</p>
         <div class="code"><pre><code class="swift">
 CardContent(item: item)
     .padding()
@@ -367,7 +367,8 @@ ContentView()
           <li>If someone scrolled in the last 400 ms, content appears at once rather than animating under their thumb.</li>
           <li>Otherwise content comes in row by row down the screen, 60 ms apart. On a long page the beat tightens so the last row starts within 0.9 s. An avatar beside a name and a handle is one row; each line of a paragraph is its own.</li>
           <li>Each line wipes in from its leading edge where its bar was, and the bar wipes out behind the same edge, so a line and its skeleton never show at once in one place. A waiting line hides only its letters, never the card behind them.</li>
-          <li>Regions landing within 150 ms of each other wait for one another and rank every row together, so a page of cards reads as one motion. Rows off screen appear at once.</li>
+          <li>Regions landing within 150 ms of each other wait for one another and rank every row together, so a page of cards reads as one motion. A region landing later waits for the lines above it, so the page always reads top to bottom. Rows off screen appear at once.</li>
+          <li>The cascade keeps time by the frames it draws: if the app stalls, it waits rather than jumping ahead and showing every line at once.</li>
           <li>On reload, the content fades off its skeleton, which comes up underneath it as it goes.</li>
           <li>While loading, a region keeps its skeleton's height, so data arriving can't move the page; if the content is a different height, it eases there over 280 ms once the reveal starts.</li>
         </ul>
@@ -1044,7 +1045,7 @@ ContentView()
         <ol class="steps">
           <li><strong>Laid out by SwiftUI.</strong> Your content renders in place from the closest data there is, at zero opacity, so every size and line break is SwiftUI's own.</li>
           <li><strong>A traced copy.</strong> A second copy, with <code>\.isDrawingSkeleton</code> set, is laid out in the same space and drawn into a canvas. A text renderer turns each line into one bar trimmed to the font's metrics; images, controls and painted shapes draw as they are.</li>
-          <li><strong>Coverage.</strong> Each pixel is measured by how far it is from the page's colour, so anything painted becomes solid and page-coloured surfaces drop out. That shape masks the skeleton fill.</li>
+          <li><strong>Coverage.</strong> Each pixel is measured by how far it is from the page's colour, so anything painted becomes solid and surfaces near the page's colour drop out. That shape masks the skeleton fill.</li>
           <li><strong>One clock.</strong> The highlight's position comes from the wall clock and the skeleton's place on screen, so every skeleton shimmers as one, however late it appeared.</li>
           <li><strong>Pieces.</strong> For an ordered reveal, the traced shape is drawn again offscreen and split into connected areas: each bar, image, control and shape is one piece, grouped into rows.</li>
           <li><strong>The reveal.</strong> The content fades, wipes or rises in over its skeleton, piece by piece, in the space it already held.</li>

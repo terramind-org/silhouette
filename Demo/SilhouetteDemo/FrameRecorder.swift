@@ -54,7 +54,7 @@ final class FrameRecorder {
         duration = seconds
         start = CACurrentMediaTime()
         let link = CADisplayLink(target: self, selector: #selector(tick))
-        link.preferredFrameRateRange = CAFrameRateRange(minimum: 30, maximum: 30, preferred: 30)
+        link.preferredFrameRateRange = CAFrameRateRange(minimum: 60, maximum: 60, preferred: 60)
         link.add(to: .main, forMode: .common)
         self.link = link
     }
@@ -62,7 +62,7 @@ final class FrameRecorder {
     @objc private func tick() {
         let t = CACurrentMediaTime() - start
         guard t < duration else { return finish() }
-        guard t - lastFrame >= 1.0 / 30 - 0.002,
+        guard t - lastFrame >= 1.0 / 30 - 0.008,
               let window = UIApplication.shared.connectedScenes.compactMap({ ($0 as? UIWindowScene)?.keyWindow }).first,
               let adaptor, let input, input.isReadyForMoreMediaData,
               let pool = adaptor.pixelBufferPool else { return }

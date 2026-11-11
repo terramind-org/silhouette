@@ -29,11 +29,18 @@ enum PieceTracer {
     /// it is from that colour. Drawn plainly, it shares nothing with the live skeleton.
     @MainActor
     static func ink<V: View>(of view: V, size: CGSize, environment: EnvironmentValues, scale: CGFloat) -> Image? {
+        inkMask(of: view, size: size, environment: environment, scale: scale).map { Image(decorative: $0, scale: scale) }
+    }
+
+    /// The content drawn in the opposite of the page, over the page, for ``coverage(of:page:)``.
+    @MainActor
+    static func inkRender<V: View>(of view: V, size: CGSize, environment: EnvironmentValues, scale: CGFloat) -> CGImage? {
         guard size.width >= 1, size.height >= 1, size.width * size.height < 6_000_000 else { return nil }
         var env = environment
         env.isDrawingSkeleton = true
         let dark = env.colorScheme == .dark
         let renderer = ImageRenderer(content: view
+            .id(UUID())
             .environment(\.self, env)
             .environment(\.colorScheme, env.colorScheme)
             .foregroundStyle(dark ? Color.white : Color.black)
@@ -43,9 +50,20 @@ enum PieceTracer {
         renderer.scale = scale
         // Offscreen, colours that follow light and dark mode resolve against the current
         // appearance, not the environment's, so render under the page's own.
-        guard let image = inAppearance(dark: dark, { renderer.cgImage }),
-              let mask = coverage(of: image, page: dark ? 0 : 1) else { return nil }
-        return Image(decorative: mask, scale: scale)
+        return inAppearance(dark: dark) { renderer.cgImage }
+    }
+
+    /// The same, with the content's text drawn invisibly.
+    @MainActor
+    static func bareRender<V: View>(of view: V, size: CGSize, environment: EnvironmentValues, scale: CGFloat) -> CGImage? {
+        guard #available(iOS 18, macOS 15, tvOS 18, watchOS 11, visionOS 2, *) else { return nil }
+        return inkRender(of: view.textRenderer(InvisibleText()), size: size, environment: environment, scale: scale)
+    }
+
+    @MainActor
+    static func inkMask<V: View>(of view: V, size: CGSize, environment: EnvironmentValues, scale: CGFloat) -> CGImage? {
+        inkRender(of: view, size: size, environment: environment, scale: scale)
+            .flatMap { coverage(of: $0, page: environment.colorScheme == .dark ? 0 : 1) }
     }
 
     @MainActor
@@ -64,7 +82,7 @@ enum PieceTracer {
     }
 
     /// Alpha for every pixel by how far its luminance is from the page's, grown by two pixels.
-    static func coverage(of image: CGImage, page: Double) -> CGImage? {
+    nonisolated static func coverage(of image: CGImage, page: Double, grow: Int = 2) -> CGImage? {
         let width = image.width, height = image.height
         var rgba = [UInt8](repeating: 0, count: width * height * 4)
         guard let context = CGContext(
@@ -77,10 +95,10 @@ enum PieceTracer {
             let r = Double(rgba[i * 4]), g = Double(rgba[i * 4 + 1]), b = Double(rgba[i * 4 + 2])
             let lum = (0.2126 * r + 0.7152 * g + 0.0722 * b) / 255
             // A faint surface (a card a shade off the page) stays out; anything clearly drawn is in.
-            alpha[i] = UInt8(min(max((abs(lum - page) * 16 - 1.2) * 255, 0), 255))
+            alpha[i] = UInt8(min(max((abs(lum - page) - surfaceTolerance) * coverageGain * 255, 0), 255))
         }
         // Grow by two pixels, so the letters' soft edges are covered.
-        for _ in 0..<2 {
+        for _ in 0..<grow {
             var grown = alpha
             for y in 0..<height {
                 for x in 0..<width {
@@ -105,11 +123,13 @@ enum PieceTracer {
     }
 
     @MainActor
-    private static func shape<V: View>(of view: V, size: CGSize, environment: EnvironmentValues, scale: CGFloat, textAsBars: Bool = true) -> CGImage? {
+    static func shape<V: View>(of view: V, size: CGSize, environment: EnvironmentValues, scale: CGFloat, textAsBars: Bool = true) -> CGImage? {
         guard size.width >= 1, size.height >= 1, size.width * size.height < 6_000_000 else { return nil }
         var env = environment
         env.isDrawingSkeleton = false
-        let renderer = ImageRenderer(content: SkeletonShape(content: view, textAsBars: textAsBars)
+        // A fresh identity each time: offscreen renders otherwise reuse how an earlier render of
+        // the same content drew its text.
+        let renderer = ImageRenderer(content: SkeletonShape(content: view.id(UUID()), textAsBars: textAsBars)
             .environment(\.self, env)
             .frame(width: size.width, height: size.height))
         renderer.proposedSize = ProposedViewSize(size)
@@ -225,12 +245,22 @@ struct RevealPlan {
     /// Seconds each piece's wipe takes.
     var fade: Double
     var start: Date
+    /// The cascade's time as drawn, shared by every layer of the reveal.
+    var clock = RevealClock()
     /// Wipes run right to left in a right-to-left layout.
     var rightToLeft = false
     /// The content as drawn, over the page's colour, in the region's coordinates: where its ink
     /// is, for a waiting piece to hide just that. Without it, a waiting piece's whole area is.
     var ink: Image?
     var inkSize: CGSize = .zero
+    /// The ink of the content with its text drawn invisibly, exact rather than grown: where
+    /// ``SurfaceLayer`` leaves the page showing, under each picture and control's skeleton.
+    var bareInk: Image?
+
+    /// Seconds into the cascade at a frame drawn at `date`.
+    func time(at date: Date) -> Double {
+        clock.time(at: date, start: start)
+    }
 
     /// When the last piece has finished, in seconds from the start.
     var end: Double {
@@ -301,10 +331,18 @@ final class RevealBatch {
     private let opened = Date()
     private var closed = false
     private var rects: [CGRect] = []
+    /// When the last cascade under way ends.
+    private(set) static var busyUntil = Date.distantPast
+    /// When each row of earlier batches starts its wipe: its top in screen coordinates.
+    private static var scheduled: [(batch: ObjectIdentifier, top: CGFloat, at: Date)] = []
 
     /// Adds a reveal's pieces, in screen coordinates, and returns every row of the batch once
     /// the window has closed.
     static func join(_ pieces: [CGRect], now: Date = Date()) async -> [CGRect] {
+        await joinBatch(pieces, now: now).rows
+    }
+
+    static func joinBatch(_ pieces: [CGRect], now: Date = Date()) async -> (rows: [CGRect], batch: ObjectIdentifier) {
         let batch: RevealBatch
         if let current, !current.closed, now.timeIntervalSince(current.opened) < window {
             batch = current
@@ -316,7 +354,94 @@ final class RevealBatch {
         let wait = window - Date().timeIntervalSince(batch.opened)
         if wait > 0 { try? await Task.sleep(for: .seconds(wait)) }
         batch.closed = true
-        return Rows.of(batch.rects)
+        return (Rows.of(batch.rects), ObjectIdentifier(batch))
+    }
+
+    /// Keeps the page's cascade strictly top to bottom across batches: a line never starts
+    /// before a line above it from an earlier batch, which a reveal landing a moment later
+    /// would otherwise do. Then records when this plan's lines start.
+    static func queue(_ plan: inout RevealPlan, region: CGRect, batch: ObjectIdentifier) {
+        let now = plan.start
+        scheduled.removeAll { $0.at < now }
+        func held(_ timed: inout [RevealPlan.Timed]) {
+            for i in timed.indices {
+                guard let delay = timed[i].delay else { continue }
+                let top = timed[i].rect.minY + region.minY
+                let after = scheduled
+                    .filter { $0.batch != batch && $0.top < top - 1 }
+                    .map { $0.at.timeIntervalSince(now) + RevealPiece.rowStagger }
+                    .max() ?? 0
+                timed[i].delay = max(delay, after)
+            }
+        }
+        held(&plan.incoming)
+        held(&plan.outgoing)
+        busyUntil = max(busyUntil, now.addingTimeInterval(plan.end))
+        for piece in plan.incoming {
+            guard let delay = piece.delay else { continue }
+            scheduled.append((batch, piece.rect.minY + region.minY, now.addingTimeInterval(delay)))
+        }
+    }
+}
+
+/// Work that can wait for a quiet moment: run one piece at a time, never while a cascade is
+/// under way, so it can't hold up a frame anyone is watching.
+@MainActor
+enum IdleWork {
+    private static var queue: [() -> Bool] = []
+    private static var running = false
+
+    /// `work` returns whether it did anything; work that had nothing to do takes no turn.
+    static func enqueue(_ work: @escaping () -> Bool) {
+        queue.append(work)
+        guard !running else { return }
+        running = true
+        Task { @MainActor in
+            while !queue.isEmpty {
+                let busy = RevealBatch.busyUntil.timeIntervalSinceNow
+                if busy > 0 {
+                    try? await Task.sleep(for: .seconds(busy + 0.05))
+                    continue
+                }
+                if queue.removeFirst()() {
+                    // One piece a frame or two, so scrolling never feels it.
+                    try? await Task.sleep(for: .seconds(0.03))
+                }
+            }
+            running = false
+        }
+    }
+}
+
+/// A cascade's time, as its frames are drawn rather than as the wall clock runs.
+///
+/// Between two drawn frames it moves on by at most a twentieth of a second, so when the app
+/// stalls (other content arriving and being traced, say) the cascade waits rather than jumping
+/// ahead and showing every line at once.
+final class RevealClock: @unchecked Sendable {
+    static let longestStep = 1.0 / 20
+    private var last: Date?
+    private(set) var elapsed: Double = 0
+    private let fixed: Double?
+
+    /// - Parameter fixed: Always this time, for tests.
+    init(fixed: Double? = nil) {
+        self.fixed = fixed
+        elapsed = fixed ?? 0
+    }
+
+    func time(at date: Date, start: Date) -> Double {
+        if let fixed { return fixed }
+        guard let last else {
+            last = date
+            elapsed = min(max(date.timeIntervalSince(start), 0), Self.longestStep)
+            return elapsed
+        }
+        if date > last {
+            elapsed += min(date.timeIntervalSince(last), Self.longestStep)
+            self.last = date
+        }
+        return elapsed
     }
 }
 
@@ -400,13 +525,13 @@ struct RevealMask: View {
             // a waiting line hides its own ink, never the card behind it.
             TimelineView(.animation) { timeline in
                 Canvas(opaque: false, rendersAsynchronously: false) { context, size in
-                    drawWaitingInk(plan, at: timeline.date.timeIntervalSince(plan.start), in: &context, size: size)
+                    drawWaitingInk(plan, at: plan.time(at: timeline.date), in: &context, size: size)
                 }
             }
         } else if let plan {
             TimelineView(.animation) { timeline in
                 Canvas(opaque: false, rendersAsynchronously: false) { context, size in
-                    draw(plan, at: timeline.date.timeIntervalSince(plan.start), in: &context, size: size)
+                    draw(plan, at: plan.time(at: timeline.date), in: &context, size: size)
                 }
             }
         } else if let mask = WipeEffect.mask(spec: spec, progress: progress, role: role, shimmerAxis: shimmerAxis) {
@@ -493,6 +618,64 @@ struct RevealMask: View {
     }
 }
 
+/// The content's surfaces under its skeleton: the cards, pills and tinted rows its pieces sit
+/// on, without the pieces, which the skeleton stands for. A live copy of the content with its
+/// text drawn invisibly and each picture and control cut out exactly, under its own skeleton
+/// block.
+///
+/// While loading it shows whole. During a reveal it lies under the content and shows only where
+/// pieces still wait: a waiting piece's ink is cut out of the content, grown a little so no soft
+/// edge of a letter is left, and this fills the cut with the surface the piece sits on. It is
+/// one view from the skeleton's first frame to the reveal's last, so nothing mounts as the
+/// cascade starts.
+struct SurfaceLayer<Content: View>: View {
+    var content: Content
+    /// The ink left once the text is drawn invisibly: pictures, controls and painted shapes.
+    var ink: Image
+    var size: CGSize
+    /// While revealing, which pieces still wait.
+    var plan: RevealPlan?
+
+    var body: some View {
+        if #available(iOS 18, macOS 15, tvOS 18, watchOS 11, visionOS 2, *) {
+            content
+                .textRenderer(InvisibleText())
+                .environment(\.isDrawingSkeleton, true)
+                .mask(alignment: .topLeading) {
+                    if let plan, plan.ink != nil {
+                        TimelineView(.animation) { timeline in
+                            Canvas(opaque: false, rendersAsynchronously: false) { context, _ in
+                                let t = plan.time(at: timeline.date)
+                                for piece in plan.incoming {
+                                    let area = RevealMask.area(of: piece.rect)
+                                    let shown = plan.amount(piece, at: t)
+                                    guard shown < 1 else { continue }
+                                    context.fill(Path(area), with: RevealMask.wipe(area: area, shown: shown, rightToLeft: plan.rightToLeft, showing: false))
+                                }
+                                context.blendMode = .destinationOut
+                                context.draw(plan.bareInk ?? ink, in: CGRect(origin: .zero, size: plan.inkSize))
+                            }
+                        }
+                    } else {
+                        Canvas(opaque: false, rendersAsynchronously: false) { context, canvas in
+                            context.fill(Path(CGRect(origin: .zero, size: canvas)), with: .color(.black))
+                            context.blendMode = .destinationOut
+                            context.draw(ink, in: CGRect(origin: .zero, size: size))
+                        }
+                    }
+                }
+                .allowsHitTesting(false)
+                .accessibilityHidden(true)
+        }
+    }
+}
+
+/// Draws text as nothing, leaving the surfaces it sits on.
+@available(iOS 18, macOS 15, tvOS 18, watchOS 11, visionOS 2, *)
+struct InvisibleText: TextRenderer {
+    func draw(layout: Text.Layout, in context: inout GraphicsContext) {}
+}
+
 /// The incoming content's entrance: blur, offset, scale and rotation easing away.
 struct EnterEffect: ViewModifier, Animatable {
     var enter: SkeletonReveal.Enter
@@ -568,3 +751,4 @@ enum WipeEffect {
         )
     }
 }
+

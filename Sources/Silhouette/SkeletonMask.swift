@@ -19,6 +19,12 @@ extension EnvironmentValues {
     @Entry var skeletonInk: Color = .black
 }
 
+/// How far from the page's colour a surface can be and still count as page: the grouped
+/// backgrounds of light mode, and dark mode's raised greys up to about 11 % white. Past it,
+/// coverage climbs steeply, so a light tint is already a solid block.
+let surfaceTolerance = 0.115
+let coverageGain = 32.0
+
 /// Draws its content as the shape of a skeleton: each line of text a bar, each image, control and
 /// painted shape a block, everything else left out. The result is an opaque mask.
 struct SkeletonShape<Content: View>: View {
@@ -74,15 +80,16 @@ struct SkeletonShape<Content: View>: View {
         m.g1 = 0; m.g2 = 0; m.g3 = 0; m.g4 = 0; m.g5 = 0
         m.b1 = 0; m.b2 = 0; m.b3 = 0; m.b4 = 0; m.b5 = 0
         // Everything is opaque over the page, so luminance alone says how far a pixel is from it.
-        let k: Float = 16
+        let k = Float(coverageGain)
+        let floor = Float(surfaceTolerance) * k
         let (lr, lg, lb): (Float, Float, Float) = (0.2126, 0.7152, 0.0722)
         m.a4 = 0
         if scheme == .dark {
             // Covered where brighter than black.
-            m.a1 = k * lr; m.a2 = k * lg; m.a3 = k * lb; m.a5 = -1.2
+            m.a1 = k * lr; m.a2 = k * lg; m.a3 = k * lb; m.a5 = -floor
         } else {
             // Covered where darker than white.
-            m.a1 = -k * lr; m.a2 = -k * lg; m.a3 = -k * lb; m.a5 = k - 1.2
+            m.a1 = -k * lr; m.a2 = -k * lg; m.a3 = -k * lb; m.a5 = k - floor
         }
         return m
     }

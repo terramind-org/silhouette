@@ -127,7 +127,7 @@ final class RevealTests: XCTestCase {
         // skeleton add up to one, and neither is half visible except along the soft edge.
         let line = CGRect(x: 20, y: 20, width: 200, height: 16)
         var plan = RevealPlan(incoming: [.init(rect: line, delay: 0)], outgoing: [.init(rect: line, delay: 0)], fade: 10, start: Date())
-        plan.start = Date().addingTimeInterval(-4.5)
+        plan.clock = RevealClock(fixed: 4.5)
         let size = CGSize(width: 240, height: 56)
         let incoming = try Rendered(RevealMask(role: .incoming, progress: 1, spec: .sequence, plan: plan, shimmerAxis: CGVector(dx: 1, dy: 0)), size: size)
         let outgoing = try Rendered(RevealMask(role: .outgoing, progress: 1, spec: .sequence, plan: plan, shimmerAxis: CGVector(dx: 1, dy: 0)).padding(0.01), size: size)
@@ -209,5 +209,42 @@ final class RevealTests: XCTestCase {
     @MainActor
     func testTogetherHasNoWipe() {
         XCTAssertNil(WipeEffect.mask(spec: .together, progress: 0.5, role: .incoming, shimmerAxis: CGVector(dx: 1, dy: 0)))
+    }
+
+    @MainActor
+    func testARaisedDarkSurfaceIsntTracedButATintIs() throws {
+        for (fill, traced) in [(Color(white: 0.105), false), (Color.green.opacity(0.4), true)] {
+            let view = fill.frame(width: 60, height: 40).frame(width: 80, height: 40)
+            let r = try Rendered(SkeletonShape(content: view).environment(\.colorScheme, .dark), size: CGSize(width: 80, height: 40), colorScheme: .dark)
+            XCTAssertEqual(r.alpha(at: CGPoint(x: 30, y: 20)), traced ? 1 : 0, accuracy: 0.05, "\(fill)")
+        }
+    }
+
+    @MainActor
+    func testALaterBatchNeverStartsAboveALineStillWaiting() async {
+        // An earlier batch's cascade is still on its way down when a reveal lower on the page
+        // lands: that reveal waits for the line above it.
+        let region = CGRect(x: 0, y: 0, width: 300, height: 400)
+        let first = [CGRect(x: 0, y: 0, width: 200, height: 14), CGRect(x: 0, y: 200, width: 200, height: 14)]
+        let (rows, a) = await RevealBatch.joinBatch(first)
+        var early = RevealPlan.make(order: RevealPiece.byRow, content: first, skeleton: first, region: region, screen: screen, pageRows: rows, delay: 0, fade: 0.25)
+        RevealBatch.queue(&early, region: region, batch: a)
+        let late = [CGRect(x: 0, y: 300, width: 200, height: 14)]
+        let (lateRows, b) = await RevealBatch.joinBatch(late)
+        var next = RevealPlan.make(order: RevealPiece.byRow, content: late, skeleton: late, region: region, screen: screen, pageRows: lateRows, delay: 0, fade: 0.25)
+        RevealBatch.queue(&next, region: region, batch: b)
+        let lineAbove = early.start.addingTimeInterval(early.incoming[1].delay ?? 0)
+        let lineBelow = next.start.addingTimeInterval(next.incoming[0].delay ?? 0)
+        XCTAssertGreaterThan(lineBelow.timeIntervalSince(lineAbove), 0.05)
+    }
+
+    func testAStallSlowsTheCascadeRatherThanSkippingIt() {
+        let clock = RevealClock()
+        let start = Date()
+        XCTAssertEqual(clock.time(at: start.addingTimeInterval(1 / 60), start: start), 1 / 60, accuracy: 0.001)
+        // Half a second without a frame drawn moves the cascade on by one short step, not half a second.
+        XCTAssertEqual(clock.time(at: start.addingTimeInterval(0.5), start: start), 1 / 60 + RevealClock.longestStep, accuracy: 0.001)
+        // Frames drawn on time keep time.
+        XCTAssertEqual(clock.time(at: start.addingTimeInterval(0.5 + 1 / 60), start: start), 2 / 60 + RevealClock.longestStep, accuracy: 0.001)
     }
 }

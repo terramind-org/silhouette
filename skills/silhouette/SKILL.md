@@ -61,7 +61,7 @@ Skeleton(model.user, sample: .sample, id: "profile") { user in
 | `.placeholder { }` on `Skeleton` | Replace the whole traced shape. Keep passing a sample: the region still sizes from the content. |
 | `SkeletonBox(width:height:radius:)` | Standalone placeholder shapes; lengths are points, `.fraction(_:)` or `.em(_:)`. |
 
-Container backgrounds: surfaces in the page colour (white card on a white page, black on black) are skipped automatically. Any other fill traces as one solid block, so put `.skeletonIgnored()` on the background view itself:
+Container backgrounds: surfaces in or near the page colour (white card on a white page, black on black, dark mode's raised greys up to about 11 % white) are skipped automatically and stay visible under the skeleton while loading. Any other fill traces as one solid block, so put `.skeletonIgnored()` on the background view itself:
 
 ```swift
 content
