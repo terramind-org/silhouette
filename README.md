@@ -16,6 +16,14 @@ While your data loads, Silhouette lays out your own view with sample data, unsee
 
 Requires iOS 17, macOS 14, tvOS 17, watchOS 10 or visionOS 1. Text is traced from the real glyph metrics on iOS 18, macOS 15, tvOS 18, watchOS 11 and visionOS 2 and later; earlier systems draw lines the way SwiftUI redacts text.
 
+## Docs
+
+The full documentation, with a recording for each feature, a theme playground and the API reference, is in [`docs/`](docs/): open [`docs/index.html`](docs/index.html) or serve the folder (`python3 -m http.server -d docs`). It's a static site with no build step.
+
+## For coding agents
+
+[`skills/silhouette/SKILL.md`](skills/silhouette/SKILL.md) teaches a coding agent to adopt Silhouette well: which API to pick, writing samples, hints, side effects, lists, accessibility, testing and a checklist to verify with the debug overlay. Copy the `skills/silhouette` folder into your agent's skills directory (for Claude Code, `.claude/skills/`).
+
 ## Install
 
 Add the package in Xcode (**File → Add Package Dependencies…**) or in `Package.swift`:
@@ -135,17 +143,22 @@ ContentView().skeletonReveal(.smart)
 
 | Reveal | What it does |
 | --- | --- |
-| `.smart` | The default. Instant if the data lands within 150 ms (the skeleton never shows), a crossfade for something small or a refetch, a top-to-bottom sequence for the rest. |
+| `.smart` | The default. A skeleton waits 150 ms before it shows, so fast data never shows one. Content appears at once if someone is scrolling, a refetch crossfades in 120 ms, and something small (under 72 pt tall, or three pieces or fewer) crossfades whole. Anything else arrives row by row in screen order over 320 ms, smaller text 60 ms behind, rows off screen at once; regions landing within 150 ms of each other share one cascade. |
 | `.together` | Crossfades the whole skeleton into the content. |
-| `.sequence` | Brings the content in where its skeleton was, top to bottom, rising slightly. |
-| `.sweep` | Uncovers the content behind the shimmer's front, in its direction. |
+| `.sequence` | Brings each piece in where its skeleton was, by position: mostly top to bottom, a little left to right, over 320 ms. |
+| `.sweep` | Uncovers the content behind one diagonal front at the shimmer's slant and pace. Content taller than one and a half screens crossfades instead. |
 | `.instant` | Swaps at once. |
 
 Every reveal is a `SkeletonReveal`. Start from one and change what you need:
 
 ```swift
 var blurIn = SkeletonReveal.sequence
-blurIn.enter = .init(blur: 6)
+blurIn.enter = .blur
+
+let bottomUp = SkeletonReveal(order: .custom { piece in
+    let up = (piece.reveal.maxY - piece.rect.maxY) / max(piece.reveal.height, 1)
+    return min(max(up, 0), 1) * 0.32
+})
 
 let wipeDown = SkeletonReveal(wipe: .custom { progress in
     let at = progress * 1.2
@@ -156,14 +169,22 @@ let wipeDown = SkeletonReveal(wipe: .custom { progress in
 
 | Field | Meaning |
 | --- | --- |
-| `order` | `.together`, `.sequence(axis:spread:)`, or `.custom` with your own delay for each position along an axis. |
-| `enter` | Where content starts as it fades in: `blur`, `offset`, `scale`, `rotation`. Presets `.blur`, `.rise`, `.zoom`. |
-| `wipe` | A mask across the content for each moment of the reveal; the outgoing skeleton gets its inverse. `.sweep` follows the shimmer. |
-| `delay`, `duration` | In seconds, each capped at one second. `0` is instant. |
+| `order` | When each piece (a bar, image, control or shape) arrives: `.together`, `.byPosition` (sequence's), `.byRow` (smart's), or `.custom` returning each `RevealPiece`'s delay in seconds, `nil` for at once. `RevealPiece.byPosition` and `RevealPiece.byRow` are public to build on. |
+| `enter` | Where content starts as it fades in: `blur`, `offset`, `scale`, `rotation`. Presets `.none`, `.blur`, `.rise`, `.zoom`. |
+| `wipe` | A mask across the content for each moment of the reveal, replacing `order`; the outgoing skeleton gets its inverse. `.sweep` follows the shimmer. |
+| `delay` | Seconds before the reveal starts. |
+| `duration` | Seconds each piece takes to fade in, or the whole content for a reveal that comes in together. 0.2 by default; `0` is instant. |
 | `hold` | How long a skeleton waits before it shows, so fast data never shows one. |
-| `choose` | Decides as the content lands, from how long the skeleton was up, the content's size and whether it's a refetch. |
+| `choose` | Decides as the content lands, from a `RevealContext`: how long the skeleton was up, the content's size and piece count, whether it's a refetch or someone is scrolling. |
 
-A reveal can't move the page. Under Reduce Motion every reveal is a short crossfade.
+Delays and durations stop at one second. New data of a different height eases to it over 280 ms. A reveal can't move the page. Under Reduce Motion every reveal is instant.
+
+For `.smart` to see scrolling, mark scroll views (iOS 18, macOS 15, tvOS 18, watchOS 11, visionOS 2; it does nothing earlier):
+
+```swift
+ScrollView { Feed() }
+    .skeletonTracksScrolling()
+```
 
 ## Theming
 
@@ -180,6 +201,7 @@ ContentView()
     ))
 
 Sidebar().skeletonTheme { $0.speed = .fast }   // change one option for one part
+CompactList().skeletonText(SkeletonTextMetrics(top: .xHeight, bottom: .baseline))   // only the text metrics
 ```
 
 | Option | Values |
@@ -198,7 +220,7 @@ Sidebar().skeletonTheme { $0.speed = .fast }   // change one option for one part
 - While loading, a region is one VoiceOver element that reads its label ("Loading" by default) and never the sample. Pass `label:` to say what's loading.
 - Skeletons are hidden from VoiceOver and from hit testing.
 - `onReveal` runs once the content has come in, for example to move accessibility focus. Silhouette also posts a layout-changed notification.
-- Under Reduce Motion the shimmer becomes a gentle pulse and every reveal a short crossfade.
+- Under Reduce Motion the shimmer becomes a gentle pulse and every reveal is instant.
 - Skeletons follow Dynamic Type, because they are traced from the text as it's laid out.
 
 ## Debugging
