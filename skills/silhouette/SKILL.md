@@ -119,7 +119,7 @@ ContentView()
 
 - Theme fields: `light`/`dark` `SkeletonColors(base:highlight:)` (or `.tinted(color)`), `animation` (`.shimmer`, `.groupShimmer`, `.pulse`, `.none`), `speed` (`.slow` default), `direction`, `bandWidth`, `radius` (`.auto`, `.points`, `.pill`), `text`, `colorScheme`, `reducedMotion` (`.holdStill` default, or `.pulse`).
 - Text bars default to cap height → descender. If lines merge in a dense list: `.skeletonText(SkeletonTextMetrics(top: .xHeight, bottom: .baseline))`.
-- Reveals: `.smart` (default), `.together`, `.sequence`, `.sweep`, `.instant`. Custom: start from one and change `order` (`.together`, `.byPosition`, `.byRow`, `.custom { piece in delay }`), `enter` (`.blur`, `.rise`, `.zoom`), `wipe`, `delay`, `duration` (per piece, 0.2 s), `hold`, `choose`. Times cap at 1 s; Reduce Motion makes every reveal instant.
+- Reveals: `.smart` (default), `.together`, `.sequence`, `.sweep`, `.instant`. Custom: start from one and change `order` (`.together`, `.byPosition`, `.byRow`, `.custom { piece in delay }`), `enter` (`.blur`, `.rise`, `.zoom`), `wipe`, `delay`, `duration` (each line's wipe, 0.25 s), `hold`, `choose`. Times cap at 1 s; Reduce Motion makes every reveal instant.
 
 ## Accessibility
 

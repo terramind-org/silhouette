@@ -353,7 +353,12 @@ struct RevealMask: View {
                 context.drawLayer { layer in
                     if let ink = plan.ink {
                         layer.clip(to: Path(area))
-                        layer.draw(ink, in: CGRect(origin: .zero, size: plan.inkSize))
+                        // Grown a point or so past the letters, so their soft edges hide too.
+                        layer.drawLayer { grown in
+                            grown.addFilter(.blur(radius: 1.2))
+                            grown.addFilter(.colorMatrix(Self.solidify))
+                            grown.draw(ink, in: CGRect(origin: .zero, size: plan.inkSize))
+                        }
                     } else {
                         layer.fill(Path(area), with: .color(.black))
                     }
@@ -375,6 +380,14 @@ struct RevealMask: View {
                 context.fill(Path(area), with: left)
             }
         }
+    }
+
+    /// Black, with alpha multiplied up, so a blurred edge becomes a solid, slightly larger shape.
+    static var solidify: ColorMatrix {
+        var m = ColorMatrix()
+        m.r1 = 0; m.g2 = 0; m.b3 = 0
+        m.a4 = 6
+        return m
     }
 
     /// One edge passing along a piece: opaque on the side already revealed when `showing`, or on

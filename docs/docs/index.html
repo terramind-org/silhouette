@@ -162,7 +162,7 @@ Skeleton(user, sample: .sample) { user in
         <p>If you leave the sample out, debug builds log one to paste the first time real data arrives: your type's shape and lengths with every value replaced, so it's safe to commit.</p>
 
         <h3 id="closest-data">The closest data</h3>
-        <p>A skeleton is drawn from the closest data Silhouette has, in this order: the data already on screen, the data this skeleton last showed in this launch, a shape remembered from an earlier launch, then your sample. With none of those, it draws three placeholder lines and logs a warning.</p>
+        <p>A skeleton is drawn from the closest data Silhouette has, in this order: the data already on screen, the data this skeleton last showed in this launch, your sample, then a shape remembered from an earlier launch. The sample comes first because remembered text keeps its letters' widths only roughly, and near the end of a line that can change where it wraps. With none of those, it draws three placeholder lines and logs a warning.</p>
 
         <h3 id="empty-and-failure">Empty and failed loads</h3>
         <p>Show something else once the data has arrived empty, or when loading failed. Chain these straight after the <code>Skeleton</code>, before any other modifier.</p>
@@ -355,7 +355,7 @@ ContentView()
           <tbody>
             <tr><td><code>.smart</code></td><td>The default. Picks one of the others as each reveal lands; see below.</td></tr>
             <tr><td><code>.together</code></td><td>Crossfades the whole skeleton into the content in 0.2 s.</td></tr>
-            <tr><td><code>.sequence</code></td><td>Each piece fades in where its skeleton was, by position: mostly top to bottom, a little left to right, spread over 320 ms.</td></tr>
+            <tr><td><code>.sequence</code></td><td>Row by row down its own region, each line wiping in where its bar was.</td></tr>
             <tr><td><code>.sweep</code></td><td>Uncovers the content behind one diagonal front, at the shimmer's slant and pace. Content taller than one and a half screens crossfades instead.</td></tr>
             <tr><td><code>.instant</code></td><td>Swaps at once.</td></tr>
           </tbody>
@@ -365,11 +365,13 @@ ContentView()
         <ul>
           <li>A skeleton waits 150 ms before it shows. If the data beats that, there's never a skeleton, and the content simply appears.</li>
           <li>If someone scrolled in the last 400 ms, content appears at once rather than animating under their thumb.</li>
-          <li>A refetch, content that had loaded before, gets a quick 120 ms crossfade.</li>
-          <li>Something small, under 72 points tall or with three pieces or fewer, crossfades whole.</li>
-          <li>Anything else arrives row by row in screen order over 320 ms. Smaller text, such as a caption under a name, comes 60 ms behind its row, and rows off screen appear at once. Regions landing within 150 ms of each other share one cascade down the screen, so a page of cards reads as one motion.</li>
+          <li>Otherwise content comes in row by row down the screen, 60 ms apart. On a long page the beat tightens so the last row starts within 0.9 s. An avatar beside a name and a handle is one row; each line of a paragraph is its own.</li>
+          <li>Each line wipes in from its leading edge where its bar was, and the bar wipes out behind the same edge, so a line and its skeleton never show at once in one place. A waiting line hides only its letters, never the card behind them.</li>
+          <li>Regions landing within 150 ms of each other wait for one another and rank every row together, so a page of cards reads as one motion. Rows off screen appear at once.</li>
+          <li>On reload, the content fades off its skeleton, which comes up underneath it as it goes.</li>
+          <li>While loading, a region keeps its skeleton's height, so data arriving can't move the page; if the content is a different height, it eases there over 280 ms once the reveal starts.</li>
         </ul>
-        <p>Pieces fade in over 0.2 s each by default. A reveal never moves the page: the content was laid out in its skeleton's place all along. Under Reduce Motion, every reveal is instant.</p>
+        <p>Each line's wipe takes 0.25 s by default. A reveal never moves the page: the content was laid out in its skeleton's place all along. Under Reduce Motion, every reveal is instant.</p>
 
         <h3 id="tracks-scrolling">Scrolling</h3>
         <p>For smart to know someone is scrolling, mark your scroll views. It needs iOS 18, macOS 15, tvOS 18, watchOS 11 or visionOS 2, and does nothing earlier.</p>
@@ -437,19 +439,19 @@ ContentView()
             <tr><td><code>enter</code></td><td>Where content starts as it fades in: <code>blur</code>, <code>offset</code>, <code>scale</code> and <code>rotation</code>. Presets <code>.none</code>, <code>.blur</code>, <code>.rise</code>, <code>.zoom</code>.</td></tr>
             <tr><td><code>wipe</code></td><td>A mask across the content for each moment of the reveal: <code>.sweep</code> or <code>.custom</code>. Replaces <code>order</code>; the outgoing skeleton gets its inverse.</td></tr>
             <tr><td><code>delay</code></td><td>Seconds before the reveal starts.</td></tr>
-            <tr><td><code>duration</code></td><td>Seconds each piece takes to fade in, or the whole content for a reveal that comes in together. 0.2 by default; <code>0</code> is instant.</td></tr>
+            <tr><td><code>duration</code></td><td>Seconds each piece's wipe takes, or the whole crossfade for a reveal that comes in together. 0.25 by default; <code>0</code> is instant.</td></tr>
             <tr><td><code>hold</code></td><td>Seconds a skeleton waits before it shows at all, so fast data never shows one.</td></tr>
             <tr><td><code>choose</code></td><td>Decides as content lands, from a <code>RevealContext</code>. Return a reveal to use, or <code>nil</code> to keep this one.</td></tr>
           </tbody>
         </table></div>
 
         <h3 id="custom-order">A custom order</h3>
-        <p>A <code>.custom</code> order gets each <code>RevealPiece</code>, one bar, image, control or shape, and returns its delay in seconds, or <code>nil</code> to show it at once. A piece knows its rect, the region's rect, its row, whether it's smaller text than the rest of its row, how late its reveal joined the cascade, and the screen. The built-in orders are exported, so you can build on them:</p>
+        <p>A <code>.custom</code> order gets each <code>RevealPiece</code>, one bar, image, control or shape, and returns its delay in seconds, or <code>nil</code> to show it at once. A piece knows its rect, the region's rect, its row on the page and how many rows there are, its row within its region, whether it's smaller text than the rest of its row, and the screen. Whatever delay you give it, the piece wipes in from its leading edge. The built-in orders are exported, so you can build on them:</p>
         <div class="code"><pre><code class="swift">
 // Bottom to top.
 let rising = SkeletonReveal(order: .custom { piece in
     let up = (piece.reveal.maxY - piece.rect.maxY) / max(piece.reveal.height, 1)
-    return min(max(up, 0), 1) * 0.32
+    return min(max(up, 0), 1) * 0.6
 })
 
 // Smart's row-by-row cascade, at half the pace.
@@ -995,10 +997,11 @@ ContentView()
             <tr><td><code>reveal</code></td><td>The whole region being revealed.</td></tr>
             <tr><td><code>unit</code></td><td>The piece's row: the pieces that sit together with it. <code>nil</code> if alone.</td></tr>
             <tr><td><code>isSecondary</code></td><td>Smaller text than the largest in its row.</td></tr>
-            <tr><td><code>late</code></td><td>Seconds since the first reveal of its cascade began.</td></tr>
+            <tr><td><code>row</code>, <code>rows</code></td><td>Its row on screen, counting from the top, among every reveal landing with it, and how many rows there are.</td></tr>
+            <tr><td><code>regionRow</code>, <code>regionRows</code></td><td>Its row within its own region, and how many that region has.</td></tr>
             <tr><td><code>screen</code></td><td>The screen the reveal is on.</td></tr>
             <tr><td><code>byPosition(_:)</code>, <code>byRow(_:)</code></td><td>The built-in orders, to build on.</td></tr>
-            <tr><td><code>cascadeSpread</code>, <code>secondaryDelay</code></td><td>0.32 s and 0.06 s.</td></tr>
+            <tr><td><code>rowStagger</code>, <code>longestCascade</code>, <code>stagger(rows:)</code></td><td>0.06 s between rows; the last row starts within 0.9 s; the beat for a given number of rows.</td></tr>
           </tbody>
         </table></div>
 
@@ -1110,7 +1113,7 @@ ContentView()
         <div class="release">
           <div><h3>Unreleased</h3><div class="date">November 2026</div></div>
           <ul>
-            <li>Reveals cascade piece by piece: rows in screen order across every region that lands together, smaller text a beat behind. New orders <code>.byPosition</code>, <code>.byRow</code> and <code>.custom</code>.</li>
+            <li>Reveals wipe each line in where its bar was, row by row down the page, a beat apart. Regions landing together wait for one another and share one cascade, a waiting line hides only its letters, content fades off its skeleton on reload, and a region keeps its height while loading. New orders <code>.byPosition</code>, <code>.byRow</code> and <code>.custom</code>.</li>
             <li>The shimmer keeps one pace on any screen width, slanted at 20 degrees by default.</li>
             <li>Under Reduce Motion skeletons hold still, as Skullet's do. A quiet pulse is an opt-in: <code>reducedMotion: .pulse</code>.</li>
             <li><code>.skeletonTracksScrolling()</code>, so content landing mid-scroll appears at once.</li>

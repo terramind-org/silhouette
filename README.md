@@ -143,9 +143,9 @@ ContentView().skeletonReveal(.smart)
 
 | Reveal | What it does |
 | --- | --- |
-| `.smart` | The default. A skeleton waits 150 ms before it shows, so fast data never shows one. Content appears at once if someone is scrolling, a refetch crossfades in 120 ms, and something small (under 72 pt tall, or three pieces or fewer) crossfades whole. Anything else arrives row by row in screen order over 320 ms, smaller text 60 ms behind, rows off screen at once; regions landing within 150 ms of each other share one cascade. |
+| `.smart` | The default. A skeleton waits 150 ms before it shows, so fast data never shows one, and content appears at once if someone is scrolling. Otherwise it comes in row by row down the screen, 60 ms apart (tighter on a long page, so the last row starts within 0.9 s), each line wiping in from its leading edge where its bar was, and the bar wiping out with it. Regions landing within 150 ms of each other wait for one another and share one cascade; rows off screen appear at once. |
 | `.together` | Crossfades the whole skeleton into the content. |
-| `.sequence` | Brings each piece in where its skeleton was, by position: mostly top to bottom, a little left to right, over 320 ms. |
+| `.sequence` | The same wipe, row by row down its own region rather than the page. |
 | `.sweep` | Uncovers the content behind one diagonal front at the shimmer's slant and pace. Content taller than one and a half screens crossfades instead. |
 | `.instant` | Swaps at once. |
 
@@ -157,7 +157,7 @@ blurIn.enter = .blur
 
 let bottomUp = SkeletonReveal(order: .custom { piece in
     let up = (piece.reveal.maxY - piece.rect.maxY) / max(piece.reveal.height, 1)
-    return min(max(up, 0), 1) * 0.32
+    return min(max(up, 0), 1) * 0.6
 })
 
 let wipeDown = SkeletonReveal(wipe: .custom { progress in
@@ -258,7 +258,7 @@ Skeletons are hidden from accessibility, so UI tests that query by accessibility
 4. **One clock.** The fill's highlight is positioned by the wall clock and the skeleton's place on screen, so every skeleton shimmers as one.
 5. **The reveal.** The content fades, wipes or rises in over the skeleton in the space it already held.
 
-The closest data is the data on screen, the data last shown under the same `id`, a shape remembered from an earlier launch, then your sample.
+The closest data is the data on screen, the data last shown under the same `id` in this launch, your sample, then a shape remembered from an earlier launch.
 
 ## Acknowledgements
 
