@@ -11,15 +11,17 @@ struct SilhouetteDemoApp: App {
 
     var body: some Scene {
         WindowGroup {
-            DemoIndex()
+            DemoRoot()
                 // `-dark YES` or `-light YES` at launch, for screenshots, without changing the device.
                 .preferredColorScheme(UserDefaults.standard.bool(forKey: "dark") ? .dark : UserDefaults.standard.bool(forKey: "light") ? .light : nil)
+                .tint(Palette.accent)
         }
     }
 }
 
 enum DemoRoute: String, CaseIterable, Identifiable, Hashable {
-    case showcase, component, plain, own, hints, memory
+    case index
+    case component, plain, own, hints, memory
     case reveals, images, size, ownReveal, async
     case theming, shimmerText, accessibility, debug
 
@@ -27,9 +29,9 @@ enum DemoRoute: String, CaseIterable, Identifiable, Hashable {
 
     var title: String {
         switch self {
-        case .showcase: "Showcase"
-        case .component: "From your component"
-        case .plain: "Plain children"
+        case .index: "Features"
+        case .component: "From your view"
+        case .plain: "Any view, with a flag"
         case .own: "Your own skeleton"
         case .hints: "Hints"
         case .memory: "Memory"
@@ -47,7 +49,7 @@ enum DemoRoute: String, CaseIterable, Identifiable, Hashable {
 
     var symbol: String {
         switch self {
-        case .showcase: "sparkles.rectangle.stack"
+        case .index: "list.bullet"
         case .component: "person.crop.rectangle"
         case .plain: "text.alignleft"
         case .own: "chart.bar"
@@ -68,7 +70,7 @@ enum DemoRoute: String, CaseIterable, Identifiable, Hashable {
     @ViewBuilder @MainActor
     var page: some View {
         switch self {
-        case .showcase: ShowcasePage()
+        case .index: FeatureIndex()
         case .component: FromComponentPage()
         case .plain: PlainChildrenPage()
         case .own: OwnSkeletonPage()
@@ -87,32 +89,37 @@ enum DemoRoute: String, CaseIterable, Identifiable, Hashable {
     }
 
     static let sections: [(String, [DemoRoute])] = [
-        ("", [.showcase]),
         ("Skeletons", [.component, .plain, .own, .hints, .memory]),
         ("Reveals", [.reveals, .images, .size, .ownReveal, .async]),
         ("Styling and reference", [.theming, .shimmerText, .accessibility, .debug]),
     ]
 }
 
-struct DemoIndex: View {
-    /// `-demo theming` at launch opens a page directly, for screenshots and recordings.
+/// The showcase, with every feature page a push away. `-demo <route>` at launch opens a page.
+struct DemoRoot: View {
     @State private var path: [DemoRoute] = UserDefaults.standard.string(forKey: "demo").flatMap(DemoRoute.init(rawValue:)).map { [$0] } ?? []
 
     var body: some View {
         NavigationStack(path: $path) {
-            List {
-                ForEach(DemoRoute.sections, id: \.0) { title, routes in
-                    Section(title) {
-                        ForEach(routes) { route in
-                            NavigationLink(value: route) {
-                                Label(route.title, systemImage: route.symbol)
-                            }
+            ShowcasePage(path: $path)
+                .navigationDestination(for: DemoRoute.self) { $0.page }
+        }
+    }
+}
+
+struct FeatureIndex: View {
+    var body: some View {
+        List {
+            ForEach(DemoRoute.sections, id: \.0) { title, routes in
+                Section(title) {
+                    ForEach(routes) { route in
+                        NavigationLink(value: route) {
+                            Label(route.title, systemImage: route.symbol)
                         }
                     }
                 }
             }
-            .navigationTitle("Silhouette")
-            .navigationDestination(for: DemoRoute.self) { $0.page }
         }
+        .navigationTitle("Features")
     }
 }

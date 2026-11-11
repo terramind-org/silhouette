@@ -10,7 +10,7 @@ enum Response: String, CaseIterable, Identifiable {
     var seconds: Double {
         switch self {
         case .fast: 0.1
-        case .typical: 1.2
+        case .typical: 1.4
         case .slow: 3
         }
     }
@@ -25,10 +25,13 @@ enum Response: String, CaseIterable, Identifiable {
 final class DemoLoad<Value> {
     private(set) var value: Value?
     private let make: () -> Value
+    /// Scales the response time, so cards on one page land at slightly different moments.
+    private let latency: Double
     private var task: Task<Void, Never>?
 
-    init(_ make: @escaping () -> Value) {
+    init(latency: Double = 1, _ make: @escaping () -> Value) {
         self.make = make
+        self.latency = latency
         reload()
     }
 
@@ -41,7 +44,7 @@ final class DemoLoad<Value> {
     /// Fetches again while the old value stays on screen.
     func refetch() {
         task?.cancel()
-        let seconds = Response.current.seconds
+        let seconds = Response.current.seconds * latency
         task = Task {
             try? await Task.sleep(for: .seconds(seconds))
             guard !Task.isCancelled else { return }
@@ -50,36 +53,31 @@ final class DemoLoad<Value> {
     }
 }
 
-/// One demo page: a short line on what it shows and which part of Skullet it mirrors, then the
-/// demo itself. Tap the demo, or the toolbar button, to load it again.
+/// One feature page: a title and a line on what it shows, the demo, and the code.
 struct DemoPage<Content: View>: View {
     var title: String
-    var mirrors: String
     var note: String
     var reload: () -> Void
     @ViewBuilder var content: Content
 
     var body: some View {
         ScrollView {
-            VStack(alignment: .leading, spacing: 20) {
-                VStack(alignment: .leading, spacing: 4) {
-                    Text(note)
-                        .font(.callout)
-                        .foregroundStyle(.secondary)
-                    Text("Skullet: \(mirrors)")
-                        .font(.caption.monospaced())
-                        .foregroundStyle(.tertiary)
+            VStack(alignment: .leading, spacing: 18) {
+                VStack(alignment: .leading, spacing: 8) {
+                    Text(title).font(.system(size: 30, weight: .bold))
+                    Text(note).font(.system(size: 16)).foregroundStyle(Palette.secondary)
                 }
+                .padding(.horizontal, 4)
+                .padding(.bottom, 6)
                 content
-                    .contentShape(.rect)
-                    .onTapGesture(perform: reload)
-                    .accessibilityAction(named: "Reload", reload)
             }
-            .padding(20)
-            .frame(maxWidth: 640, alignment: .leading)
+            .padding(.horizontal, 16)
+            .padding(.vertical, 12)
+            .frame(maxWidth: 560, alignment: .leading)
             .frame(maxWidth: .infinity)
         }
-        .navigationTitle(title)
+        .skeletonTracksScrolling()
+        .background(Palette.page.ignoresSafeArea())
         #if os(iOS)
         .navigationBarTitleDisplayMode(.inline)
         #endif
@@ -101,31 +99,38 @@ struct DemoPage<Content: View>: View {
     }
 }
 
-/// A rounded card on the grouped background.
-struct Card<Content: View>: View {
+/// A demo you can tap to load again, with a quiet caption under it.
+struct Reloadable<Content: View>: View {
+    var caption: String = "Tap to reload"
+    var reload: () -> Void
     @ViewBuilder var content: Content
 
     var body: some View {
-        content
-            .padding(16)
-            .frame(maxWidth: .infinity, alignment: .leading)
-            .background(.background, in: RoundedRectangle(cornerRadius: 20, style: .continuous))
-            .overlay(RoundedRectangle(cornerRadius: 20, style: .continuous).strokeBorder(.quaternary))
+        VStack(spacing: 10) {
+            content
+                .contentShape(.rect)
+                .onTapGesture(perform: reload)
+                .accessibilityAction(named: "Reload", reload)
+            Text(caption)
+                .font(.system(size: 13))
+                .foregroundStyle(Palette.secondary.opacity(0.8))
+        }
     }
 }
 
-/// Initials on a coloured disc.
-struct Avatar: View {
-    var initials: String
-    var color: Color
-    var size: CGFloat = 44
+/// A short code sample under a demo.
+struct CodeNote: View {
+    var code: String
+    init(_ code: String) { self.code = code }
 
     var body: some View {
-        Circle()
-            .fill(color.gradient)
-            .frame(width: size, height: size)
-            .overlay(Text(initials).font(.system(size: size * 0.36, weight: .semibold)).foregroundStyle(.white))
-            .accessibilityHidden(true)
+        Text(code)
+            .font(.system(size: 13, design: .monospaced))
+            .foregroundStyle(Palette.secondary)
+            .frame(maxWidth: .infinity, alignment: .leading)
+            .padding(16)
+            .background(Palette.card, in: RoundedRectangle(cornerRadius: 18, style: .continuous))
+            .overlay(RoundedRectangle(cornerRadius: 18, style: .continuous).strokeBorder(Palette.hairline))
     }
 }
 
@@ -138,5 +143,23 @@ struct ResponsePicker: View {
             ForEach(Response.allCases) { Text($0.rawValue.capitalized).tag($0) }
         }
         .pickerStyle(.segmented)
+    }
+}
+
+/// A segmented choice with a label.
+struct Choice<T: Hashable>: View {
+    var title: String
+    @Binding var selection: T
+    var options: [(T, String)]
+
+    var body: some View {
+        VStack(alignment: .leading, spacing: 6) {
+            Text(title).font(.system(size: 13)).foregroundStyle(Palette.secondary)
+            Picker(title, selection: $selection) {
+                ForEach(options, id: \.0) { Text($0.1).tag($0.0) }
+            }
+            .pickerStyle(.segmented)
+            .labelsHidden()
+        }
     }
 }

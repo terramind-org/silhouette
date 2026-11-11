@@ -34,10 +34,12 @@ public struct AsyncSkeleton<Value: Sendable, Content: View>: View {
         trigger: AnyHashable? = nil,
         label: Text? = nil,
         onReveal: (() -> Void)? = nil,
+        fileID: StaticString = #fileID,
+        line: UInt = #line,
         load: @escaping @Sendable () async throws -> Value,
         @ViewBuilder content: @escaping (Value) -> Content
     ) {
-        self.init(sample: sample, id: id, trigger: trigger, label: label, onReveal: onReveal, codec: nil, load: load, content: content)
+        self.init(sample: sample, id: id ?? "\(fileID):\(line)", trigger: trigger, label: label, onReveal: onReveal, codec: nil, load: load, content: content)
     }
 
     /// For `Codable` values, an `id` also remembers the layout across launches.
@@ -47,10 +49,12 @@ public struct AsyncSkeleton<Value: Sendable, Content: View>: View {
         trigger: AnyHashable? = nil,
         label: Text? = nil,
         onReveal: (() -> Void)? = nil,
+        fileID: StaticString = #fileID,
+        line: UInt = #line,
         load: @escaping @Sendable () async throws -> Value,
         @ViewBuilder content: @escaping (Value) -> Content
     ) where Value: Codable {
-        self.init(sample: sample, id: id, trigger: trigger, label: label, onReveal: onReveal, codec: .codable, load: load, content: content)
+        self.init(sample: sample, id: id ?? "\(fileID):\(line)", trigger: trigger, label: label, onReveal: onReveal, codec: .codable, load: load, content: content)
     }
 
     init(

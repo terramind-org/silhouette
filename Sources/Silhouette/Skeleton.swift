@@ -37,6 +37,7 @@ public struct Skeleton<Value, Content: View>: View {
     ///   - data: The data to show. The skeleton shows while it's `nil`.
     ///   - sample: Stands in for the data to draw the first skeleton. Give it typical lengths.
     ///   - id: Remembers the shape last shown under this key, so the next skeleton is exact.
+    ///     Without one, the shape is remembered by where this `Skeleton` is in your code.
     ///   - isLoading: Shows the skeleton even over data, for example while a refetch replaces it.
     ///   - label: Read by VoiceOver while loading. "Loading" by default.
     ///   - onReveal: Called once the content has come in over a skeleton.
@@ -48,13 +49,15 @@ public struct Skeleton<Value, Content: View>: View {
         isLoading: Bool = false,
         label: Text? = nil,
         onReveal: (() -> Void)? = nil,
+        fileID: StaticString = #fileID,
+        line: UInt = #line,
         @ViewBuilder content: @escaping (Value) -> Content
     ) {
-        self.init(data, sample: sample, id: id, isLoading: isLoading, label: label, onReveal: onReveal, codec: nil, content: content)
+        self.init(data, sample: sample, id: id ?? "\(fileID):\(line)", isLoading: isLoading, label: label, onReveal: onReveal, codec: nil, content: content)
     }
 
-    /// For `Codable` data, an `id` also remembers the layout across launches: a copy of the data
-    /// with its letters, digits and numbers replaced, never the data itself.
+    /// For `Codable` data the layout is also remembered across launches: a copy of the data with
+    /// its letters, digits and numbers replaced, never the data itself.
     public init(
         _ data: Value?,
         sample: Value? = nil,
@@ -62,9 +65,11 @@ public struct Skeleton<Value, Content: View>: View {
         isLoading: Bool = false,
         label: Text? = nil,
         onReveal: (() -> Void)? = nil,
+        fileID: StaticString = #fileID,
+        line: UInt = #line,
         @ViewBuilder content: @escaping (Value) -> Content
     ) where Value: Codable {
-        self.init(data, sample: sample, id: id, isLoading: isLoading, label: label, onReveal: onReveal, codec: .codable, content: content)
+        self.init(data, sample: sample, id: id ?? "\(fileID):\(line)", isLoading: isLoading, label: label, onReveal: onReveal, codec: .codable, content: content)
     }
 
     init(
