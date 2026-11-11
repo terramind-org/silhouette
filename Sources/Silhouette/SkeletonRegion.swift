@@ -152,20 +152,14 @@ struct SkeletonRegion<Placeholder: View>: ViewModifier {
 
     private func waitOutHold() async {
         guard isLoading, !held else { return }
-        // The hold keeps a fast first load from flashing a skeleton. Content that was already on
-        // screen goes straight to its skeleton, with no blank beat between them.
-        if hasRevealed {
-            var transaction = Transaction()
-            transaction.disablesAnimations = true
-            withTransaction(transaction) { held = true }
-        } else {
-            let hold = min(max(reveal.hold, 0), 1)
-            if hold > 0 {
-                try? await Task.sleep(for: .seconds(hold))
-                guard !Task.isCancelled, isLoading else { return }
-            }
-            held = true
+        // The hold keeps a fast first load from flashing a skeleton. (Content that was already on
+        // screen goes straight to its skeleton in `startLoading`.)
+        let hold = min(max(reveal.hold, 0), 1)
+        if hold > 0 {
+            try? await Task.sleep(for: .seconds(hold))
+            guard !Task.isCancelled, isLoading, !held else { return }
         }
+        held = true
         heldSince = Date()
         sizeWhileLoading = frame.size
     }
@@ -178,7 +172,12 @@ struct SkeletonRegion<Placeholder: View>: ViewModifier {
         withTransaction(transaction) {
             isRevealing = false
             progress = 0
-            held = false
+            // Content that was on screen goes straight to its skeleton, with no blank beat.
+            held = hasRevealed
+        }
+        if held {
+            heldSince = Date()
+            sizeWhileLoading = frame.size
         }
     }
 
