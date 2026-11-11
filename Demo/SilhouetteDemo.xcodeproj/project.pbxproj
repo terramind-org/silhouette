@@ -13,6 +13,7 @@
 		548790179F20D43015260438 /* DemoViews.swift in Sources */ = {isa = PBXBuildFile; fileRef = 8BAAAEA7549BF6F40B7E86B5 /* DemoViews.swift */; };
 		55BA028905D1AACE2FDCD8CF /* DemoSupport.swift in Sources */ = {isa = PBXBuildFile; fileRef = 9AEA885A2B8CE93C5942546D /* DemoSupport.swift */; };
 		716C29175752367F6C746C69 /* ThemingPage.swift in Sources */ = {isa = PBXBuildFile; fileRef = 18EAE98FB84AED39A6FF975E /* ThemingPage.swift */; };
+		8C1007B159F0C91D8457D190 /* FrameRecorder.swift in Sources */ = {isa = PBXBuildFile; fileRef = ABEEBDF189E012F23BA35660 /* FrameRecorder.swift */; };
 		B43542891D65735010C4656E /* Models.swift in Sources */ = {isa = PBXBuildFile; fileRef = FB68FC46E685156570298C3E /* Models.swift */; };
 /* End PBXBuildFile section */
 
@@ -23,6 +24,7 @@
 		7DB2EF44B44351DC17A42BEE /* SilhouetteDemo.app */ = {isa = PBXFileReference; includeInIndex = 0; lastKnownFileType = wrapper.application; path = SilhouetteDemo.app; sourceTree = BUILT_PRODUCTS_DIR; };
 		8BAAAEA7549BF6F40B7E86B5 /* DemoViews.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = DemoViews.swift; sourceTree = "<group>"; };
 		9AEA885A2B8CE93C5942546D /* DemoSupport.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = DemoSupport.swift; sourceTree = "<group>"; };
+		ABEEBDF189E012F23BA35660 /* FrameRecorder.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = FrameRecorder.swift; sourceTree = "<group>"; };
 		F64D99BBE84DAF6A36AC311A /* DemoPages.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = DemoPages.swift; sourceTree = "<group>"; };
 		FB68FC46E685156570298C3E /* Models.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = Models.swift; sourceTree = "<group>"; };
 /* End PBXFileReference section */
@@ -70,6 +72,7 @@
 				F64D99BBE84DAF6A36AC311A /* DemoPages.swift */,
 				9AEA885A2B8CE93C5942546D /* DemoSupport.swift */,
 				8BAAAEA7549BF6F40B7E86B5 /* DemoViews.swift */,
+				ABEEBDF189E012F23BA35660 /* FrameRecorder.swift */,
 				FB68FC46E685156570298C3E /* Models.swift */,
 				54C4F611890EFC1505CBEA95 /* SilhouetteDemoApp.swift */,
 				18EAE98FB84AED39A6FF975E /* ThemingPage.swift */,
@@ -140,6 +143,7 @@
 				08290E011AE074EC99EB89C3 /* DemoPages.swift in Sources */,
 				55BA028905D1AACE2FDCD8CF /* DemoSupport.swift in Sources */,
 				548790179F20D43015260438 /* DemoViews.swift in Sources */,
+				8C1007B159F0C91D8457D190 /* FrameRecorder.swift in Sources */,
 				B43542891D65735010C4656E /* Models.swift in Sources */,
 				268C2133C15204E9518BFDA3 /* SilhouetteDemoApp.swift in Sources */,
 				716C29175752367F6C746C69 /* ThemingPage.swift in Sources */,

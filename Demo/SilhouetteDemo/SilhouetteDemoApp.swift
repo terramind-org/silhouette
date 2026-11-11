@@ -3,6 +3,12 @@ import SwiftUI
 
 @main
 struct SilhouetteDemoApp: App {
+    init() {
+        #if os(iOS)
+        FrameRecorder.startIfRequested()
+        #endif
+    }
+
     var body: some Scene {
         WindowGroup {
             DemoIndex()

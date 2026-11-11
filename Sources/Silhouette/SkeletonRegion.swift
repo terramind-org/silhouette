@@ -109,7 +109,7 @@ struct SkeletonRegion<Placeholder: View>: ViewModifier {
                 if showsSkeleton {
                     skeletonLayer(content)
                         .modifier(RevealEffect(progress: progress, spec: spec, role: .outgoing, shimmerAxis: shimmerAxis))
-                        .transition(.opacity.animation(.easeOut(duration: 0.2)))
+                        .transition(hasRevealed ? .identity : .opacity.animation(.easeOut(duration: 0.2)))
                 }
             }
             .overlay {
@@ -152,12 +152,20 @@ struct SkeletonRegion<Placeholder: View>: ViewModifier {
 
     private func waitOutHold() async {
         guard isLoading, !held else { return }
-        let hold = min(max(reveal.hold, 0), 1)
-        if hold > 0 {
-            try? await Task.sleep(for: .seconds(hold))
-            guard !Task.isCancelled, isLoading else { return }
+        // The hold keeps a fast first load from flashing a skeleton. Content that was already on
+        // screen goes straight to its skeleton, with no blank beat between them.
+        if hasRevealed {
+            var transaction = Transaction()
+            transaction.disablesAnimations = true
+            withTransaction(transaction) { held = true }
+        } else {
+            let hold = min(max(reveal.hold, 0), 1)
+            if hold > 0 {
+                try? await Task.sleep(for: .seconds(hold))
+                guard !Task.isCancelled, isLoading else { return }
+            }
+            held = true
         }
-        held = true
         heldSince = Date()
         sizeWhileLoading = frame.size
     }
