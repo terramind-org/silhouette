@@ -233,7 +233,7 @@ Or launch with `-SilhouetteDebug YES` (`xray` for x-ray too), or call `setSkelet
 
 ## Memory
 
-With an `id`, a reveal remembers what it showed, so the next skeleton is exact. Within a launch it keeps the real data. Across launches, for `Codable` data, it keeps only the layout: a copy with every letter, digit and number replaced by a placeholder of the same length, in `UserDefaults`.
+A `Skeleton` remembers what it showed, so the next skeleton is exact. It's keyed by where the `Skeleton` is in your code; pass an `id` to share a shape between places or to tell apart instances in a `ForEach`. Within a launch it keeps the real data. Across launches, for `Codable` data, it keeps only the layout: a copy with every letter, digit and number replaced by a placeholder of the same length, in `UserDefaults`.
 
 ```swift
 Skeleton(messages, sample: Message.samples, id: "inbox") { Inbox(messages: $0) }

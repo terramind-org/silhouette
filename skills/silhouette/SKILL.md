@@ -30,7 +30,7 @@ Needs iOS 17 / macOS 14 / tvOS 17 / watchOS 10 / visionOS 1. `import Silhouette`
 | Something that can't be traced (chart, map, video) | a hint: `.skeletonBlock`, `.skeletonShape { }` |
 | Work in progress, not missing content (an AI tool call) | `ShimmerText("…")` or `.shimmer(isRunning)` |
 
-Prefer `Skeleton(data, sample:)`. Its closure only ever shows real data on screen, and it supports `id:` memory, `.empty`, `.failure` and `.placeholder`.
+Prefer `Skeleton(data, sample:)`. Its closure only ever shows real data on screen, and it remembers its last shape, plus `.empty`, `.failure` and `.placeholder`.
 
 ```swift
 Skeleton(model.user, sample: .sample, id: "profile") { user in
@@ -104,7 +104,8 @@ List(model.messages ?? Message.samples) { message in
 - Keep the value optional in the model; load from `.task` on the screen, outside the skeleton.
 - Refetch: pass nothing and the old content stays until replaced; pass `isLoading: model.isRefreshing` to go back to a skeleton drawn from what's on screen.
 - Add `.skeletonTracksScrolling()` to scroll views that host skeletons, so content landing mid-scroll appears at once (iOS 18+, no-op earlier).
-- `id:` makes the next skeleton exact (in-memory within a launch; for `Codable` data, a scrubbed layout in `UserDefaults` across launches). Call `forgetSkeletonShapes()` on sign-out whenever you use `id:`.
+- Every `Skeleton`/`AsyncSkeleton` remembers its last shape, keyed by its place in code (in memory within a launch; for `Codable` data, a scrubbed layout in `UserDefaults` across launches). Pass `id:` to share a shape across screens, and a distinct `id:` per item when one `Skeleton` line runs inside a `ForEach`, or all items share one shape.
+- Call `forgetSkeletonShapes()` on sign-out in any app with accounts, since layouts persist with or without `id:`.
 
 ## Theming and reveals
 
@@ -138,7 +139,7 @@ Turn it on while adopting: `.skeletonDebug(.outlines)` on the root, `setSkeleton
 
 - Blue outline while loading, tagged with the shape's source (`sample`, `last shown`, `remembered`, `on screen`, `custom`, `content`, `fallback`).
 - After reveal: **green "no move"** is the goal; **red "moved ±Npt"** means the sample's lengths are off. Fix the sample, not the layout.
-- `fallback` means nothing to measure: add a sample or an id.
+- `fallback` means nothing to measure: add a sample.
 - Console (debug builds) also logs missing samples, moves, and zero-size skeletons.
 
 ## Pitfalls
@@ -149,7 +150,8 @@ Turn it on while adopting: `.skeletonDebug(.outlines)` on the root, `setSkeleton
 - Work in `.task`/`.onAppear` inside the content without the `isDrawingSkeleton` guard: duplicate requests.
 - Unsized images, or `Spacer`-only views while loading: nothing to draw.
 - Adding `.skeletonIgnored()` to the card instead of its background view: the whole card disappears from the skeleton.
-- Using `id:` without `forgetSkeletonShapes()` on sign-out.
+- No `forgetSkeletonShapes()` on sign-out: the next person sees the outline of the last one's data.
+- One `Skeleton` inside a `ForEach` without per-item `id:`: every row shares the last-shown shape.
 - Expecting `AsyncSkeleton` to take a custom error view: it shows `localizedDescription`. Use `Skeleton` + `.failure` for your own.
 - Text bars look like plain redaction on iOS 17 / macOS 14: expected; glyph-exact bars need iOS 18+.
 
@@ -163,6 +165,6 @@ Turn it on while adopting: `.skeletonDebug(.outlines)` on the root, `setSkeleton
 - [ ] No `.task`/`.onAppear` inside skeleton content runs unguarded.
 - [ ] Meaningful regions pass `label:`.
 - [ ] Scroll views hosting skeletons have `.skeletonTracksScrolling()`.
-- [ ] `forgetSkeletonShapes()` is called on sign-out if any `id:` is used.
+- [ ] `forgetSkeletonShapes()` is called on sign-out.
 - [ ] With the debug overlay on, every region reveals green "no move" in light and dark, at a large Dynamic Type size too.
 - [ ] Debug overlay code removed; the project builds.

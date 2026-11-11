@@ -162,7 +162,7 @@ Skeleton(user, sample: .sample) { user in
         <p>If you leave the sample out, debug builds log one to paste the first time real data arrives: your type's shape and lengths with every value replaced, so it's safe to commit.</p>
 
         <h3 id="closest-data">The closest data</h3>
-        <p>A skeleton is drawn from the closest data Silhouette has, in this order: the data already on screen, the data last shown under the same <code>id</code> in this launch, a shape remembered from an earlier launch, then your sample. With none of those, it draws three placeholder lines and logs a warning.</p>
+        <p>A skeleton is drawn from the closest data Silhouette has, in this order: the data already on screen, the data this skeleton last showed in this launch, a shape remembered from an earlier launch, then your sample. With none of those, it draws three placeholder lines and logs a warning.</p>
 
         <h3 id="empty-and-failure">Empty and failed loads</h3>
         <p>Show something else once the data has arrived empty, or when loading failed. Chain these straight after the <code>Skeleton</code>, before any other modifier.</p>
@@ -315,17 +315,17 @@ var body: some View {
         <div class="screen"><video autoplay loop muted playsinline preload="metadata" width="1206" height="2622" src="../media/memory.mp4" aria-label="An inbox reloads, and its skeleton now matches the messages it showed last time exactly."></video></div>
       </figure>
       <div class="prose">
-        <p>Give a <code>Skeleton</code> an <code>id</code> and it remembers what it showed, so the next skeleton under that id is exact rather than drawn from the sample.</p>
+        <p>Every <code>Skeleton</code> remembers what it showed, so its next skeleton is exact rather than drawn from the sample. By default the memory is keyed by where the <code>Skeleton</code> is in your code. Pass an <code>id</code> to share a shape between places, or to tell apart several instances of one line of code, such as a <code>Skeleton</code> inside a <code>ForEach</code>; otherwise they share one shape.</p>
         <div class="code"><pre><code class="swift">
 Skeleton(messages, sample: Message.samples, id: "inbox") { messages in
     Inbox(messages: messages)
 }
 </code></pre></div>
         <ul>
-          <li><strong>Within a launch</strong> it keeps the real data last shown under the id, in memory.</li>
+          <li><strong>Within a launch</strong> it keeps the real data last shown, in memory.</li>
           <li><strong>Across launches</strong>, for <code>Codable</code> data, it keeps only the layout, in <code>UserDefaults</code>: a copy where every letter becomes <code>n</code> or <code>N</code>, every digit <code>0</code>, and every number a run of 8s with the same digit count. Spaces, punctuation and booleans stay, so the copy wraps like the original. A copy that no longer decodes is dropped.</li>
         </ul>
-        <p>Even a scrubbed shape gives away the outline of someone's data. Clear every remembered shape on sign-out:</p>
+        <p>Even a scrubbed shape gives away the outline of someone's data, and it is kept whether or not you pass an <code>id</code>. Clear every remembered shape on sign-out:</p>
         <div class="code"><pre><code class="swift">
 func signOut() async {
     await session.end()
@@ -412,7 +412,7 @@ SkeletonAsyncImage(url: photo.url) { image in
       </figure>
       <div class="prose">
         <p>A skeleton drawn from a sample or from old data won't always match the new data's shape. When the real content is a different height, the region eases to it over 280 ms instead of snapping.</p>
-        <p>Easing is a fallback, not the goal. Each time it happens, a debug build logs how many points the skeleton was off, and the <a href="#debugging">debug overlay</a> labels the region in red with the distance. Fix it with a sample of typical length, or an <code>id</code> so the next skeleton is drawn from what was really shown.</p>
+        <p>Easing is a fallback, not the goal. Each time it happens, a debug build logs how many points the skeleton was off, and the <a href="#debugging">debug overlay</a> labels the region in red with the distance. Fix it with a sample of typical length. The next skeleton is drawn from what was really shown, so it only happens once per place.</p>
       </div>
     </section>
 
@@ -498,7 +498,7 @@ AsyncSkeleton(sample: Quote.sample, id: "quote", trigger: day) {
 </code></pre></div>
         <ul>
           <li>Change <code>trigger</code> to load again. While it reloads, the old content stays on screen.</li>
-          <li>With an <code>id</code> and no sample, the skeleton is the shape last shown under that id.</li>
+          <li>It remembers its shape the same way <code>Skeleton</code> does, by its place in your code or by <code>id</code>, so after the first load it needs no sample.</li>
           <li>A tracing copy inside another skeleton never starts the work.</li>
           <li>A thrown error shows its <code>localizedDescription</code> in a quiet callout. For your own error view, hold the value yourself and use <code>Skeleton</code> with <code>.failure</code>.</li>
         </ul>
@@ -788,13 +788,13 @@ ContentView()
       <h2>Troubleshooting</h2>
       <div class="prose">
         <details><summary>The page jumps when content arrives</summary><div>
-          <p>Turn on <a href="#debugging">debugging</a> to see where the skeleton came from and how far the content moved. Most often the sample is shorter or longer than real data: give it typical lengths. An <code>id</code> makes the next skeleton exact.</p>
+          <p>Turn on <a href="#debugging">debugging</a> to see where the skeleton came from and how far the content moved. Most often the sample is shorter or longer than real data: give it typical lengths. The next skeleton is drawn from what was really shown, so it will be exact.</p>
         </div></details>
         <details><summary>A whole card is one solid block</summary><div>
           <p>Its background isn't the page's colour, so it was traced as a shape. Add <code>.skeletonIgnored()</code> to the background view, inside <code>.background { }</code>, not to the card.</p>
         </div></details>
         <details><summary>Three grey lines and a warning in the console</summary><div>
-          <p>There was nothing to measure: no sample, no remembered shape, no data on screen. Pass a <code>sample:</code>, or an <code>id</code> so the shape is remembered after the first load. For a single placeholder, use <code>SkeletonBox</code>.</p>
+          <p>There was nothing to measure: no sample, no remembered shape, no data on screen. This happens on the very first load of a <code>Skeleton</code> without a sample; after that its shape is remembered. Pass a <code>sample:</code> so the first load looks right too. For a single placeholder, use <code>SkeletonBox</code>.</p>
         </div></details>
         <details><summary>An image has no skeleton, or moves when it loads</summary><div>
           <p>It had no size until it loaded. Give it a <code>.frame</code> or an <code>.aspectRatio</code>. Debug builds log when a skeleton has no size.</p>
@@ -832,7 +832,7 @@ ContentView()
           <tbody>
             <tr><td><code>_ data</code></td><td><code>Value?</code></td><td>The data to show. The skeleton shows while it's <code>nil</code>.</td></tr>
             <tr><td><code>sample</code></td><td><code>Value?</code></td><td>Stands in for the data to draw the first skeleton.</td></tr>
-            <tr><td><code>id</code></td><td><code>String?</code></td><td>Remembers the shape last shown under this key; across launches for <code>Codable</code> data.</td></tr>
+            <tr><td><code>id</code></td><td><code>String?</code></td><td>The key the shape is remembered under; across launches for <code>Codable</code> data. Defaults to this <code>Skeleton</code>'s place in your code.</td></tr>
             <tr><td><code>isLoading</code></td><td><code>Bool</code></td><td>Shows the skeleton even over data. <code>false</code> by default.</td></tr>
             <tr><td><code>label</code></td><td><code>Text?</code></td><td>Read by VoiceOver while loading. "Loading" by default.</td></tr>
             <tr><td><code>onReveal</code></td><td><code>(() -&gt; Void)?</code></td><td>Called once the content has come in over a skeleton.</td></tr>
@@ -863,7 +863,7 @@ ContentView()
           <thead><tr><th>Parameter</th><th>Type</th><th>Meaning</th></tr></thead>
           <tbody>
             <tr><td><code>sample</code></td><td><code>Value?</code></td><td>Draws the skeleton while the work runs.</td></tr>
-            <tr><td><code>id</code></td><td><code>String?</code></td><td>Remembers the shape under this key.</td></tr>
+            <tr><td><code>id</code></td><td><code>String?</code></td><td>The key the shape is remembered under. Defaults to its place in your code.</td></tr>
             <tr><td><code>trigger</code></td><td><code>AnyHashable?</code></td><td>Change it to run the work again.</td></tr>
             <tr><td><code>label</code></td><td><code>Text?</code></td><td>Read by VoiceOver while loading.</td></tr>
             <tr><td><code>onReveal</code></td><td><code>(() -&gt; Void)?</code></td><td>Called once the content has come in.</td></tr>
@@ -1062,7 +1062,7 @@ ContentView()
             <tr><td><code>skullet-block</code>, <code>skullet-ignore</code></td><td><code>.skeletonBlock()</code>, <code>.skeletonIgnored()</code></td><td><span class="status full">Full</span></td></tr>
             <tr><td><code>empty</code>, <code>emptyMessage</code>, <code>error</code></td><td><code>.empty(_:message:)</code>, <code>.failure(_:content:)</code></td><td><span class="status full">Full</span></td></tr>
             <tr><td><code>label</code>, <code>onReveal</code></td><td><code>label:</code>, <code>onReveal:</code></td><td><span class="status full">Full</span></td></tr>
-            <tr><td>Memory by <code>id</code></td><td><code>id:</code>, in memory and <code>UserDefaults</code></td><td><span class="status partial">Partial</span><br>Needs an <code>id</code>; there's no page and markup to key by. Across launches only for <code>Codable</code> data.</td></tr>
+            <tr><td>Memory, by <code>id</code> or automatically</td><td><code>id:</code> or the place in code, in memory and <code>UserDefaults</code></td><td><span class="status partial">Partial</span><br>Keyed by place in code without an <code>id</code>, as Skullet keys by page and markup. Across launches only for <code>Codable</code> data.</td></tr>
             <tr><td><code>forgetShapes()</code></td><td><code>forgetSkeletonShapes()</code></td><td><span class="status full">Full</span></td></tr>
             <tr><td>Reveals: smart, together, sequence, sweep</td><td><code>.smart</code>, <code>.together</code>, <code>.sequence</code>, <code>.sweep</code></td><td><span class="status full">Full</span></td></tr>
             <tr><td><code>RevealSpec</code> <code>order</code> function</td><td><code>.custom((RevealPiece) -&gt; Double?)</code>, with <code>byPosition</code> and <code>byRow</code> exported</td><td><span class="status full">Full</span></td></tr>
@@ -1113,6 +1113,7 @@ ContentView()
             <li><code>.skeletonTracksScrolling()</code>, so content landing mid-scroll appears at once.</li>
             <li>Reloading content goes straight to its skeleton, with no blank beat.</li>
             <li>Under Reduce Motion every reveal is instant.</li>
+            <li>A <code>Skeleton</code> or <code>AsyncSkeleton</code> without an <code>id</code> remembers its shape by where it is in your code.</li>
           </ul>
         </div>
         <div class="release">
