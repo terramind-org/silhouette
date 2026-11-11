@@ -26,6 +26,8 @@ struct SkeletonShape<Content: View>: View {
     /// Draws each line of text as a bar. Off, text keeps its own letters: the content's ink, for
     /// a reveal to hide letter by letter without touching the surface behind them.
     var textAsBars = true
+    /// Grows every shape by about this many points, so soft edges count too.
+    var spread: CGFloat = 0
 
     @Environment(\.skeletonTheme) private var theme
     @Environment(\.colorScheme) private var colorScheme
@@ -38,6 +40,7 @@ struct SkeletonShape<Content: View>: View {
                 guard let shape = context.resolveSymbol(id: SymbolID.content) else { return }
                 let rect = CGRect(origin: .zero, size: size)
                 // Over the page's colour, then measured by how far each pixel is from it.
+                if spread > 0 { context.addFilter(.blur(radius: spread)) }
                 context.addFilter(.colorMatrix(Self.coverage(for: colorScheme)))
                 context.drawLayer { layer in
                     layer.fill(Path(rect), with: .color(colorScheme == .dark ? .black : .white))

@@ -21,14 +21,6 @@ enum PieceTracer {
         return pieces(in: image, pointSize: size)
     }
 
-    /// Where the view puts ink: its letters themselves, its images, controls and painted shapes,
-    /// and none of the surfaces behind them. A reveal hides only this, so a card's surface is
-    /// never cut away while its lines wait for their turn.
-    @MainActor
-    static func ink<V: View>(of view: V, size: CGSize, environment: EnvironmentValues, scale: CGFloat) -> CGImage? {
-        shape(of: view, size: size, environment: environment, scale: scale, textAsBars: false)
-    }
-
     @MainActor
     private static func shape<V: View>(of view: V, size: CGSize, environment: EnvironmentValues, scale: CGFloat, textAsBars: Bool = true) -> CGImage? {
         guard size.width >= 1, size.height >= 1, size.width * size.height < 6_000_000 else { return nil }
@@ -152,10 +144,6 @@ struct RevealPlan {
     var start: Date
     /// Wipes run right to left in a right-to-left layout.
     var rightToLeft = false
-    /// The content's ink (see `PieceTracer.ink`), in the region's coordinates. While a piece
-    /// waits, only its ink is hidden; without it, the piece's whole area is.
-    var ink: Image?
-    var inkSize: CGSize = .zero
 
     /// When the last piece has finished, in seconds from the start.
     var end: Double {
@@ -187,9 +175,7 @@ struct RevealPlan {
         pageRows: [CGRect],
         delay: Double,
         fade: Double,
-        rightToLeft: Bool = false,
-        ink: CGImage? = nil,
-        inkScale: CGFloat = 1
+        rightToLeft: Bool = false
     ) -> RevealPlan {
         let regionRows = Rows.of(content + skeleton)
         let onScreenRows = pageRows.filter { RevealPiece.onScreen($0, screen) }
@@ -214,11 +200,7 @@ struct RevealPlan {
                 return Timed(rect: rect, delay: order(piece).map { min(max($0, 0), 1) + delay })
             }
         }
-        return RevealPlan(
-            incoming: timed(content), outgoing: timed(skeleton), fade: fade, start: Date(), rightToLeft: rightToLeft,
-            ink: ink.map { Image(decorative: $0, scale: inkScale) },
-            inkSize: ink.map { CGSize(width: CGFloat($0.width) / inkScale, height: CGFloat($0.height) / inkScale) } ?? .zero
-        )
+        return RevealPlan(incoming: timed(content), outgoing: timed(skeleton), fade: fade, start: Date(), rightToLeft: rightToLeft)
     }
 }
 
@@ -323,9 +305,33 @@ struct RevealMask: View {
     var spec: SkeletonReveal
     var plan: RevealPlan?
     var shimmerAxis: CGVector
+    /// The content, traced live with its letters as letters: what a waiting line hides. Without
+    /// it, a waiting piece's whole area is hidden.
+    var ink: AnyView? = nil
 
     var body: some View {
-        if let plan {
+        if let plan, role == .incoming, let ink {
+            // Everything shows except the letters, images and shapes of what hasn't wiped in yet:
+            // a waiting line hides its own ink, never the card behind it.
+            ZStack {
+                // Black, not the primary colour: on macOS that's only 85% opaque.
+                Rectangle().fill(.black)
+                SkeletonShape(content: ink, textAsBars: false, spread: 1.2)
+                    .mask {
+                        TimelineView(.animation) { timeline in
+                            Canvas(opaque: false, rendersAsynchronously: false) { context, _ in
+                                let t = timeline.date.timeIntervalSince(plan.start)
+                                for piece in plan.incoming {
+                                    let area = Self.area(of: piece.rect)
+                                    context.fill(Path(area), with: Self.wipe(area: area, shown: plan.amount(piece, at: t), rightToLeft: plan.rightToLeft, showing: false))
+                                }
+                            }
+                        }
+                    }
+                    .blendMode(.destinationOut)
+            }
+            .compositingGroup()
+        } else if let plan {
             TimelineView(.animation) { timeline in
                 Canvas(opaque: false, rendersAsynchronously: false) { context, size in
                     draw(plan, at: timeline.date.timeIntervalSince(plan.start), in: &context, size: size)
@@ -334,7 +340,7 @@ struct RevealMask: View {
         } else if let mask = WipeEffect.mask(spec: spec, progress: progress, role: role, shimmerAxis: shimmerAxis) {
             LinearGradient(stops: mask.stops, startPoint: mask.startPoint, endPoint: mask.endPoint)
         } else {
-            Rectangle().opacity(role == .incoming ? progress : 1 - progress)
+            Rectangle().fill(.black).opacity(role == .incoming ? progress : 1 - progress)
         }
     }
 
@@ -343,28 +349,12 @@ struct RevealMask: View {
         let incoming = role == .incoming
         let pieces = incoming ? plan.incoming : plan.outgoing
         if incoming {
-            // Everything shows except the ink of what hasn't wiped in yet: a waiting line hides
-            // its letters, never the card behind them.
+            // Without the content's ink, a waiting piece hides its whole area.
             context.fill(Path(full), with: .color(.black))
             context.blendMode = .destinationOut
             for piece in pieces {
                 let area = Self.area(of: piece.rect)
-                let waiting = Self.wipe(area: area, shown: plan.amount(piece, at: t), rightToLeft: plan.rightToLeft, showing: false)
-                context.drawLayer { layer in
-                    if let ink = plan.ink {
-                        layer.clip(to: Path(area))
-                        // Grown a point or so past the letters, so their soft edges hide too.
-                        layer.drawLayer { grown in
-                            grown.addFilter(.blur(radius: 1.2))
-                            grown.addFilter(.colorMatrix(Self.solidify))
-                            grown.draw(ink, in: CGRect(origin: .zero, size: plan.inkSize))
-                        }
-                    } else {
-                        layer.fill(Path(area), with: .color(.black))
-                    }
-                    layer.blendMode = .destinationIn
-                    layer.fill(Path(area), with: waiting)
-                }
+                context.fill(Path(area), with: Self.wipe(area: area, shown: plan.amount(piece, at: t), rightToLeft: plan.rightToLeft, showing: false))
             }
         } else {
             // The skeleton's faint traces outside its pieces go with the last piece; each bar
@@ -380,14 +370,6 @@ struct RevealMask: View {
                 context.fill(Path(area), with: left)
             }
         }
-    }
-
-    /// Black, with alpha multiplied up, so a blurred edge becomes a solid, slightly larger shape.
-    static var solidify: ColorMatrix {
-        var m = ColorMatrix()
-        m.r1 = 0; m.g2 = 0; m.b3 = 0
-        m.a4 = 6
-        return m
     }
 
     /// One edge passing along a piece: opaque on the side already revealed when `showing`, or on
@@ -442,6 +424,7 @@ struct RevealLayer: ViewModifier, Animatable {
     var spec: SkeletonReveal
     var plan: RevealPlan?
     var shimmerAxis: CGVector
+    var ink: AnyView? = nil
 
     nonisolated var animatableData: Double {
         get { progress }
@@ -450,7 +433,7 @@ struct RevealLayer: ViewModifier, Animatable {
 
     func body(content: Content) -> some View {
         content.mask {
-            RevealMask(role: role, progress: min(max(progress, 0), 1), spec: spec, plan: plan, shimmerAxis: shimmerAxis)
+            RevealMask(role: role, progress: min(max(progress, 0), 1), spec: spec, plan: plan, shimmerAxis: shimmerAxis, ink: ink)
         }
     }
 }
