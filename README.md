@@ -28,30 +28,33 @@ The full documentation, with a recording for each feature, a theme playground an
 
 ## Parity with Skullet
 
-Silhouette follows [Skullet](https://skullet.lochie.me/docs)'s design and shares no code with it. Every section of Skullet's docs:
+Silhouette follows [Skullet](https://skullet.lochie.me/docs)'s design and shares no code with it. Every Skullet feature works here too, each with a screen in the demo app:
 
-| Skullet section | Silhouette | Status |
+| Skullet | Silhouette | Demo screen |
 | --- | --- | --- |
-| Skeletons: From your component | `Skeleton(data, sample:) { }` | Full |
-| Skeletons: Plain children | `.skeleton(isLoading:)`; a view with nothing to measure draws three lines | Full |
-| Skeletons: Your own skeleton | `.placeholder { }` and `SkeletonBox` | Full |
-| Skeletons: Hints | `.skeletonBlock()`, `.skeletonIgnored()`, `.skeletonShape { }` | Full |
-| Skeletons: Memory | `id:` and `forgetSkeletonShapes()`, kept in `UserDefaults` rather than `localStorage` | Full |
-| Reveals: Reveal modes | `.smart`, `.together`, `.sequence`, `.sweep`, with the 150 ms hold | Full |
-| Reveals: Changing size | The region eases to the new height over 0.28 s | Full |
-| Reveals: Your own reveal | `SkeletonReveal(order:enter:wipe:delay:duration:hold:choose:)` with the same 1 s limits. `Enter` has blur, offset, scale and rotation but no clip path; use `wipe` for masks | Partial |
-| Reveals: Suspense | `AsyncSkeleton`: SwiftUI has no Suspense, so it runs your async work and reveals what it returns | Full |
-| Styling: Theming | `.skeletonTheme`: colours, `shimmer` / `groupShimmer` / `pulse` / `none`, speed, radius, text metrics, colour scheme. No CSS custom properties: not applicable | Full |
-| Reference: Server rendering | Not applicable: iOS has no server rendering. A skeleton is drawn in the first frame the view appears | Doesn't apply |
-| Reference: Accessibility | `label`, skeletons hidden from VoiceOver, Reduce Motion holds still and reveals at once, `onReveal` | Full |
-| Reference: Debugging | `.skeletonDebug([.outlines, .xray])`. The URL flag doesn't apply to apps | Full |
-| Reference: Data fetching | Observation, `.task`, refetching and lists | Full |
-| Reference: Web component | Not applicable: there is no DOM. A UIKit wrapper isn't built | Doesn't apply |
-| Reference: Testing | Hold the shimmer still for snapshots, UI tests, `\.isDrawingSkeleton` | Full |
-| Reference: Troubleshooting | Same problems, SwiftUI fixes | Full |
-| Reference: API | Every type, modifier and function | Full |
-| Reference: How it works | SwiftUI lays the view out; a text renderer draws each line as one bar | Full |
-| Other: Images | `SkeletonAsyncImage`: each picture shimmers until it has loaded, then wipes in as its own piece | Full |
+| <Skeleton data sample> | `Skeleton(data, sample:) { }` | From your view |
+| `loading` on plain children | `.skeleton(isLoading:)` | Any view, with a flag |
+| `.Skeleton` static, `SkeletonBox` | `.placeholder { }`, `SkeletonBox` | Your own skeleton |
+| `skullet-block`, `skullet-ignore` | `.skeletonBlock()`, `.skeletonIgnored()`, `.skeletonShape { }` | Hints |
+| Memory, `id`, `forgetShapes()` | `id:`, `forgetSkeletonShapes()` | Memory |
+| `empty`, `emptyMessage`, `error` | `.empty(_:message:)`, `.failure(_:)` | From your view |
+| Reveal modes: smart, together, sequence, sweep | `.smart`, `.together`, `.sequence`, `.sweep` (uncovers the content behind the shimmer's front) | Reveal modes, and the panel above |
+| 150 ms hold under smart | `hold`, 0.15 s | Reveal modes (Response: fast) |
+| Changing size | Eases to the new height over 0.28 s | Changing size |
+| RevealSpec `order` | `.together`, `.byPosition`, `.byRow`, `.custom { piece in }` | Your own reveal |
+| RevealSpec `enter`: filter, translate, scale, rotate, clipPath | `Enter(blur:offset:scale:rotation:clip:)` | Your own reveal: blur, unveil, zoom |
+| RevealSpec `wipe`: mask, `out`, `effect` | `.custom(_:outgoing:effect:)` | Your own reveal: wipe, focus |
+| `delay`, `duration`, `hold`, 1 s limits | Same, same limits | Your own reveal |
+| `choose` | `choose: (RevealContext) -> SkeletonReveal?` | Reveal modes (smart is built on it) |
+| Images wait behind their own skeleton | `SkeletonAsyncImage` | Images |
+| `SkeletonSuspense` | `AsyncSkeleton` | AsyncSkeleton |
+| Theme: mode, colours, animation, speed, radius, text | `.skeletonTheme`: colour scheme, colours, shimmer / groupShimmer / pulse / none, speed, radius, text metrics | Theming |
+| Accessibility: aria-busy, label, reduced motion, onReveal | Hidden skeletons, `label:`, Reduce Motion, `onReveal:` | Accessibility |
+| Debug overlay, `skullet-xray`, `setDebug()` | `.skeletonDebug([.outlines, .xray])`, `setSkeletonDebug(_:)`, a launch argument | Debugging |
+| Data fetching: pass data as it arrives | Observation, `.task`, refetch with `isLoading:` | The showcase; AsyncSkeleton |
+| Testing: instant reveals, hidden skeleton text | `-SilhouetteInstant YES`, skeletons hidden from accessibility | None; covered by unit tests |
+
+Web-only, so not carried over: server rendering (iOS has none), the web component (there is no DOM), and CSS custom properties and the CSP `nonce` (no CSS).
 
 ## For coding agents
 

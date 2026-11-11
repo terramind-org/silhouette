@@ -212,7 +212,8 @@ struct ChangingSizePage: View {
 
 struct OwnRevealPage: View {
     @State private var load = DemoLoad { Notice.real }
-    @State private var choice = "blur"
+    /// `-own unveil` opens on a reveal, for recordings.
+    @State private var choice = UserDefaults.standard.string(forKey: "own") ?? "blur"
 
     private var reveal: SkeletonReveal {
         switch choice {
@@ -221,6 +222,14 @@ struct OwnRevealPage: View {
                 let at = p * 1.2
                 return .init(stops: [.init(color: .black, location: max(0, at - 0.2)), .init(color: .clear, location: min(1, max(at, 0.001)))])
             }, duration: 0.5)
+        case "focus":
+            // A wipe down with an effect: the content clears from a blur as the front passes.
+            SkeletonReveal(wipe: .custom({ p in
+                let at = p * 1.2
+                return .init(stops: [.init(color: .black, location: max(0, at - 0.2)), .init(color: .clear, location: min(1, max(at, 0.001)))])
+            }, effect: { p in SkeletonReveal.Enter(blur: 8 * (1 - p), scale: 0.98 + 0.02 * p) }), duration: 0.6)
+        case "unveil":
+            SkeletonReveal(order: .byPosition, enter: .unveil, duration: 0.35)
         case "zoom":
             SkeletonReveal(order: .byPosition, enter: .zoom, duration: 0.3)
         default:
@@ -229,8 +238,8 @@ struct OwnRevealPage: View {
     }
 
     var body: some View {
-        DemoPage(title: "Your own reveal", note: "Every built-in is a SkeletonReveal. Start from one and change what you need: a blur-in sequence, a wipe down, a zoom.", reload: load.reload) {
-            Choice(title: "Reveal", selection: $choice, options: ["blur", "wipe", "zoom"].map { ($0, $0) })
+        DemoPage(title: "Your own reveal", note: "Every built-in is a SkeletonReveal. Start from one and change what you need: a blur-in sequence, a wipe down, a wipe that clears a blur, an unveil, a zoom.", reload: load.reload) {
+            Choice(title: "Reveal", selection: $choice, options: ["blur", "wipe", "focus", "unveil", "zoom"].map { ($0, $0) })
             Reloadable(reload: load.reload) {
                 Skeleton(load.value, sample: Notice.sample) { NotificationsCard(items: $0) }
                     .skeletonReveal(reveal)

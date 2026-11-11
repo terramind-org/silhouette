@@ -422,11 +422,14 @@ SkeletonAsyncImage(url: photo.url) { image in
       </div>
     </section>
 
-    <section id="your-own-reveal" class="demo">
+    <section id="your-own-reveal">
       <h2>Your own reveal</h2>
-      <figure class="clip">
-        <div class="screen"><video autoplay loop muted playsinline preload="metadata" width="1206" height="2622" src="../media/ownReveal.mp4" aria-label="Custom reveals: content blurring into focus piece by piece, a wipe down the card, and a slight zoom."></video></div>
-      </figure>
+      <div class="panel" data-clips="../media/own-reveal/{reveal}.mp4">
+        <div class="controls">
+          <div class="control"><span>Reveal</span><div class="segmented" role="group" aria-label="Reveal" data-key="reveal"><button type="button" data-value="blur" aria-pressed="true">blur</button><button type="button" data-value="wipe" aria-pressed="false">wipe</button><button type="button" data-value="focus" aria-pressed="false">focus</button><button type="button" data-value="unveil" aria-pressed="false">unveil</button><button type="button" data-value="zoom" aria-pressed="false">zoom</button></div></div>
+        </div>
+        <div class="stage"><video autoplay loop muted playsinline preload="auto" src="../media/own-reveal/blur.mp4" aria-label="Notifications revealing with a custom reveal: blurring in, wiping down, clearing from a blur, unveiling from the top, or zooming."></video></div>
+      </div>
       <div class="prose">
         <p>Every built-in is a <code>SkeletonReveal</code>. Start from one and change what you need:</p>
         <div class="code"><pre><code class="swift">
@@ -436,11 +439,22 @@ blurIn.enter = .blur
 ContentView()
     .skeletonReveal(blurIn)
 </code></pre></div>
+        <p>Unveil each piece from its top edge, or give a wipe an <code>effect</code> that paints the incoming content at each moment:</p>
+        <div class="code"><pre><code class="swift">
+let unveil = SkeletonReveal(order: .byPosition, enter: .unveil)
+
+let focus = SkeletonReveal(
+    wipe: .custom({ p in wipeDown(p) }, effect: { p in
+        .init(blur: 8 * (1 - p), scale: 0.98 + 0.02 * p)
+    }),
+    duration: 0.6
+)
+</code></pre></div>
         <div class="table"><table>
           <thead><tr><th>Field</th><th>Meaning</th></tr></thead>
           <tbody>
             <tr><td><code>order</code></td><td>When each piece arrives: <code>.together</code>, <code>.byPosition</code> (sequence's), <code>.byRow</code> (smart's) or <code>.custom</code> with your own delay per piece.</td></tr>
-            <tr><td><code>enter</code></td><td>Where content starts as it fades in: <code>blur</code>, <code>offset</code>, <code>scale</code> and <code>rotation</code>. Presets <code>.none</code>, <code>.blur</code>, <code>.rise</code>, <code>.zoom</code>.</td></tr>
+            <tr><td><code>enter</code></td><td>Where content starts as it fades in: <code>blur</code>, <code>offset</code>, <code>scale</code>, <code>rotation</code> and <code>clip</code>, an edge to unveil from, like a CSS clip path. Presets <code>.none</code>, <code>.blur</code>, <code>.rise</code>, <code>.zoom</code>.</td></tr>
             <tr><td><code>wipe</code></td><td>A mask across the content for each moment of the reveal: <code>.sweep</code> or <code>.custom</code>. Replaces <code>order</code>; the outgoing skeleton gets its inverse.</td></tr>
             <tr><td><code>delay</code></td><td>Seconds before the reveal starts.</td></tr>
             <tr><td><code>duration</code></td><td>Seconds each piece's wipe takes, or the whole crossfade for a reveal that comes in together. 0.25 by default; <code>0</code> is instant.</td></tr>
@@ -779,6 +793,10 @@ List(model.messages ?? Message.samples) { message in
 let name = app.staticTexts["Ada Lovelace"]
 XCTAssertTrue(name.waitForExistence(timeout: 5))
 </code></pre></div>
+        <p>Launch with <code>-SilhouetteInstant YES</code> and every reveal is instant and every skeleton holds still, so UI tests and screenshots never wait on motion:</p>
+        <div class="code"><pre><code class="swift">
+app.launchArguments += ["-SilhouetteInstant", "YES"]
+</code></pre></div>
         <p>To skip reveal animations, set the instant reveal when the app runs under UI tests:</p>
         <div class="code"><pre><code class="swift">
 ContentView()
@@ -1060,33 +1078,38 @@ ContentView()
       <h2>Parity with Skullet</h2>
       <div class="prose">
         <p>Silhouette follows <a href="https://skullet.lochie.me/docs">Skullet</a>'s design closely and shares no code with it. Here is every Skullet feature and where it stands.</p>
-        <h3 id="parity-by-section">Section by section</h3>
-        <p>Every page of Skullet's docs and its Silhouette equivalent.</p>
+        <h3 id="parity-by-section">Feature by feature</h3>
+        <p>Every Skullet feature, the Silhouette API that does the same, and the demo screen where it works.</p>
         <div class="table loose"><table>
-          <thead><tr><th>Skullet section</th><th>Silhouette</th><th>Status</th></tr></thead>
+          <thead><tr><th>Skullet</th><th>Silhouette</th><th>Demo</th><th></th></tr></thead>
           <tbody>
-            <tr><td>Skeletons: From your component</td><td><code>Skeleton(data, sample:) { }</code></td><td><span class="status full">Full</span></td></tr>
-            <tr><td>Skeletons: Plain children</td><td><code>.skeleton(isLoading:)</code>; a view with nothing to measure draws three lines</td><td><span class="status full">Full</span></td></tr>
-            <tr><td>Skeletons: Your own skeleton</td><td><code>.placeholder { }</code> and <code>SkeletonBox</code></td><td><span class="status full">Full</span></td></tr>
-            <tr><td>Skeletons: Hints</td><td><code>.skeletonBlock()</code>, <code>.skeletonIgnored()</code>, <code>.skeletonShape { }</code></td><td><span class="status full">Full</span></td></tr>
-            <tr><td>Skeletons: Memory</td><td><code>id:</code> and <code>forgetSkeletonShapes()</code>, kept in <code>UserDefaults</code> rather than <code>localStorage</code></td><td><span class="status full">Full</span></td></tr>
-            <tr><td>Reveals: Reveal modes</td><td><code>.smart</code>, <code>.together</code>, <code>.sequence</code>, <code>.sweep</code>, with the 150 ms hold</td><td><span class="status full">Full</span></td></tr>
-            <tr><td>Reveals: Changing size</td><td>The region eases to the new height over 0.28 s</td><td><span class="status full">Full</span></td></tr>
-            <tr><td>Reveals: Your own reveal</td><td><code>SkeletonReveal(order:enter:wipe:delay:duration:hold:choose:)</code> with the same 1 s limits. <code>Enter</code> has blur, offset, scale and rotation but no clip path; use <code>wipe</code> for masks</td><td><span class="status partial">Partial</span></td></tr>
-            <tr><td>Reveals: Suspense</td><td><code>AsyncSkeleton</code>: SwiftUI has no Suspense, so it runs your async work and reveals what it returns</td><td><span class="status full">Full</span></td></tr>
-            <tr><td>Styling: Theming</td><td><code>.skeletonTheme</code>: colours, <code>shimmer</code> / <code>groupShimmer</code> / <code>pulse</code> / <code>none</code>, speed, radius, text metrics, colour scheme. No CSS custom properties: not applicable</td><td><span class="status full">Full</span></td></tr>
-            <tr><td>Reference: Server rendering</td><td>Not applicable: iOS has no server rendering. A skeleton is drawn in the first frame the view appears</td><td><span class="status web">Doesn't apply</span></td></tr>
-            <tr><td>Reference: Accessibility</td><td><code>label</code>, skeletons hidden from VoiceOver, Reduce Motion holds still and reveals at once, <code>onReveal</code></td><td><span class="status full">Full</span></td></tr>
-            <tr><td>Reference: Debugging</td><td><code>.skeletonDebug([.outlines, .xray])</code>. The URL flag doesn't apply to apps</td><td><span class="status full">Full</span></td></tr>
-            <tr><td>Reference: Data fetching</td><td>Observation, <code>.task</code>, refetching and lists</td><td><span class="status full">Full</span></td></tr>
-            <tr><td>Reference: Web component</td><td>Not applicable: there is no DOM. A UIKit wrapper isn't built</td><td><span class="status web">Doesn't apply</span></td></tr>
-            <tr><td>Reference: Testing</td><td>Hold the shimmer still for snapshots, UI tests, <code>\.isDrawingSkeleton</code></td><td><span class="status full">Full</span></td></tr>
-            <tr><td>Reference: Troubleshooting</td><td>Same problems, SwiftUI fixes</td><td><span class="status full">Full</span></td></tr>
-            <tr><td>Reference: API</td><td>Every type, modifier and function</td><td><span class="status full">Full</span></td></tr>
-            <tr><td>Reference: How it works</td><td>SwiftUI lays the view out; a text renderer draws each line as one bar</td><td><span class="status full">Full</span></td></tr>
-            <tr><td>Other: Images</td><td><code>SkeletonAsyncImage</code>: each picture shimmers until it has loaded, then wipes in as its own piece</td><td><span class="status full">Full</span></td></tr>
+            <tr><td>&lt;Skeleton data sample&gt;</td><td><code>Skeleton(data, sample:) { }</code></td><td>From your view</td><td><span class="status full">Has it</span></td></tr>
+            <tr><td><code>loading</code> on plain children</td><td><code>.skeleton(isLoading:)</code></td><td>Any view, with a flag</td><td><span class="status full">Has it</span></td></tr>
+            <tr><td><code>.Skeleton</code> static, <code>SkeletonBox</code></td><td><code>.placeholder { }</code>, <code>SkeletonBox</code></td><td>Your own skeleton</td><td><span class="status full">Has it</span></td></tr>
+            <tr><td><code>skullet-block</code>, <code>skullet-ignore</code></td><td><code>.skeletonBlock()</code>, <code>.skeletonIgnored()</code>, <code>.skeletonShape { }</code></td><td>Hints</td><td><span class="status full">Has it</span></td></tr>
+            <tr><td>Memory, <code>id</code>, <code>forgetShapes()</code></td><td><code>id:</code>, <code>forgetSkeletonShapes()</code></td><td>Memory</td><td><span class="status full">Has it</span></td></tr>
+            <tr><td><code>empty</code>, <code>emptyMessage</code>, <code>error</code></td><td><code>.empty(_:message:)</code>, <code>.failure(_:)</code></td><td>From your view</td><td><span class="status full">Has it</span></td></tr>
+            <tr><td>Reveal modes: smart, together, sequence, sweep</td><td><code>.smart</code>, <code>.together</code>, <code>.sequence</code>, <code>.sweep</code> (uncovers the content behind the shimmer's front)</td><td>Reveal modes, and the panel above</td><td><span class="status full">Has it</span></td></tr>
+            <tr><td>150 ms hold under smart</td><td><code>hold</code>, 0.15 s</td><td>Reveal modes (Response: fast)</td><td><span class="status full">Has it</span></td></tr>
+            <tr><td>Changing size</td><td>Eases to the new height over 0.28 s</td><td>Changing size</td><td><span class="status full">Has it</span></td></tr>
+            <tr><td>RevealSpec <code>order</code></td><td><code>.together</code>, <code>.byPosition</code>, <code>.byRow</code>, <code>.custom { piece in }</code></td><td>Your own reveal</td><td><span class="status full">Has it</span></td></tr>
+            <tr><td>RevealSpec <code>enter</code>: filter, translate, scale, rotate, clipPath</td><td><code>Enter(blur:offset:scale:rotation:clip:)</code></td><td>Your own reveal: blur, unveil, zoom</td><td><span class="status full">Has it</span></td></tr>
+            <tr><td>RevealSpec <code>wipe</code>: mask, <code>out</code>, <code>effect</code></td><td><code>.custom(_:outgoing:effect:)</code></td><td>Your own reveal: wipe, focus</td><td><span class="status full">Has it</span></td></tr>
+            <tr><td><code>delay</code>, <code>duration</code>, <code>hold</code>, 1 s limits</td><td>Same, same limits</td><td>Your own reveal</td><td><span class="status full">Has it</span></td></tr>
+            <tr><td><code>choose</code></td><td><code>choose: (RevealContext) -&gt; SkeletonReveal?</code></td><td>Reveal modes (smart is built on it)</td><td><span class="status full">Has it</span></td></tr>
+            <tr><td>Images wait behind their own skeleton</td><td><code>SkeletonAsyncImage</code></td><td>Images</td><td><span class="status full">Has it</span></td></tr>
+            <tr><td><code>SkeletonSuspense</code></td><td><code>AsyncSkeleton</code></td><td>AsyncSkeleton</td><td><span class="status full">Has it</span></td></tr>
+            <tr><td>Theme: mode, colours, animation, speed, radius, text</td><td><code>.skeletonTheme</code>: colour scheme, colours, shimmer / groupShimmer / pulse / none, speed, radius, text metrics</td><td>Theming</td><td><span class="status full">Has it</span></td></tr>
+            <tr><td>Accessibility: aria-busy, label, reduced motion, onReveal</td><td>Hidden skeletons, <code>label:</code>, Reduce Motion, <code>onReveal:</code></td><td>Accessibility</td><td><span class="status full">Has it</span></td></tr>
+            <tr><td>Debug overlay, <code>skullet-xray</code>, <code>setDebug()</code></td><td><code>.skeletonDebug([.outlines, .xray])</code>, <code>setSkeletonDebug(_:)</code>, a launch argument</td><td>Debugging</td><td><span class="status full">Has it</span></td></tr>
+            <tr><td>Data fetching: pass data as it arrives</td><td>Observation, <code>.task</code>, refetch with <code>isLoading:</code></td><td>The showcase; AsyncSkeleton</td><td><span class="status full">Has it</span></td></tr>
+            <tr><td>Testing: instant reveals, hidden skeleton text</td><td><code>-SilhouetteInstant YES</code>, skeletons hidden from accessibility</td><td>None; covered by unit tests</td><td><span class="status full">Has it</span></td></tr>
+            <tr><td>Server rendering, styles.css import</td><td>Web only: there is no server rendering on iOS</td><td></td><td><span class="status web">Web only</span></td></tr>
+            <tr><td>Web component, <code>new Reveal()</code></td><td>Web only: there is no DOM</td><td></td><td><span class="status web">Web only</span></td></tr>
+            <tr><td>CSS custom properties, CSP <code>nonce</code></td><td>Web only: no CSS on iOS</td><td></td><td><span class="status web">Web only</span></td></tr>
           </tbody>
         </table></div>
+        <h3 id="parity-by-feature">In more detail</h3>
         <h3 id="parity-by-feature">Feature by feature</h3>
         <div class="table loose"><table>
           <thead><tr><th>Skullet</th><th>Silhouette</th><th>Status</th></tr></thead>

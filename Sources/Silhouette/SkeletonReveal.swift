@@ -101,19 +101,22 @@ public struct SkeletonReveal: Sendable {
         public static let byRow = Order.custom(RevealPiece.byRow)
     }
 
-    /// Where content starts from as it fades in. Only what paints: blur, offset, scale and
-    /// rotation. Nothing here changes layout.
+    /// Where content starts from as it fades in. Only what paints: blur, offset, scale,
+    /// rotation and a clip. Nothing here changes layout.
     public struct Enter: Sendable, Equatable {
         public var blur: CGFloat
         public var offset: CGSize
         public var scale: CGFloat
         public var rotation: Angle
+        /// Starts clipped away entirely and unveils from this edge, like a CSS `clip-path` inset.
+        public var clip: Edge?
 
-        public init(blur: CGFloat = 0, offset: CGSize = .zero, scale: CGFloat = 1, rotation: Angle = .zero) {
+        public init(blur: CGFloat = 0, offset: CGSize = .zero, scale: CGFloat = 1, rotation: Angle = .zero, clip: Edge? = nil) {
             self.blur = blur
             self.offset = offset
             self.scale = scale
             self.rotation = rotation
+            self.clip = clip
         }
 
         public static let none = Enter()
@@ -123,6 +126,8 @@ public struct SkeletonReveal: Sendable {
         public static let rise = Enter(offset: CGSize(width: 0, height: 6))
         /// Grows slightly into place.
         public static let zoom = Enter(scale: 0.97)
+        /// Unveils from the top edge down.
+        public static let unveil = Enter(clip: .top)
     }
 
     /// A mask that uncovers content across its frame as the reveal runs.
@@ -131,7 +136,9 @@ public struct SkeletonReveal: Sendable {
         case sweep
         /// Your own mask for each moment of the reveal, from progress 0 to 1. Opaque stops show
         /// the content. The outgoing skeleton gets the inverse, or its own mask if you give one.
-        case custom(@Sendable (Double) -> WipeMask, outgoing: (@Sendable (Double) -> WipeMask)? = nil)
+        /// `effect` paints the incoming content at each moment too, for example a blur that
+        /// clears as the wipe passes.
+        case custom(@Sendable (Double) -> WipeMask, outgoing: (@Sendable (Double) -> WipeMask)? = nil, effect: (@Sendable (Double) -> Enter)? = nil)
     }
 
     /// One frame of a wipe: a gradient across the content.
@@ -166,7 +173,7 @@ public struct SkeletonReveal: Sendable {
         spec.choose = nil
         spec.delay = min(max(spec.delay, 0), 1)
         spec.duration = min(max(spec.duration, 0), 1)
-        if context.reduceMotion { spec = .instant }
+        if context.reduceMotion || SkeletonTesting.isInstant { spec = .instant }
         return spec
     }
 }
@@ -270,5 +277,13 @@ extension View {
     /// Sets how content replaces its skeleton, for every skeleton below this view.
     public func skeletonReveal(_ reveal: SkeletonReveal) -> some View {
         environment(\.skeletonReveal, reveal)
+    }
+}
+
+/// For UI tests and snapshots: launch the app with `-SilhouetteInstant YES` and every reveal is
+/// instant and every skeleton holds still, so screenshots and queries never wait on motion.
+public enum SkeletonTesting {
+    nonisolated public static var isInstant: Bool {
+        UserDefaults.standard.bool(forKey: "SilhouetteInstant")
     }
 }

@@ -688,11 +688,31 @@ struct EnterEffect: ViewModifier, Animatable {
     }
 
     func body(content: Content) -> some View {
+        let shown = 1 - rest
+        let edge = enter.clip
         content
             .blur(radius: enter.blur * rest)
             .scaleEffect(1 + (enter.scale - 1) * rest)
             .rotationEffect(enter.rotation * rest)
             .offset(x: enter.offset.width * rest, y: enter.offset.height * rest)
+            // Always masked, so the content keeps its identity whichever entrance is in use.
+            .mask {
+                Rectangle().fill(.black).scaleEffect(
+                    x: edge == .leading || edge == .trailing ? shown : 1,
+                    y: edge == .top || edge == .bottom ? shown : 1,
+                    anchor: Self.anchor(for: edge)
+                )
+            }
+    }
+
+    static func anchor(for edge: Edge?) -> UnitPoint {
+        switch edge {
+        case .top: .top
+        case .bottom: .bottom
+        case .leading: .leading
+        case .trailing: .trailing
+        case nil: .center
+        }
     }
 }
 
@@ -709,10 +729,22 @@ struct RevealLayer: ViewModifier, Animatable {
         set { progress = newValue }
     }
 
+    /// A custom wipe's `effect` on the incoming content at this moment.
+    private var effect: SkeletonReveal.Enter {
+        guard role == .incoming, case .custom(_, _, let effect?) = spec.wipe else { return .none }
+        return effect(min(max(progress, 0), 1))
+    }
+
     func body(content: Content) -> some View {
-        content.mask {
-            RevealMask(role: role, progress: min(max(progress, 0), 1), spec: spec, plan: plan, shimmerAxis: shimmerAxis)
-        }
+        let effect = effect
+        content
+            .blur(radius: effect.blur)
+            .scaleEffect(effect.scale)
+            .rotationEffect(effect.rotation)
+            .offset(effect.offset)
+            .mask {
+                RevealMask(role: role, progress: min(max(progress, 0), 1), spec: spec, plan: plan, shimmerAxis: shimmerAxis)
+            }
     }
 }
 
@@ -724,7 +756,7 @@ enum WipeEffect {
         var mask: SkeletonReveal.WipeMask
         switch spec.wipe {
         case .sweep: mask = sweep(progress: p, axis: shimmerAxis)
-        case .custom(let make, let outgoing):
+        case .custom(let make, let outgoing, _):
             if role == .outgoing, let outgoing { return outgoing(p) }
             mask = make(p)
         case nil: return nil

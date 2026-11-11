@@ -247,4 +247,20 @@ final class RevealTests: XCTestCase {
         // Frames drawn on time keep time.
         XCTAssertEqual(clock.time(at: start.addingTimeInterval(0.5 + 1 / 60), start: start), 2 / 60 + RevealClock.longestStep, accuracy: 0.001)
     }
+
+    func testTheTestingSwitchMakesEveryRevealInstant() {
+        UserDefaults.standard.set(true, forKey: "SilhouetteInstant")
+        defer { UserDefaults.standard.removeObject(forKey: "SilhouetteInstant") }
+        let context = RevealContext(skeletonShownFor: 2, size: CGSize(width: 300, height: 200), isRefetch: false, isInteracting: false, reduceMotion: false)
+        XCTAssertEqual(SkeletonReveal.smart.resolved(for: context).duration, 0)
+        XCTAssertEqual(ShimmerFill.animation(for: SkeletonTheme(), reduceMotion: false), SkeletonAnimation.none)
+    }
+
+    func testAWipeEffectIsAskedForEachMoment() {
+        let wipe = SkeletonReveal.Wipe.custom({ _ in .init(stops: []) }, effect: { p in .init(blur: 8 * (1 - p)) })
+        guard case .custom(_, _, let effect?) = wipe else { return XCTFail("no effect") }
+        XCTAssertEqual(effect(0).blur, 8)
+        XCTAssertEqual(effect(1).blur, 0)
+        XCTAssertEqual(SkeletonReveal.Enter.unveil.clip, .top)
+    }
 }

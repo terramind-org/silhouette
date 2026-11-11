@@ -72,6 +72,7 @@ struct ShimmerFill: View {
 
     /// Under Reduce Motion skeletons hold still, unless the theme asks for a quiet pulse.
     nonisolated static func animation(for theme: SkeletonTheme, reduceMotion: Bool) -> SkeletonAnimation {
+        if SkeletonTesting.isInstant { return .none }
         guard reduceMotion, theme.animation != .none else { return theme.animation }
         return theme.reducedMotion == .pulse ? .pulse : .none
     }
