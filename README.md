@@ -5,7 +5,8 @@ Skeleton loading states for SwiftUI, traced from your real layout.
 While your data loads, Silhouette lays out your own view with sample data, unseen, and draws a skeleton in exactly its shape: a bar for each line of text as it wraps, a block for each image, control and painted shape. Every skeleton on screen shimmers in step. When the data arrives, the content replaces its skeleton in place, so nothing on the page moves.
 
 <p align="center">
-  <img src="docs/media/loading-to-loaded.gif" width="320" alt="A profile card, a feed and a dashboard shimmer as skeletons, then their content fades in where the skeletons were.">
+  <img src="docs/media/loading-to-loaded.gif" width="300" alt="A profile card and an article shimmer as skeletons in their exact shape, then their content fades in where the skeletons were.">
+  <img src="docs/media/loading-to-loaded-dark.gif" width="300" alt="The same cards loading in dark mode.">
 </p>
 
 - **No second skeleton to maintain.** The skeleton *is* your view. Change the view and the skeleton follows.
@@ -92,6 +93,11 @@ For work that's under way, such as an AI tool call, shimmer the line itself. It 
 ShimmerText("Looking at your sleep")
 Text(call.title).shimmer(call.isRunning)
 ```
+
+<p align="center">
+  <img src="docs/media/own-loading.png" width="260" alt="A chart drawn as twelve skeleton bars of rising height, and a round SkeletonBox beside two lines.">
+  <img src="docs/media/debug.png" width="260" alt="The debug overlay: a card outlined in red, labelled moved +66pt, and one in green, labelled no move.">
+</p>
 
 ## Hints
 
