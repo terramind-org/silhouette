@@ -599,6 +599,7 @@ Sidebar()
           <tbody>
             <tr><td><code>light</code>, <code>dark</code></td><td>A <code>SkeletonColors(base:highlight:)</code> for each colour scheme. Light is black at 7% with a white highlight at 60%; dark is white at 8% with white at 10%, which suits a true-black page. <code>SkeletonColors.tinted(_:base:highlight:)</code> builds both from one colour.</td></tr>
             <tr><td><code>colorScheme</code></td><td>Forces light or dark skeleton colours. <code>nil</code>, the default, follows the system.</td></tr>
+            <tr><td><code>reducedMotion</code></td><td>What skeletons do under Reduce Motion: <code>.holdStill</code> (the default) shows the base colour with nothing moving; <code>.pulse</code> breathes quietly in place instead.</td></tr>
             <tr><td><code>animation</code></td><td><code>.shimmer</code> (one band across the whole screen), <code>.groupShimmer</code> (a band across each region, edge to edge), <code>.pulse</code> or <code>.none</code>.</td></tr>
             <tr><td><code>speed</code></td><td><code>.slow</code> (default), <code>.normal</code>, <code>.fast</code> or <code>.seconds(_:)</code>. A shimmer loop takes 4, 3 or 2 seconds across a 1280-point screen and keeps that pace on any width; a pulse takes 2.4, 1.8 or 1.2 seconds.</td></tr>
             <tr><td><code>direction</code></td><td><code>.angle(.degrees(20))</code> by default, measured clockwise from left to right. Also <code>.leadingToTrailing</code>, <code>.trailingToLeading</code>, <code>.topToBottom</code>, <code>.bottomToTop</code>. Mirrored in right-to-left languages.</td></tr>
@@ -658,7 +659,7 @@ ShimmerText(isActive: call.isRunning) {
 Text(call.title)
     .shimmer(call.isRunning)
 </code></pre></div>
-        <p><code>.shimmer(_:)</code> works on any view, not only text. Under Reduce Motion it breathes gently instead of sweeping.</p>
+                <p><code>.shimmer(_:)</code> works on any view, not only text. Under Reduce Motion it rests at its quiet tone and holds still, or breathes gently if the theme's <code>reducedMotion</code> is <code>.pulse</code>.</p>
       </div>
     </section>
 
@@ -676,7 +677,7 @@ Text(call.title)
           <li>While loading, a region is one VoiceOver element that reads its label, "Loading" by default, and never the sample. Pass <code>label:</code> to say what's loading: <code>label: Text("Loading profile")</code>.</li>
           <li>Skeletons are hidden from VoiceOver and from hit testing, and the hidden content can't be tapped.</li>
           <li>Once content has come in, Silhouette posts a layout-changed notification. Use <code>onReveal</code> to move focus yourself, for example with <code>@AccessibilityFocusState</code>.</li>
-          <li>Under Reduce Motion the shimmer becomes a slower, gentler pulse, and every reveal is instant.</li>
+                    <li>Under Reduce Motion skeletons hold still and every reveal is instant. Set the theme's <code>reducedMotion</code> to <code>.pulse</code> for a quiet pulse in place instead.</li>
           <li>Skeletons follow Dynamic Type, because they are traced from your text as it's laid out at the current size. <code>SkeletonBox</code> heights in <code>.em</code> scale too.</li>
           <li>Right-to-left layouts mirror, and so does the shimmer's direction.</li>
         </ul>
@@ -814,8 +815,8 @@ ContentView()
         <details><summary>Content animates in while I'm scrolling</summary><div>
           <p>Add <code>.skeletonTracksScrolling()</code> to the scroll view so <code>.smart</code> can see the scroll and reveal at once. It needs iOS 18 or the matching releases.</p>
         </div></details>
-        <details><summary>The shimmer is a pulse, and reveals don't animate</summary><div>
-          <p>Reduce Motion is on. That's deliberate: the band becomes a gentle pulse and reveals are instant.</p>
+        <details><summary>Skeletons hold still, and reveals don't animate</summary><div>
+          <p>Reduce Motion is on. That's deliberate: skeletons hold still and reveals are instant. For a quiet pulse instead, set <code>reducedMotion: .pulse</code> on the theme.</p>
         </div></details>
       </div>
     </section>
@@ -944,6 +945,7 @@ ContentView()
             <tr><td><code>radius</code></td><td><code>SkeletonRadius</code></td><td><code>.auto</code></td></tr>
             <tr><td><code>text</code></td><td><code>SkeletonTextMetrics</code></td><td>cap height to descender</td></tr>
             <tr><td><code>colorScheme</code></td><td><code>ColorScheme?</code></td><td><code>nil</code>: follows the system</td></tr>
+            <tr><td><code>reducedMotion</code></td><td><code>SkeletonReducedMotion</code></td><td><code>.holdStill</code>; or <code>.pulse</code></td></tr>
           </tbody>
         </table></div>
         <div class="table"><table>
@@ -1082,7 +1084,7 @@ ContentView()
             <tr><td>Custom properties per element</td><td><code>.skeletonTheme { }</code> on any view</td><td><span class="status full">Full</span></td></tr>
             <tr><td>Debug overlay, x-ray, <code>setDebug</code>, <code>?skullet-debug</code></td><td><code>.skeletonDebug</code>, <code>setSkeletonDebug</code>, <code>-SilhouetteDebug</code></td><td><span class="status full">Full</span></td></tr>
             <tr><td><code>aria-busy</code>, hidden skeleton, label</td><td>One VoiceOver element, skeleton hidden</td><td><span class="status full">Full</span></td></tr>
-            <tr><td>Reduced motion: skeletons hold still, reveals instant</td><td>A gentle pulse; reveals instant</td><td><span class="status partial">Partial</span><br>A slow pulse instead of stillness, by choice.</td></tr>
+            <tr><td>Reduced motion: skeletons hold still, reveals instant</td><td>The same; a quiet pulse is an opt-in (<code>reducedMotion: .pulse</code>)</td><td><span class="status full">Full</span></td></tr>
             <tr><td><code>useReveal()</code></td><td><code>@Environment(\.skeletonReveal)</code></td><td><span class="status full">Full</span></td></tr>
             <tr><td>Testing in jsdom</td><td>XCUITest and snapshot guidance</td><td><span class="status full">Full</span></td></tr>
             <tr><td>Server rendering</td><td>&mdash;</td><td><span class="status web">Web-only</span><br>There's no server HTML in a SwiftUI app.</td></tr>
@@ -1110,6 +1112,7 @@ ContentView()
           <ul>
             <li>Reveals cascade piece by piece: rows in screen order across every region that lands together, smaller text a beat behind. New orders <code>.byPosition</code>, <code>.byRow</code> and <code>.custom</code>.</li>
             <li>The shimmer keeps one pace on any screen width, slanted at 20 degrees by default.</li>
+            <li>Under Reduce Motion skeletons hold still, as Skullet's do. A quiet pulse is an opt-in: <code>reducedMotion: .pulse</code>.</li>
             <li><code>.skeletonTracksScrolling()</code>, so content landing mid-scroll appears at once.</li>
             <li>Reloading content goes straight to its skeleton, with no blank beat.</li>
             <li>Under Reduce Motion every reveal is instant.</li>

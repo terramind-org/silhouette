@@ -3,8 +3,8 @@ import SwiftUI
 /// One line of text with a highlight passing over its letters, for work that's under way.
 ///
 /// Use it for a single loading line, such as an AI tool call that's running. It shares the
-/// skeletons' clock, so it shimmers in step with them, and it breathes gently under Reduce
-/// Motion.
+/// skeletons' clock, so it shimmers in step with them. Under Reduce Motion it rests at its
+/// quiet tone, or breathes in place if the theme's `reducedMotion` is `.pulse`.
 ///
 /// ```swift
 /// ShimmerText("Looking at your sleep")

@@ -117,7 +117,7 @@ ContentView()
     .skeletonReveal(.smart)                            // default
 ```
 
-- Theme fields: `light`/`dark` `SkeletonColors(base:highlight:)` (or `.tinted(color)`), `animation` (`.shimmer`, `.groupShimmer`, `.pulse`, `.none`), `speed` (`.slow` default), `direction`, `bandWidth`, `radius` (`.auto`, `.points`, `.pill`), `text`, `colorScheme`.
+- Theme fields: `light`/`dark` `SkeletonColors(base:highlight:)` (or `.tinted(color)`), `animation` (`.shimmer`, `.groupShimmer`, `.pulse`, `.none`), `speed` (`.slow` default), `direction`, `bandWidth`, `radius` (`.auto`, `.points`, `.pill`), `text`, `colorScheme`, `reducedMotion` (`.holdStill` default, or `.pulse`).
 - Text bars default to cap height → descender. If lines merge in a dense list: `.skeletonText(SkeletonTextMetrics(top: .xHeight, bottom: .baseline))`.
 - Reveals: `.smart` (default), `.together`, `.sequence`, `.sweep`, `.instant`. Custom: start from one and change `order` (`.together`, `.byPosition`, `.byRow`, `.custom { piece in delay }`), `enter` (`.blur`, `.rise`, `.zoom`), `wipe`, `delay`, `duration` (per piece, 0.2 s), `hold`, `choose`. Times cap at 1 s; Reduce Motion makes every reveal instant.
 
@@ -125,7 +125,7 @@ ContentView()
 
 - Pass `label: Text("Loading profile")` to every `Skeleton`, `.skeleton` and `AsyncSkeleton` that covers a meaningful region. The loading region is one VoiceOver element reading that label.
 - Use `onReveal:` to move focus (`@AccessibilityFocusState`) when the loaded content is the point of the screen.
-- Nothing else to do: skeletons are hidden from VoiceOver and hit testing, follow Dynamic Type, RTL and Reduce Motion.
+- Nothing else to do: skeletons are hidden from VoiceOver and hit testing, follow Dynamic Type, RTL and Reduce Motion (they hold still and reveals are instant; opt into a quiet pulse with `reducedMotion: .pulse`).
 
 ## Testing
 

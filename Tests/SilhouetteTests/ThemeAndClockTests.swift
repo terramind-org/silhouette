@@ -24,6 +24,21 @@ final class ThemeAndClockTests: XCTestCase {
         XCTAssertEqual(SkeletonSpeed.seconds(0.01).shimmerLoop, 0.2, "a loop never collapses to nothing")
     }
 
+    func testReduceMotionHoldsStillByDefault() {
+        let theme = SkeletonTheme()
+        XCTAssertEqual(theme.reducedMotion, .holdStill)
+        XCTAssertEqual(ShimmerFill.animation(for: theme, reduceMotion: true), SkeletonAnimation.none)
+        XCTAssertEqual(ShimmerFill.animation(for: theme, reduceMotion: false), .shimmer)
+    }
+
+    func testReduceMotionCanOptIntoAQuietPulse() {
+        var theme = SkeletonTheme(animation: .groupShimmer)
+        theme.reducedMotion = .pulse
+        XCTAssertEqual(ShimmerFill.animation(for: theme, reduceMotion: true), .pulse)
+        theme.animation = .none
+        XCTAssertEqual(ShimmerFill.animation(for: theme, reduceMotion: true), SkeletonAnimation.none, "a still theme stays still")
+    }
+
     func testShimmerKeepsOnePaceOnAnyWidth() {
         // One loop crosses a 1280-point screen in 70% of its time, whatever the screen's width.
         XCTAssertEqual(ShimmerFill.pace(speed: .slow), 1280 / (0.7 * 4), accuracy: 1e-6)

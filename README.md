@@ -208,6 +208,7 @@ CompactList().skeletonText(SkeletonTextMetrics(top: .xHeight, bottom: .baseline)
 | --- | --- |
 | `light`, `dark` | The base fill and the highlight, per colour scheme. `SkeletonColors.tinted(_:)` builds both from one colour. |
 | `colorScheme` | Force light or dark skeletons; `nil` follows the system. |
+| `reducedMotion` | What skeletons do under Reduce Motion: `.holdStill` (default) or a quiet `.pulse`. |
 | `animation` | `.shimmer`, `.groupShimmer` (a band per region), `.pulse` or `.none`. |
 | `speed` | `.slow`, `.normal`, `.fast` or `.seconds(_:)`. |
 | `direction` | `.leadingToTrailing` (follows right-to-left languages), `.trailingToLeading`, `.topToBottom`, `.bottomToTop` or `.angle(_:)`. |
@@ -220,7 +221,7 @@ CompactList().skeletonText(SkeletonTextMetrics(top: .xHeight, bottom: .baseline)
 - While loading, a region is one VoiceOver element that reads its label ("Loading" by default) and never the sample. Pass `label:` to say what's loading.
 - Skeletons are hidden from VoiceOver and from hit testing.
 - `onReveal` runs once the content has come in, for example to move accessibility focus. Silhouette also posts a layout-changed notification.
-- Under Reduce Motion the shimmer becomes a gentle pulse and every reveal is instant.
+- Under Reduce Motion skeletons hold still and every reveal is instant, as Skullet does. Set the theme's `reducedMotion` to `.pulse` for a quiet pulse in place instead.
 - Skeletons follow Dynamic Type, because they are traced from the text as it's laid out.
 
 ## Debugging

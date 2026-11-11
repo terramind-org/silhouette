@@ -293,7 +293,7 @@ struct AccessibilityPage: View {
     @State private var load = DemoLoad { Person.real }
 
     var body: some View {
-        DemoPage(title: "Accessibility", note: "While loading, VoiceOver reads one element, “Loading profile”, and never the sample. Reduce Motion holds the shimmer to a gentle pulse and makes reveals instant. The skeleton follows Dynamic Type.", reload: load.reload) {
+        DemoPage(title: "Accessibility", note: "While loading, VoiceOver reads one element, “Loading profile”, and never the sample. Under Reduce Motion skeletons hold still and reveals are instant. The skeleton follows Dynamic Type.", reload: load.reload) {
             Reloadable(reload: load.reload) {
                 Skeleton(load.value, sample: .sample, label: Text("Loading profile")) { ProfileCard(person: $0) }
             }

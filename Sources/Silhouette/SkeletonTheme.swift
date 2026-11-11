@@ -32,6 +32,8 @@ public struct SkeletonTheme: Sendable, Equatable {
     public var text: SkeletonTextMetrics
     /// Forces light or dark colours for skeletons. `nil` follows the system.
     public var colorScheme: ColorScheme?
+    /// What skeletons do when Reduce Motion is on. They hold still by default.
+    public var reducedMotion: SkeletonReducedMotion
 
     public init(
         light: SkeletonColors = .defaultLight,
@@ -42,7 +44,8 @@ public struct SkeletonTheme: Sendable, Equatable {
         bandWidth: CGFloat? = nil,
         radius: SkeletonRadius = .auto,
         text: SkeletonTextMetrics = SkeletonTextMetrics(),
-        colorScheme: ColorScheme? = nil
+        colorScheme: ColorScheme? = nil,
+        reducedMotion: SkeletonReducedMotion = .holdStill
     ) {
         self.light = light
         self.dark = dark
@@ -53,6 +56,7 @@ public struct SkeletonTheme: Sendable, Equatable {
         self.radius = radius
         self.text = text
         self.colorScheme = colorScheme
+        self.reducedMotion = reducedMotion
     }
 
     /// The theme skeletons use when you set none.
@@ -99,6 +103,14 @@ public enum SkeletonAnimation: Sendable, Equatable, CaseIterable {
     case pulse
     /// Skeletons hold still.
     case none
+}
+
+/// What skeletons do when Reduce Motion is on.
+public enum SkeletonReducedMotion: Sendable, Equatable, Hashable, CaseIterable {
+    /// Skeletons hold still: the base colour, with no highlight moving over it.
+    case holdStill
+    /// A slow, quiet pulse in place of any travelling band. Nothing moves across the screen.
+    case pulse
 }
 
 /// How fast skeletons move.

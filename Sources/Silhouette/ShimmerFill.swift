@@ -66,12 +66,14 @@ struct ShimmerFill: View {
         .allowsHitTesting(false)
     }
 
-    /// Reduce Motion turns any travelling band into a gentle pulse.
     private var effectiveAnimation: SkeletonAnimation {
-        switch theme.animation {
-        case .shimmer, .groupShimmer: reduceMotion ? .pulse : theme.animation
-        case .pulse, .none: theme.animation
-        }
+        Self.animation(for: theme, reduceMotion: reduceMotion)
+    }
+
+    /// Under Reduce Motion skeletons hold still, unless the theme asks for a quiet pulse.
+    nonisolated static func animation(for theme: SkeletonTheme, reduceMotion: Bool) -> SkeletonAnimation {
+        guard reduceMotion, theme.animation != .none else { return theme.animation }
+        return theme.reducedMotion == .pulse ? .pulse : .none
     }
 
     private var bandWidth: CGFloat {
