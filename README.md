@@ -1,0 +1,240 @@
+# Silhouette
+
+Skeleton loading states for SwiftUI, traced from your real layout.
+
+While your data loads, Silhouette lays out your own view with sample data, unseen, and draws a skeleton in exactly its shape: a bar for each line of text as it wraps, a block for each image, control and painted shape. Every skeleton on screen shimmers in step. When the data arrives, the content replaces its skeleton in place, so nothing on the page moves.
+
+<p align="center">
+  <img src="docs/media/loading-to-loaded.gif" width="320" alt="A profile card, a feed and a dashboard shimmer as skeletons, then their content fades in where the skeletons were.">
+</p>
+
+- **No second skeleton to maintain.** The skeleton *is* your view. Change the view and the skeleton follows.
+- **One shimmer.** Every skeleton keeps time by the same clock and its place on screen, however late it appeared.
+- **No layout jump.** The content was laid out in the skeleton's place all along. New data of a different size eases to its height.
+- **Native.** Dynamic Type, light and dark mode, Reduce Motion, VoiceOver and right-to-left layouts all work out of the box.
+
+Requires iOS 17, macOS 14, tvOS 17, watchOS 10 or visionOS 1. Text is traced from the real glyph metrics on iOS 18, macOS 15, tvOS 18, watchOS 11 and visionOS 2 and later; earlier systems draw lines the way SwiftUI redacts text.
+
+## Install
+
+Add the package in Xcode (**File → Add Package Dependencies…**) or in `Package.swift`:
+
+```swift
+.package(url: "https://github.com/terramind-org/silhouette.git", from: "0.1.0")
+```
+
+```swift
+.target(name: "App", dependencies: [.product(name: "Silhouette", package: "silhouette")])
+```
+
+## Usage
+
+### From your view and a sample
+
+Pass the data, `nil` while it loads, and a sample of it. Your view is built from the sample, traced, and only ever receives real data on screen.
+
+```swift
+import Silhouette
+
+Skeleton(user, sample: .sample) { user in
+    ProfileCard(user: user)
+}
+```
+
+Give the sample typical lengths: a name of a usual length, a bio that wraps like a real one. In debug builds, a `Skeleton` without a sample logs one to paste, with your data's shape and every value replaced.
+
+### Any view, with a flag
+
+Build the view however you like and say when it's loading:
+
+```swift
+ProfileCard(user: user ?? .sample)
+    .skeleton(isLoading: user == nil)
+```
+
+Regions nest. Put the modifier on just the part that loads for partial loading; an inner region loads on its own once its outer one has revealed.
+
+### Async work
+
+`AsyncSkeleton` runs the work, shows the skeleton while it waits and reveals in place. Change `trigger` to load again; the old content stays on screen while it does.
+
+```swift
+AsyncSkeleton(sample: Quote.sample) {
+    try await api.quoteOfTheDay()
+} content: { quote in
+    QuoteCard(quote: quote)
+}
+```
+
+### Empty and error states
+
+```swift
+Skeleton(messages, sample: Message.samples) { Inbox(messages: $0) }
+    .empty(messages?.isEmpty == true) { Text("No messages yet") }
+    .failure(error) { error in ErrorView(error) }
+```
+
+### Remote images
+
+Images never hold back a reveal. Each one keeps shimmering in its frame until it has loaded, then fades in.
+
+```swift
+SkeletonAsyncImage(url: photo.url) { $0.resizable().scaledToFill() }
+    .frame(width: 120, height: 120)
+    .clipShape(.rect(cornerRadius: 12))
+```
+
+### A single loading line
+
+For work that's under way, such as an AI tool call, shimmer the line itself. It shares the skeletons' clock.
+
+```swift
+ShimmerText("Looking at your sleep")
+Text(call.title).shimmer(call.isRunning)
+```
+
+## Hints
+
+Tracing gets most views right. Where it doesn't, mark the view:
+
+```swift
+Chart(points).skeletonBlock(cornerRadius: 8)   // one block, not traced
+Text("New").skeletonIgnored()                 // left out of the skeleton
+Avatar(user).skeletonShape { Circle() }       // your own skeleton shape
+SkeletonBox(width: 40, height: 40, radius: .pill)  // a standalone placeholder
+```
+
+Surfaces in the page's own colour, such as a white card in light mode or a black one in dark, are treated as containers: a card traces as its lines and pictures, not as one block. For a container with any other background, mark the background with `skeletonIgnored()`:
+
+```swift
+content
+    .background { RoundedRectangle(cornerRadius: 20).fill(.cardBackground).skeletonIgnored() }
+```
+
+A traced copy of your view is laid out to draw its skeleton. If a view starts work in `.task` or `.onAppear`, skip it in that copy:
+
+```swift
+@Environment(\.isDrawingSkeleton) private var isDrawingSkeleton
+...
+.task { if !isDrawingSkeleton { await model.load() } }
+```
+
+## Reveals
+
+A reveal is the moment content replaces its skeleton. Set one for everything below a view:
+
+```swift
+ContentView().skeletonReveal(.smart)
+```
+
+| Reveal | What it does |
+| --- | --- |
+| `.smart` | The default. Instant if the data lands within 150 ms (the skeleton never shows), a crossfade for something small or a refetch, a top-to-bottom sequence for the rest. |
+| `.together` | Crossfades the whole skeleton into the content. |
+| `.sequence` | Brings the content in where its skeleton was, top to bottom, rising slightly. |
+| `.sweep` | Uncovers the content behind the shimmer's front, in its direction. |
+| `.instant` | Swaps at once. |
+
+Every reveal is a `SkeletonReveal`. Start from one and change what you need:
+
+```swift
+var blurIn = SkeletonReveal.sequence
+blurIn.enter = .init(blur: 6)
+
+let wipeDown = SkeletonReveal(wipe: .custom { progress in
+    let at = progress * 1.2
+    return .init(stops: [.init(color: .black, location: max(0, at - 0.2)),
+                         .init(color: .clear, location: max(at, 0.001))])
+}, duration: 0.4)
+```
+
+| Field | Meaning |
+| --- | --- |
+| `order` | `.together`, `.sequence(axis:spread:)`, or `.custom` with your own delay for each position along an axis. |
+| `enter` | Where content starts as it fades in: `blur`, `offset`, `scale`, `rotation`. Presets `.blur`, `.rise`, `.zoom`. |
+| `wipe` | A mask across the content for each moment of the reveal; the outgoing skeleton gets its inverse. `.sweep` follows the shimmer. |
+| `delay`, `duration` | In seconds, each capped at one second. `0` is instant. |
+| `hold` | How long a skeleton waits before it shows, so fast data never shows one. |
+| `choose` | Decides as the content lands, from how long the skeleton was up, the content's size and whether it's a refetch. |
+
+A reveal can't move the page. Under Reduce Motion every reveal is a short crossfade.
+
+## Theming
+
+```swift
+ContentView()
+    .skeletonTheme(SkeletonTheme(
+        light: .init(base: .black.opacity(0.08), highlight: .white.opacity(0.55)),
+        dark: .init(base: .white.opacity(0.10), highlight: .white.opacity(0.10)),
+        animation: .shimmer,
+        speed: .slow,
+        direction: .angle(.degrees(20)),
+        radius: .pill,
+        text: .init(top: .capHeight, bottom: .descender)
+    ))
+
+Sidebar().skeletonTheme { $0.speed = .fast }   // change one option for one part
+```
+
+| Option | Values |
+| --- | --- |
+| `light`, `dark` | The base fill and the highlight, per colour scheme. `SkeletonColors.tinted(_:)` builds both from one colour. |
+| `colorScheme` | Force light or dark skeletons; `nil` follows the system. |
+| `animation` | `.shimmer`, `.groupShimmer` (a band per region), `.pulse` or `.none`. |
+| `speed` | `.slow`, `.normal`, `.fast` or `.seconds(_:)`. |
+| `direction` | `.leadingToTrailing` (follows right-to-left languages), `.trailingToLeading`, `.topToBottom`, `.bottomToTop` or `.angle(_:)`. |
+| `bandWidth` | The width of the shimmer's highlight. |
+| `radius` | How round each line of text is: `.auto`, `.points(_:)` or `.pill`. |
+| `text` | How much of each line is drawn: from `ascender`, `capHeight` or `xHeight` down to `descender` or `baseline`. Cap height to descender by default, since SwiftUI sets lines with no extra leading. |
+
+## Accessibility
+
+- While loading, a region is one VoiceOver element that reads its label ("Loading" by default) and never the sample. Pass `label:` to say what's loading.
+- Skeletons are hidden from VoiceOver and from hit testing.
+- `onReveal` runs once the content has come in, for example to move accessibility focus. Silhouette also posts a layout-changed notification.
+- Under Reduce Motion the shimmer becomes a gentle pulse and every reveal a short crossfade.
+- Skeletons follow Dynamic Type, because they are traced from the text as it's laid out.
+
+## Debugging
+
+```swift
+content.skeletonDebug(.outlines)     // or .all to add x-ray
+```
+
+Or launch with `-SilhouetteDebug YES` (`xray` for x-ray too), or call `setSkeletonDebug(.outlines)`. Each loading region is outlined: blue while it loads, labelled with where its skeleton came from; then green if nothing moved when the content arrived, or red with how far it moved. X-ray shows the hidden content faintly through its skeleton.
+
+## Memory
+
+With an `id`, a reveal remembers what it showed, so the next skeleton is exact. Within a launch it keeps the real data. Across launches, for `Codable` data, it keeps only the layout: a copy with every letter, digit and number replaced by a placeholder of the same length, in `UserDefaults`.
+
+```swift
+Skeleton(messages, sample: Message.samples, id: "inbox") { Inbox(messages: $0) }
+
+forgetSkeletonShapes()   // on sign-out
+```
+
+## Testing
+
+Skeletons are hidden from accessibility, so UI tests that query by accessibility label or identifier skip them. While a region loads, its content is hidden from accessibility too; wait for the real content's label. To skip reveals in UI tests, set `.skeletonReveal(.instant)`.
+
+## The demo app
+
+`Demo/` has an app with a page for every feature, each beside the part of Skullet it mirrors. Open `Demo/SilhouetteDemo.xcodeproj` and run it on an iPhone simulator or a Mac. The project is generated from `Demo/project.yml` with [XcodeGen](https://github.com/yonaskolb/XcodeGen); CI checks it's up to date.
+
+## How it works
+
+1. **Layout by SwiftUI.** Your content renders in place from the closest data there is, at opacity 0, so every size and line break is SwiftUI's own.
+2. **A traced copy.** A second copy is laid out in the same space and drawn into a canvas. Text is drawn by a `TextRenderer` as one bar per line, trimmed to the font's metrics; everything else draws as it is.
+3. **Coverage.** The canvas measures how far each pixel is from the page's colour, so anything painted becomes solid and page-coloured surfaces drop out. That shape masks the skeleton fill.
+4. **One clock.** The fill's highlight is positioned by the wall clock and the skeleton's place on screen, so every skeleton shimmers as one.
+5. **The reveal.** The content fades, wipes or rises in over the skeleton in the space it already held.
+
+The closest data is the data on screen, the data last shown under the same `id`, a shape remembered from an earlier launch, then your sample.
+
+## Acknowledgements
+
+Silhouette is a native take on the ideas in [Skullet](https://skullet.lochie.me) by Lochie Axon, a skeleton library for the web. It shares no code with it.
+
+## Licence
+
+MIT. See [LICENSE](LICENSE).

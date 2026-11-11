@@ -1,0 +1,55 @@
+name: CI
+
+on:
+  push:
+    branches: [main]
+  pull_request:
+
+concurrency:
+  group: ${{ github.workflow }}-${{ github.ref }}
+  cancel-in-progress: true
+
+jobs:
+  test-macos:
+    name: Test (macOS)
+    runs-on: macos-15
+    steps:
+      - uses: actions/checkout@v4
+      - name: Select Xcode
+        run: sudo xcode-select -s /Applications/Xcode_16.4.app || true
+      - run: swift --version
+      - name: Build and test
+        run: swift test
+
+  build-platforms:
+    name: Build (${{ matrix.platform }})
+    runs-on: macos-15
+    strategy:
+      fail-fast: false
+      matrix:
+        platform: [iOS Simulator, watchOS Simulator, tvOS Simulator, visionOS Simulator]
+    steps:
+      - uses: actions/checkout@v4
+      - name: Select Xcode
+        run: sudo xcode-select -s /Applications/Xcode_16.4.app || true
+      - name: Build
+        run: |
+          xcodebuild build -scheme Silhouette \
+            -destination "generic/platform=${{ matrix.platform }}" \
+            -skipMacroValidation | xcpretty || exit ${PIPESTATUS[0]}
+
+  demo:
+    name: Demo app
+    runs-on: macos-15
+    steps:
+      - uses: actions/checkout@v4
+      - name: Select Xcode
+        run: sudo xcode-select -s /Applications/Xcode_16.4.app || true
+      - name: Check the generated project is up to date
+        run: |
+          brew install xcodegen
+          cd Demo && xcodegen generate && git diff --exit-code -- SilhouetteDemo.xcodeproj
+      - name: Build
+        run: |
+          xcodebuild build -project Demo/SilhouetteDemo.xcodeproj -scheme SilhouetteDemo \
+            -destination "generic/platform=iOS Simulator" | xcpretty || exit ${PIPESTATUS[0]}
