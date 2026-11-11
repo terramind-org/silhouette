@@ -36,12 +36,31 @@ enum PieceTracer {
         let renderer = ImageRenderer(content: view
             .environment(\.self, env)
             .environment(\.colorScheme, env.colorScheme)
+            .foregroundStyle(dark ? Color.white : Color.black)
             .frame(width: size.width, height: size.height, alignment: .topLeading)
             .background(dark ? Color.black : Color.white))
         renderer.proposedSize = ProposedViewSize(size)
         renderer.scale = scale
-        guard let image = renderer.cgImage, let mask = coverage(of: image, page: dark ? 0 : 1) else { return nil }
+        // Offscreen, colours that follow light and dark mode resolve against the current
+        // appearance, not the environment's, so render under the page's own.
+        guard let image = inAppearance(dark: dark, { renderer.cgImage }),
+              let mask = coverage(of: image, page: dark ? 0 : 1) else { return nil }
         return Image(decorative: mask, scale: scale)
+    }
+
+    @MainActor
+    static func inAppearance<T>(dark: Bool, _ body: () -> T) -> T {
+        #if canImport(UIKit) && !os(watchOS)
+        var result: T?
+        UITraitCollection(userInterfaceStyle: dark ? .dark : .light).performAsCurrent { result = body() }
+        return result!
+        #elseif canImport(AppKit) && !targetEnvironment(macCatalyst)
+        var result: T?
+        NSAppearance(named: dark ? .darkAqua : .aqua)?.performAsCurrentDrawingAppearance { result = body() }
+        return result ?? body()
+        #else
+        return body()
+        #endif
     }
 
     /// Alpha for every pixel by how far its luminance is from the page's, grown by two pixels.
