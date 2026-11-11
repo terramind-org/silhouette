@@ -9,6 +9,11 @@ While your data loads, Silhouette lays out your own view with sample data, unsee
   <img src="docs/media/loading-to-loaded-dark.gif" width="300" alt="The same cards loading in dark mode.">
 </p>
 
+<p align="center">
+  <img src="docs/media/comments-dark.png" width="300" alt="A comments card with three comments, avatars as initials on gradients, likes and reply links.">
+  <img src="docs/media/cards-light.png" width="300" alt="A profile header with a cover, avatar, bio and follower counts, above a feed post.">
+</p>
+
 - **No second skeleton to maintain.** The skeleton *is* your view. Change the view and the skeleton follows.
 - **One shimmer.** Every skeleton keeps time by the same clock and its place on screen, however late it appeared.
 - **No layout jump.** The content was laid out in the skeleton's place all along. New data of a different size eases to its height.
@@ -19,6 +24,34 @@ Requires iOS 17, macOS 14, tvOS 17, watchOS 10 or visionOS 1. Text is traced fro
 ## Docs
 
 The full documentation, with a recording for each feature, a theme playground and the API reference, is in [`docs/`](docs/): open [`docs/index.html`](docs/index.html) or serve the folder (`python3 -m http.server -d docs`). It's a static site with no build step.
+
+
+## Parity with Skullet
+
+Silhouette follows [Skullet](https://skullet.lochie.me/docs)'s design and shares no code with it. Every section of Skullet's docs:
+
+| Skullet section | Silhouette | Status |
+| --- | --- | --- |
+| Skeletons: From your component | `Skeleton(data, sample:) { }` | Full |
+| Skeletons: Plain children | `.skeleton(isLoading:)`; a view with nothing to measure draws three lines | Full |
+| Skeletons: Your own skeleton | `.placeholder { }` and `SkeletonBox` | Full |
+| Skeletons: Hints | `.skeletonBlock()`, `.skeletonIgnored()`, `.skeletonShape { }` | Full |
+| Skeletons: Memory | `id:` and `forgetSkeletonShapes()`, kept in `UserDefaults` rather than `localStorage` | Full |
+| Reveals: Reveal modes | `.smart`, `.together`, `.sequence`, `.sweep`, with the 150 ms hold | Full |
+| Reveals: Changing size | The region eases to the new height over 0.28 s | Full |
+| Reveals: Your own reveal | `SkeletonReveal(order:enter:wipe:delay:duration:hold:choose:)` with the same 1 s limits. `Enter` has blur, offset, scale and rotation but no clip path; use `wipe` for masks | Partial |
+| Reveals: Suspense | `AsyncSkeleton`: SwiftUI has no Suspense, so it runs your async work and reveals what it returns | Full |
+| Styling: Theming | `.skeletonTheme`: colours, `shimmer` / `groupShimmer` / `pulse` / `none`, speed, radius, text metrics, colour scheme. No CSS custom properties: not applicable | Full |
+| Reference: Server rendering | Not applicable: iOS has no server rendering. A skeleton is drawn in the first frame the view appears | Doesn't apply |
+| Reference: Accessibility | `label`, skeletons hidden from VoiceOver, Reduce Motion holds still and reveals at once, `onReveal` | Full |
+| Reference: Debugging | `.skeletonDebug([.outlines, .xray])`. The URL flag doesn't apply to apps | Full |
+| Reference: Data fetching | Observation, `.task`, refetching and lists | Full |
+| Reference: Web component | Not applicable: there is no DOM. A UIKit wrapper isn't built | Doesn't apply |
+| Reference: Testing | Hold the shimmer still for snapshots, UI tests, `\.isDrawingSkeleton` | Full |
+| Reference: Troubleshooting | Same problems, SwiftUI fixes | Full |
+| Reference: API | Every type, modifier and function | Full |
+| Reference: How it works | SwiftUI lays the view out; a text renderer draws each line as one bar | Full |
+| Other: Images | `SkeletonAsyncImage`: each picture shimmers until it has loaded, then wipes in as its own piece | Full |
 
 ## For coding agents
 
@@ -267,3 +300,10 @@ Silhouette is a native take on the ideas in [Skullet](https://skullet.lochie.me)
 ## Licence
 
 MIT. See [LICENSE](LICENSE).
+
+---
+
+<p>
+  <img src="docs/assets/terramind-mark.png" width="16" height="16" alt="">
+  Silhouette by <a href="https://terramind.com">Terramind</a>. Designed and built in <a href="https://nucleus.terramind.com">Nucleus</a>, Terramind's agent workspace.
+</p>

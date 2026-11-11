@@ -5,9 +5,8 @@
   <meta name="viewport" content="width=device-width, initial-scale=1">
   <title>Docs: Silhouette</title>
   <meta name="description" content="How to add skeleton loading states to a SwiftUI app with Silhouette: skeletons from your own views, reveals, theming, accessibility, debugging and the full API.">
-  <meta name="color-scheme" content="light dark">
-  <meta name="theme-color" content="#fbfbfd" media="(prefers-color-scheme: light)">
-  <meta name="theme-color" content="#000000" media="(prefers-color-scheme: dark)">
+  <meta name="color-scheme" content="dark">
+  <meta name="theme-color" content="#000000">
   <link rel="icon" href="../assets/mark.svg" type="image/svg+xml">
   <link rel="stylesheet" href="../assets/site.css">
 </head>
@@ -339,11 +338,15 @@ func signOut() async {
 
     <p class="part">Reveals</p>
 
-    <section id="reveal-modes" class="demo">
+    <section id="reveal-modes">
       <h2>Reveal modes</h2>
-      <figure class="clip">
-        <div class="screen"><video autoplay loop muted playsinline preload="metadata" width="1206" height="2622" src="../media/reveals.mp4" aria-label="The same feed revealing four ways: all at once, piece by piece, row by row and behind a diagonal sweep."></video></div>
-      </figure>
+      <div class="panel" data-clips="../media/reveal-modes/{reveal}-{response}.mp4">
+        <div class="controls">
+          <div class="control"><span>Reveal</span><div class="segmented" role="group" aria-label="Reveal" data-key="reveal"><button type="button" data-value="together" aria-pressed="false">together</button><button type="button" data-value="sequence" aria-pressed="false">sequence</button><button type="button" data-value="smart" aria-pressed="true">smart</button><button type="button" data-value="sweep" aria-pressed="false">sweep</button></div></div>
+          <div class="control"><span>Response</span><div class="segmented" role="group" aria-label="Response" data-key="response"><button type="button" data-value="fast" aria-pressed="false">fast</button><button type="button" data-value="typical" aria-pressed="true">typical</button><button type="button" data-value="slow" aria-pressed="false">slow</button></div></div>
+        </div>
+        <div class="stage"><video autoplay loop muted playsinline preload="auto" src="../media/reveal-modes/smart-typical.mp4" aria-label="Comments and notifications loading, then revealing with the chosen mode."></video></div>
+      </div>
       <div class="prose">
         <p>A reveal is the moment content replaces its skeleton. Set one for every skeleton below a view:</p>
         <div class="code"><pre><code class="swift">
@@ -1057,6 +1060,34 @@ ContentView()
       <h2>Parity with Skullet</h2>
       <div class="prose">
         <p>Silhouette follows <a href="https://skullet.lochie.me/docs">Skullet</a>'s design closely and shares no code with it. Here is every Skullet feature and where it stands.</p>
+        <h3 id="parity-by-section">Section by section</h3>
+        <p>Every page of Skullet's docs and its Silhouette equivalent.</p>
+        <div class="table loose"><table>
+          <thead><tr><th>Skullet section</th><th>Silhouette</th><th>Status</th></tr></thead>
+          <tbody>
+            <tr><td>Skeletons: From your component</td><td><code>Skeleton(data, sample:) { }</code></td><td><span class="status full">Full</span></td></tr>
+            <tr><td>Skeletons: Plain children</td><td><code>.skeleton(isLoading:)</code>; a view with nothing to measure draws three lines</td><td><span class="status full">Full</span></td></tr>
+            <tr><td>Skeletons: Your own skeleton</td><td><code>.placeholder { }</code> and <code>SkeletonBox</code></td><td><span class="status full">Full</span></td></tr>
+            <tr><td>Skeletons: Hints</td><td><code>.skeletonBlock()</code>, <code>.skeletonIgnored()</code>, <code>.skeletonShape { }</code></td><td><span class="status full">Full</span></td></tr>
+            <tr><td>Skeletons: Memory</td><td><code>id:</code> and <code>forgetSkeletonShapes()</code>, kept in <code>UserDefaults</code> rather than <code>localStorage</code></td><td><span class="status full">Full</span></td></tr>
+            <tr><td>Reveals: Reveal modes</td><td><code>.smart</code>, <code>.together</code>, <code>.sequence</code>, <code>.sweep</code>, with the 150 ms hold</td><td><span class="status full">Full</span></td></tr>
+            <tr><td>Reveals: Changing size</td><td>The region eases to the new height over 0.28 s</td><td><span class="status full">Full</span></td></tr>
+            <tr><td>Reveals: Your own reveal</td><td><code>SkeletonReveal(order:enter:wipe:delay:duration:hold:choose:)</code> with the same 1 s limits. <code>Enter</code> has blur, offset, scale and rotation but no clip path; use <code>wipe</code> for masks</td><td><span class="status partial">Partial</span></td></tr>
+            <tr><td>Reveals: Suspense</td><td><code>AsyncSkeleton</code>: SwiftUI has no Suspense, so it runs your async work and reveals what it returns</td><td><span class="status full">Full</span></td></tr>
+            <tr><td>Styling: Theming</td><td><code>.skeletonTheme</code>: colours, <code>shimmer</code> / <code>groupShimmer</code> / <code>pulse</code> / <code>none</code>, speed, radius, text metrics, colour scheme. No CSS custom properties: not applicable</td><td><span class="status full">Full</span></td></tr>
+            <tr><td>Reference: Server rendering</td><td>Not applicable: iOS has no server rendering. A skeleton is drawn in the first frame the view appears</td><td><span class="status web">Doesn't apply</span></td></tr>
+            <tr><td>Reference: Accessibility</td><td><code>label</code>, skeletons hidden from VoiceOver, Reduce Motion holds still and reveals at once, <code>onReveal</code></td><td><span class="status full">Full</span></td></tr>
+            <tr><td>Reference: Debugging</td><td><code>.skeletonDebug([.outlines, .xray])</code>. The URL flag doesn't apply to apps</td><td><span class="status full">Full</span></td></tr>
+            <tr><td>Reference: Data fetching</td><td>Observation, <code>.task</code>, refetching and lists</td><td><span class="status full">Full</span></td></tr>
+            <tr><td>Reference: Web component</td><td>Not applicable: there is no DOM. A UIKit wrapper isn't built</td><td><span class="status web">Doesn't apply</span></td></tr>
+            <tr><td>Reference: Testing</td><td>Hold the shimmer still for snapshots, UI tests, <code>\.isDrawingSkeleton</code></td><td><span class="status full">Full</span></td></tr>
+            <tr><td>Reference: Troubleshooting</td><td>Same problems, SwiftUI fixes</td><td><span class="status full">Full</span></td></tr>
+            <tr><td>Reference: API</td><td>Every type, modifier and function</td><td><span class="status full">Full</span></td></tr>
+            <tr><td>Reference: How it works</td><td>SwiftUI lays the view out; a text renderer draws each line as one bar</td><td><span class="status full">Full</span></td></tr>
+            <tr><td>Other: Images</td><td><code>SkeletonAsyncImage</code>: each picture shimmers until it has loaded, then wipes in as its own piece</td><td><span class="status full">Full</span></td></tr>
+          </tbody>
+        </table></div>
+        <h3 id="parity-by-feature">Feature by feature</h3>
         <div class="table loose"><table>
           <thead><tr><th>Skullet</th><th>Silhouette</th><th>Status</th></tr></thead>
           <tbody>
@@ -1133,6 +1164,11 @@ ContentView()
       </div>
     </section>
 
+
+    <footer class="byline">
+      <img src="../assets/terramind-mark.png" alt="" width="18" height="18">
+      <span>Silhouette by <a href="https://terramind.com">Terramind</a>. Designed and built in <a href="https://nucleus.terramind.com">Nucleus</a>, Terramind's agent workspace.</span>
+    </footer>
   </article>
 
   <footer class="footer" style="margin-top:72px">

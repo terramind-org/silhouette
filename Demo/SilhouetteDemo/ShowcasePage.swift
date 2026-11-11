@@ -6,6 +6,10 @@ import SwiftUI
 struct ShowcasePage: View {
     @State private var hero = DemoLoad { true }
     @State private var person = DemoLoad { Person.real }
+    @State private var header = DemoLoad(latency: 0.95) { ProfileHeader.real }
+    @State private var post = DemoLoad(latency: 1.05) { FeedPost.real() }
+    @State private var comments = DemoLoad(latency: 1.1) { Comment.real }
+    @State private var listing = DemoLoad(latency: 1.15) { Listing.real() }
     @State private var article = DemoLoad { Article.withPicture() }
     @State private var chat = DemoLoad { ChatThread.real }
     @State private var notices = DemoLoad { Notice.real }
@@ -25,6 +29,10 @@ struct ShowcasePage: View {
                     .padding(.bottom, 18)
 
                 card(person.reload) { Skeleton(person.value, sample: .sample) { ProfileRowCard(person: $0) } }
+                card(header.reload) { Skeleton(header.value, sample: .sample) { ProfileHeaderCard(profile: $0) } }
+                card(post.reload) { Skeleton(post.value, sample: .sample) { FeedPostCard(post: $0) } }
+                card(comments.reload) { Skeleton(comments.value, sample: Comment.sample) { CommentsCard(comments: $0) } }
+                card(listing.reload) { Skeleton(listing.value, sample: .sample) { ListingCard(listing: $0) } }
                 card(article.reload) { Skeleton(article.value, sample: .sample) { ArticleCard(article: $0, imageURL: galleryURL($0.picture)) } }
                 card(chat.reload) { Skeleton(chat.value, sample: .sample) { ChatCard(thread: $0) } }
                 card(notices.reload) { Skeleton(notices.value, sample: Notice.sample) { NotificationsCard(items: $0) } }
@@ -64,7 +72,7 @@ struct ShowcasePage: View {
     }
 
     private func reloadAll() {
-        [hero.reload, person.reload, article.reload, chat.reload, notices.reload, track.reload, stats.reload, gallery.reload, holdings.reload, settings.reload].forEach { $0() }
+        [hero.reload, person.reload, header.reload, post.reload, comments.reload, listing.reload, article.reload, chat.reload, notices.reload, track.reload, stats.reload, gallery.reload, holdings.reload, settings.reload].forEach { $0() }
     }
 }
 

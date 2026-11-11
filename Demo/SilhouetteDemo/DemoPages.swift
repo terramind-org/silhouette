@@ -154,7 +154,9 @@ struct MemoryPage: View {
 struct RevealModesPage: View {
     @State private var chat = DemoLoad(latency: 1) { ChatThread.real }
     @State private var notices = DemoLoad(latency: 1.05) { Notice.real }
-    @State private var mode = "smart"
+    @State private var comments = DemoLoad(latency: 0.95) { Comment.real }
+    /// `-mode sweep` opens on a mode, for recordings.
+    @State private var mode = UserDefaults.standard.string(forKey: "mode") ?? "smart"
 
     private var reveal: SkeletonReveal {
         switch mode {
@@ -165,7 +167,7 @@ struct RevealModesPage: View {
         }
     }
 
-    private func reload() { chat.reload(); notices.reload() }
+    private func reload() { comments.reload(); chat.reload(); notices.reload() }
 
     var body: some View {
         DemoPage(title: "Reveal modes", note: "How content replaces its skeleton. Under smart, data that lands within 150 ms shows at once: set the response to fast to see it.", reload: reload) {
@@ -173,6 +175,7 @@ struct RevealModesPage: View {
             ResponsePicker()
             Reloadable(reload: reload) {
                 VStack(spacing: 14) {
+                    Skeleton(comments.value, sample: Comment.sample) { CommentsCard(comments: $0) }
                     Skeleton(notices.value, sample: Notice.sample) { NotificationsCard(items: $0) }
                     Skeleton(chat.value, sample: .sample) { ChatCard(thread: $0) }
                 }

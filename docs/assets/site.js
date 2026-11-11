@@ -217,3 +217,24 @@
     videos.forEach(function (v) { io.observe(v); });
   }
 })();
+
+// Live panels: segmented controls choose between pre-recorded clips.
+(function () {
+  document.querySelectorAll(".panel[data-clips]").forEach(function (panel) {
+    var video = panel.querySelector("video");
+    var choice = {};
+    panel.querySelectorAll(".segmented").forEach(function (group) {
+      var pressed = group.querySelector('[aria-pressed="true"]');
+      choice[group.dataset.key] = pressed ? pressed.dataset.value : "";
+      group.addEventListener("click", function (event) {
+        var button = event.target.closest("button");
+        if (!button) return;
+        group.querySelectorAll("button").forEach(function (b) { b.setAttribute("aria-pressed", String(b === button)); });
+        choice[group.dataset.key] = button.dataset.value;
+        var src = panel.dataset.clips.replace(/\{(\w+)\}/g, function (_, key) { return choice[key]; });
+        video.src = src;
+        video.play().catch(function () {});
+      });
+    });
+  });
+})();

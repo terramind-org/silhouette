@@ -168,3 +168,7 @@ Turn it on while adopting: `.skeletonDebug(.outlines)` on the root, `setSkeleton
 - [ ] `forgetSkeletonShapes()` is called on sign-out.
 - [ ] With the debug overlay on, every region reveals green "no move" in light and dark, at a large Dynamic Type size too.
 - [ ] Debug overlay code removed; the project builds.
+
+---
+
+Silhouette by Terramind (https://terramind.com). Designed and built in Nucleus, Terramind's agent workspace (https://nucleus.terramind.com).
