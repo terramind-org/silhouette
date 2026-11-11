@@ -30,11 +30,13 @@ struct Article: Codable, Hashable {
     var summary: String
     var author: String
     var readTime: String
+    /// The picture comes with the data, so it starts loading only once the data is here.
+    var picture: Int? = nil
 
     static let sample = Article(
-        title: "A headline of usual length",
-        summary: "A standfirst that runs to about two lines, the way a real one does on a phone screen.",
-        author: "Sample Author", readTime: "4 min read"
+        title: "A headline, about this",
+        summary: "A standfirst of the usual length, about as long as the real one, so it wraps to two lines.",
+        author: "Sample Name", readTime: "4 min read"
     )
     static let real = Article(
         title: "Designing for the wait",
@@ -54,11 +56,11 @@ struct ChatThread: Codable, Hashable {
     var initials: String
     var messages: [ChatMessage]
 
-    static let sample = ChatThread(name: "Sample", initials: "SA", messages: [
-        ChatMessage(id: 0, text: "A question of a typical length?", mine: true),
+    static let sample = ChatThread(name: "Sam", initials: "SA", messages: [
+        ChatMessage(id: 0, text: "A question about this long, as long as a real one?", mine: true),
         ChatMessage(id: 1, text: "A reply of about this length", mine: false),
-        ChatMessage(id: 2, text: "A longer reply that runs across a couple of lines in the bubble", mine: false),
-        ChatMessage(id: 3, text: "Short one", mine: true),
+        ChatMessage(id: 2, text: "and a longer reply that wraps onto a second line in its bubble, too", mine: false),
+        ChatMessage(id: 3, text: "Okay", mine: true),
     ])
     static let real = ChatThread(name: "Ada", initials: "AL", messages: [
         ChatMessage(id: 0, text: "Wait, how does it know how long the text is?", mine: true),

@@ -41,8 +41,9 @@ public func forgetSkeletonShapes() {
 
 /// Keeps the layout of a value and drops its content.
 ///
-/// Letters become `n` or `N`, digits `0`, numbers keep their digit count, and spaces and
-/// punctuation stay, so text wraps and numbers take nearly the same width as the real thing.
+/// Letters become a letter of the same width, digits `0`, numbers keep their digit count, and
+/// spaces and punctuation stay, so text wraps where the real text did and numbers take the same
+/// width.
 enum ShapeScrubber {
     static func scrub<Value: Encodable>(_ value: Value) throws -> Data {
         let encoded = try JSONEncoder().encode(value)
@@ -71,10 +72,24 @@ enum ShapeScrubber {
     static func scrub(string: String) -> String {
         String(string.map { c -> Character in
             if c.isNumber { return "0" }
-            if c.isLetter { return c.isUppercase ? "N" : "n" }
+            if c.isLetter { return stand(in: c) }
             return c
         })
     }
+
+    /// A letter of about the same width in the system font, so remembered text wraps where the
+    /// real text did: narrow letters stay narrow, wide ones wide, and nothing stays readable.
+    static func stand(in c: Character) -> Character {
+        for (letters, stand) in widths where letters.contains(c) { return stand }
+        return c.isUppercase ? "N" : "a"
+    }
+
+    private static let widths: [(Set<Character>, Character)] = [
+        (Set("ijl"), "l"), (Set("frt"), "t"), (Set("acekszvxy"), "a"), (Set("bdghnopqu"), "n"),
+        (Set("m"), "m"), (Set("w"), "w"),
+        (Set("IJ"), "I"), (Set("EFLSTZ"), "E"), (Set("M"), "M"), (Set("W"), "W"),
+        (Set("ABCDGHKNOPQRUVXY"), "N"),
+    ]
 
     static func scrub(number: NSNumber) -> NSNumber {
         let value = number.doubleValue

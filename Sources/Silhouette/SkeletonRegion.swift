@@ -43,11 +43,12 @@ struct SkeletonRegion<Content: View, Placeholder: View>: View {
     @Environment(\.layoutDirection) private var layoutDirection
     @Environment(\.accessibilityReduceMotion) private var reduceMotion
 
-    /// 0 shows the skeleton, 1 the content. Animated for crossfades and wipes.
+    /// How visible the content is: 0 under its skeleton, 1 revealed. Animated for crossfades,
+    /// wipes and the fade back to a skeleton on reload.
     @State private var progress: Double
     /// 1 at the start of an entrance, 0 once arrived.
     @State private var enterRest: Double = 0
-    /// Whether the skeleton has waited out the reveal's hold and is showing.
+    /// Whether the skeleton is showing: past the reveal's hold, or back after a reload.
     @State private var held = false
     @State private var heldSince: Date?
     @State private var hasRevealed = false
@@ -55,12 +56,17 @@ struct SkeletonRegion<Content: View, Placeholder: View>: View {
     @State private var spec = SkeletonReveal.together
     @State private var plan: RevealPlan?
     @State private var frame: CGRect = .zero
+    /// The content's own height, measured inside the pinned frame.
+    @State private var naturalHeight: CGFloat?
+    /// While loading, the region keeps its skeleton's height, so data arriving can't move the
+    /// page before the reveal starts; afterwards the pin lets go, eased.
+    @State private var pinnedHeight: CGFloat?
     @State private var sizeWhileLoading: CGSize?
     @State private var moved: CGFloat?
     @State private var revealID = 0
-    /// Holds the region at the skeleton's height for a moment, so new content of another size
-    /// eases to its height instead of snapping.
-    @State private var heldHeight: CGFloat?
+
+    /// How long content takes to fade back to its skeleton on reload, and the skeleton to come in.
+    static var exitFade: Double { 0.22 }
 
     init(content: Content, placeholder: Placeholder?, isLoading: Bool, source: SkeletonSource, label: Text?, onReveal: (() -> Void)?) {
         self.content = content
@@ -93,11 +99,11 @@ struct SkeletonRegion<Content: View, Placeholder: View>: View {
         theme.direction.unitVector(layoutDirection: layoutDirection)
     }
 
-    /// While loading, the content is never visible, whatever a reveal left behind; x-ray shows
-    /// it faintly.
+    /// The content's visibility. While loading it is only ever fading out (after a reload), or
+    /// faint under x-ray.
     private var incomingProgress: Double {
         guard isLoading else { return progress }
-        return debug.contains(.xray) ? 0.3 : 0
+        return max(progress, debug.contains(.xray) ? 0.3 : 0)
     }
 
     private var showsSkeleton: Bool {
@@ -106,18 +112,22 @@ struct SkeletonRegion<Content: View, Placeholder: View>: View {
 
     private var region: some View {
         content
+            .onGeometryChange(for: CGFloat.self) { $0.size.height } action: { height in
+                naturalHeight = height
+                if isLoading { pinnedHeight = height }
+            }
             .modifier(EnterEffect(enter: spec.enter, rest: enterRest))
             .modifier(RevealLayer(progress: incomingProgress, role: .incoming, spec: spec, plan: isLoading ? nil : plan, shimmerAxis: shimmerAxis))
             .accessibilityHidden(isLoading)
             .allowsHitTesting(!isLoading)
-            // Only the height animates; what's inside changes at once, unseen, so the sample
-            // never crossfades into the real content.
-            .frame(height: heldHeight, alignment: .top)
+            // The content changes at once, unseen; only this frame eases from the skeleton's
+            // height to the content's, so nothing crossfades and the page never jumps.
+            .frame(height: pinnedHeight, alignment: .top)
             .overlay(alignment: .topLeading) {
                 if showsSkeleton {
                     skeletonLayer
                         .modifier(RevealLayer(progress: progress, role: .outgoing, spec: spec, plan: plan, shimmerAxis: shimmerAxis))
-                        .transition(hasRevealed ? .identity : .opacity.animation(.easeOut(duration: 0.2)))
+                        .transition(.opacity.animation(.easeOut(duration: Self.exitFade)))
                 }
             }
             .overlay {
@@ -156,21 +166,26 @@ struct SkeletonRegion<Content: View, Placeholder: View>: View {
             }
     }
 
-    // MARK: Phases
+    // MARK: Loading
 
     private func waitOutHold() async {
         guard isLoading, !held else { return }
-        // The hold keeps a fast first load from flashing a skeleton. (Content that was already on
-        // screen goes straight to its skeleton in `startLoading`.)
+        // The hold keeps a fast first load from flashing a skeleton. (After a reload the skeleton
+        // comes back in `startLoading`, once the content has faded out.)
+        guard !hasRevealed else { return }
         let hold = min(max(reveal.hold, 0), 1)
         if hold > 0 {
             try? await Task.sleep(for: .seconds(hold))
             guard !Task.isCancelled, isLoading, !held else { return }
         }
+        showSkeleton()
+        warnIfUnsized()
+    }
+
+    private func showSkeleton() {
         held = true
         heldSince = Date()
         sizeWhileLoading = frame.size
-        warnIfUnsized()
     }
 
     private func startLoading() {
@@ -181,50 +196,47 @@ struct SkeletonRegion<Content: View, Placeholder: View>: View {
         withTransaction(transaction) {
             isRevealing = false
             plan = nil
-            progress = 0
             enterRest = 0
-            // Content that was on screen goes straight to its skeleton, with no blank beat.
-            held = hasRevealed
+            pinnedHeight = naturalHeight
         }
-        if held {
-            heldSince = Date()
-            sizeWhileLoading = frame.size
+        guard hasRevealed else {
+            withTransaction(transaction) { progress = 0 }
+            return
+        }
+        guard !reduceMotion else {
+            withTransaction(transaction) { progress = 0 }
+            showSkeleton()
+            return
+        }
+        // Content that was on screen fades off its skeleton, which comes up underneath it as it
+        // goes, so the page never empties.
+        showSkeleton()
+        withAnimation(.easeInOut(duration: Self.exitFade)) {
+            progress = 0
         }
     }
+
+    // MARK: Revealing
 
     private func finishLoading() {
         let wasShowing = held
         let screen = ScreenBounds.current
-        // The pieces the skeleton showed, and the pieces of what replaces it.
-        let skeletonPieces: [CGRect] = wasShowing ? tracePieces(of: placeholder.map { AnyView($0) } ?? AnyView(content), size: sizeWhileLoading ?? frame.size) : []
+        revealID += 1
+        let id = revealID
+        let isRefetch = hasRevealed
+        hasRevealed = true
         let context = RevealContext(
             skeletonShownFor: wasShowing ? heldSince.map { Date().timeIntervalSince($0) } : nil,
             size: frame.size,
-            pieces: skeletonPieces.count,
-            isRefetch: hasRevealed,
+            isRefetch: isRefetch,
             isInteracting: SkeletonInput.isInteracting,
             reduceMotion: reduceMotion
         )
-        let resolved = reveal.resolved(for: context)
-        hasRevealed = true
-        revealID += 1
-        let id = revealID
-        easeToNewHeight(from: wasShowing ? sizeWhileLoading?.height : nil)
-
-        let done = {
-            guard id == revealID else { return }
-            isRevealing = false
-            held = false
-            plan = nil
-            if let before = sizeWhileLoading {
-                moved = frame.size.height - before.height
-                warnIfMoved(by: moved ?? 0)
-            }
-            if wasShowing {
-                onReveal?()
-                AccessibilityNotification.LayoutChanged().post()
-            }
-        }
+        // A cascade still needs to know how many pieces there are, for `choose`.
+        let skeletonPieces: [CGRect] = wasShowing ? tracePieces(of: placeholder.map { AnyView($0) } ?? AnyView(content), size: sizeWhileLoading ?? frame.size) : []
+        var counted = context
+        counted.pieces = skeletonPieces.count
+        let resolved = reveal.resolved(for: counted)
 
         guard wasShowing, resolved.duration > 0 else {
             var transaction = Transaction()
@@ -233,85 +245,121 @@ struct SkeletonRegion<Content: View, Placeholder: View>: View {
                 spec = resolved
                 progress = 1
                 enterRest = 0
+                held = false
+                pinnedHeight = nil
             }
-            done()
+            done(id: id, revealed: wasShowing)
             return
         }
 
         if case .custom(let order) = resolved.order, resolved.wipe == nil {
-            // Ordered: each piece fades in where its skeleton was, on the shared clock.
+            // Ordered: hold the skeleton until every reveal landing alongside this one is in,
+            // then each piece wipes in on one cascade down the page.
+            let region = frame
             let contentPieces = tracePieces(of: content, size: frame.size)
-            let next = RevealPlan.make(
-                order: order,
-                content: contentPieces,
-                skeleton: skeletonPieces,
-                region: frame,
-                screen: screen,
-                late: RevealBatch.join(),
-                delay: resolved.delay,
-                fade: resolved.duration
-            )
+            let ink = PieceTracer.ink(of: content, size: frame.size, environment: environment, scale: environment.displayScale)
             var transaction = Transaction()
             transaction.disablesAnimations = true
             withTransaction(transaction) {
                 spec = resolved
-                plan = next
-                progress = 1
-                enterRest = resolved.enter == .none ? 0 : 1
                 isRevealing = true
+                progress = 0
             }
-            if resolved.enter != .none {
-                withAnimation(.timingCurve(0.25, 0.1, 0.25, 1, duration: next.end)) { enterRest = 0 }
-            }
+            let global = (contentPieces + skeletonPieces).map { $0.offsetBy(dx: region.minX, dy: region.minY) }
             Task { @MainActor in
+                let pageRows = await RevealBatch.join(global)
+                guard id == revealID else { return }
+                let next = RevealPlan.make(
+                    order: order,
+                    content: contentPieces,
+                    skeleton: skeletonPieces,
+                    region: region,
+                    screen: screen,
+                    pageRows: pageRows,
+                    delay: resolved.delay,
+                    fade: resolved.duration,
+                    rightToLeft: layoutDirection == .rightToLeft,
+                    ink: ink,
+                    inkScale: environment.displayScale
+                )
+                withTransaction(transaction) {
+                    plan = next
+                    progress = 1
+                    enterRest = resolved.enter == .none ? 0 : 1
+                }
+                if resolved.enter != .none {
+                    withAnimation(.timingCurve(0.25, 0.1, 0.25, 1, duration: next.end)) { enterRest = 0 }
+                }
+                releaseHeight()
                 try? await Task.sleep(for: .seconds(next.end + 0.05))
-                done()
+                guard id == revealID else { return }
+                finish(id: id)
             }
             return
         }
 
         // Together, or a wipe: one animated progress.
         var duration = resolved.duration
+        var chosen = resolved
         if case .sweep = resolved.wipe {
             // At the shimmer's pace; content taller than a screen and a half crossfades instead.
             if frame.height > screen.height * 1.5 {
-                var crossfade = resolved
-                crossfade.wipe = nil
-                crossfade.order = .together
-                return run(crossfade, duration: 0.2, done: done)
+                chosen.wipe = nil
+                chosen.order = .together
+                duration = 0.2
+            } else {
+                let pace = ShimmerFill.pace(speed: theme.speed)
+                duration = min(max(ShimmerFill.extent(of: frame.size, along: shimmerAxis) / pace, 0.25), 1)
             }
-            let pace = ShimmerFill.pace(speed: theme.speed)
-            duration = min(max(ShimmerFill.extent(of: frame.size, along: shimmerAxis) / pace, 0.25), 1)
         }
-        run(resolved, duration: duration, done: done)
-    }
-
-    private func run(_ resolved: SkeletonReveal, duration: Double, done: @escaping () -> Void) {
         var transaction = Transaction()
         transaction.disablesAnimations = true
         withTransaction(transaction) {
-            spec = resolved
+            spec = chosen
             plan = nil
-            enterRest = resolved.enter == .none ? 0 : 1
+            enterRest = chosen.enter == .none ? 0 : 1
             isRevealing = true
         }
-        let curve = Animation.timingCurve(0.25, 0.1, 0.25, 1, duration: duration).delay(resolved.delay)
+        releaseHeight()
+        let curve = Animation.timingCurve(0.25, 0.1, 0.25, 1, duration: duration).delay(chosen.delay)
         withAnimation(curve) {
             progress = 1
             enterRest = 0
         } completion: {
-            done()
+            guard id == revealID else { return }
+            finish(id: id)
         }
     }
 
-    /// Pins the region at the skeleton's height, then lets it go, eased, to the content's own.
-    private func easeToNewHeight(from height: CGFloat?) {
-        guard let height, !reduceMotion else { return }
+    /// Lets the pinned height go, easing to the content's own.
+    private func releaseHeight() {
+        guard pinnedHeight != nil else { return }
+        if reduceMotion {
+            pinnedHeight = nil
+        } else {
+            withAnimation(.timingCurve(0.2, 0, 0, 1, duration: 0.28)) { pinnedHeight = nil }
+        }
+    }
+
+    private func finish(id: Int) {
         var transaction = Transaction()
         transaction.disablesAnimations = true
-        withTransaction(transaction) { heldHeight = height }
-        Task { @MainActor in
-            withAnimation(.timingCurve(0.2, 0, 0, 1, duration: 0.28)) { heldHeight = nil }
+        withTransaction(transaction) {
+            isRevealing = false
+            held = false
+            plan = nil
+        }
+        done(id: id, revealed: true)
+    }
+
+    private func done(id: Int, revealed: Bool) {
+        if let before = sizeWhileLoading {
+            moved = (naturalHeight ?? frame.height) - before.height
+            warnIfMoved(by: moved ?? 0)
+        }
+        if revealed {
+            onReveal?()
+            AccessibilityNotification.LayoutChanged().post()
         }
     }
 
@@ -324,7 +372,7 @@ struct SkeletonRegion<Content: View, Placeholder: View>: View {
     private func warnIfMoved(by moved: CGFloat) {
         #if DEBUG
         guard abs(moved) >= 1 else { return }
-        SampleTemplate.logger.notice("A skeleton (\(source.rawValue, privacy: .public)) was \(Int(abs(moved)), privacy: .public)pt \(moved > 0 ? "shorter" : "taller", privacy: .public) than its content, so the page moved when it arrived. Give the sample typical lengths.")
+        SampleTemplate.logger.notice("A skeleton (\(source.rawValue, privacy: .public)) at y \(Int(frame.minY), privacy: .public) was \(Int(abs(moved)), privacy: .public)pt \(moved > 0 ? "shorter" : "taller", privacy: .public) than its content, so the page moved when it arrived. Give the sample typical lengths.")
         #endif
     }
 

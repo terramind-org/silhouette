@@ -183,13 +183,12 @@ struct RevealModesPage: View {
 }
 
 struct ImagesPage: View {
-    @State private var load = DemoLoad { Array(0..<9) }
-    @State private var seed = 100
+    @State private var load = DemoLoad { (0..<9).map { _ in Optional(Int.random(in: 0..<100_000)) } }
 
     var body: some View {
-        DemoPage(title: "Images", note: "Images never hold a reveal back. Each keeps its own skeleton until it has loaded, then fades in.", reload: { seed += 1; load.reload() }) {
-            Reloadable(reload: { seed += 1; load.reload() }) {
-                Skeleton(load.value, sample: Array(0..<9)) { GalleryCard(items: $0, seed: seed) }
+        DemoPage(title: "Images", note: "Images never hold a reveal back. Each keeps its own skeleton until it has loaded, then fades in.", reload: load.reload) {
+            Reloadable(reload: load.reload) {
+                Skeleton(load.value, sample: Array(repeating: nil, count: 9)) { GalleryCard(items: $0) }
             }
         }
     }

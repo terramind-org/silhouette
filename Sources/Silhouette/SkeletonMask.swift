@@ -23,6 +23,9 @@ extension EnvironmentValues {
 /// painted shape a block, everything else left out. The result is an opaque mask.
 struct SkeletonShape<Content: View>: View {
     var content: Content
+    /// Draws each line of text as a bar. Off, text keeps its own letters: the content's ink, for
+    /// a reveal to hide letter by letter without touching the surface behind them.
+    var textAsBars = true
 
     @Environment(\.skeletonTheme) private var theme
     @Environment(\.colorScheme) private var colorScheme
@@ -42,7 +45,7 @@ struct SkeletonShape<Content: View>: View {
                 }
             } symbols: {
                 content
-                    .modifier(TextAsBars(metrics: theme.text, radius: theme.radius, ink: colorScheme == .dark ? .white : .black))
+                    .modifier(TextAsBars(enabled: textAsBars, metrics: theme.text, radius: theme.radius, ink: colorScheme == .dark ? .white : .black))
                     .environment(\.isDrawingSkeleton, true)
                     .environment(\.skeletonInk, colorScheme == .dark ? .white : .black)
                     .frame(width: proxy.size.width, height: proxy.size.height, alignment: .topLeading)
@@ -84,13 +87,16 @@ struct SkeletonShape<Content: View>: View {
 
 /// Draws each line of text as one bar, trimmed to the theme's text metrics.
 struct TextAsBars: ViewModifier {
+    var enabled = true
     var metrics: SkeletonTextMetrics
     var radius: SkeletonRadius
     /// The colour bars are drawn in: the opposite of the page.
     var ink: Color
 
     func body(content: Content) -> some View {
-        if #available(iOS 18, macOS 15, tvOS 18, watchOS 11, visionOS 2, *) {
+        if !enabled {
+            content
+        } else if #available(iOS 18, macOS 15, tvOS 18, watchOS 11, visionOS 2, *) {
             content.textRenderer(LineBarRenderer(metrics: metrics, radius: radius, ink: ink))
         } else {
             content.redacted(reason: .placeholder)

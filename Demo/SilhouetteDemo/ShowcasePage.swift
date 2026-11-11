@@ -4,17 +4,16 @@ import SwiftUI
 /// The demo's home, after Skullet's landing page: the hero and a column of everyday cards, each
 /// loading on its own and cascading in as one page.
 struct ShowcasePage: View {
-    @State private var hero = DemoLoad(latency: 0.95) { true }
-    @State private var person = DemoLoad(latency: 0.9) { Person.real }
-    @State private var article = DemoLoad(latency: 1.0) { Article.real }
-    @State private var chat = DemoLoad(latency: 1.05) { ChatThread.real }
-    @State private var notices = DemoLoad(latency: 0.95) { Notice.real }
-    @State private var track = DemoLoad(latency: 1.1) { Track.real }
-    @State private var stats = DemoLoad(latency: 1.15) { Stats.real }
-    @State private var holdings = DemoLoad(latency: 1.2) { Holding.real }
-    @State private var settings = DemoLoad(latency: 1.25) { SettingRow.real }
-    @State private var gallery = DemoLoad(latency: 1.2) { Array(0..<6) }
-    @State private var seed = 0
+    @State private var hero = DemoLoad { true }
+    @State private var person = DemoLoad { Person.real }
+    @State private var article = DemoLoad { Article.withPicture() }
+    @State private var chat = DemoLoad { ChatThread.real }
+    @State private var notices = DemoLoad { Notice.real }
+    @State private var track = DemoLoad { Track.real }
+    @State private var stats = DemoLoad { Stats.real }
+    @State private var holdings = DemoLoad { Holding.real }
+    @State private var settings = DemoLoad { SettingRow.real }
+    @State private var gallery = DemoLoad { Gallery.pictures() }
     @Binding var path: [DemoRoute]
 
     var body: some View {
@@ -26,12 +25,12 @@ struct ShowcasePage: View {
                     .padding(.bottom, 18)
 
                 card(person.reload) { Skeleton(person.value, sample: .sample) { ProfileRowCard(person: $0) } }
-                card(article.reload) { Skeleton(article.value, sample: .sample) { ArticleCard(article: $0, imageURL: galleryURL(9, seed: seed)) } }
+                card(article.reload) { Skeleton(article.value, sample: .sample) { ArticleCard(article: $0, imageURL: galleryURL($0.picture)) } }
                 card(chat.reload) { Skeleton(chat.value, sample: .sample) { ChatCard(thread: $0) } }
                 card(notices.reload) { Skeleton(notices.value, sample: Notice.sample) { NotificationsCard(items: $0) } }
                 card(track.reload) { Skeleton(track.value, sample: .sample) { TrackCard(track: $0) } }
                 card(stats.reload) { Skeleton(stats.value, sample: .sample) { StatsCard(stats: $0) } }
-                card(gallery.reload) { Skeleton(gallery.value, sample: Array(0..<6)) { GalleryCard(items: $0, seed: seed) } }
+                card(gallery.reload) { Skeleton(gallery.value, sample: Gallery.sample) { GalleryCard(items: $0) } }
                 card(holdings.reload) { Skeleton(holdings.value, sample: Holding.sample) { PortfolioCard(holdings: $0) } }
                 card(settings.reload) { Skeleton(settings.value, sample: SettingRow.sample) { SettingsCard(rows: $0) } }
 
@@ -65,7 +64,6 @@ struct ShowcasePage: View {
     }
 
     private func reloadAll() {
-        seed += 1
         [hero.reload, person.reload, article.reload, chat.reload, notices.reload, track.reload, stats.reload, gallery.reload, holdings.reload, settings.reload].forEach { $0() }
     }
 }

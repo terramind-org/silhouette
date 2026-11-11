@@ -13,8 +13,8 @@ import SwiftUI
 /// ```
 ///
 /// The skeleton is drawn from the closest data there is: the data already on screen, the data
-/// last shown under the same `id`, a shape remembered from an earlier launch (for `Codable`
-/// data with an `id`), then the sample.
+/// last shown under the same `id` in this launch, the sample, then a shape remembered from an
+/// earlier launch (for `Codable` data).
 public struct Skeleton<Value, Content: View>: View {
     private let data: Value?
     private let sample: Value?
@@ -162,11 +162,11 @@ public struct Skeleton<Value, Content: View>: View {
     private var closestData: (value: Value, source: SkeletonSource)? {
         if isLoading, let data { return (data, .onScreen) }
         if let lastShown { return (lastShown, .onScreen) }
-        if let id {
-            if let value = SkeletonMemory.lastShown(id: id, as: Value.self) { return (value, .lastShown) }
-            if let codec, let value = codec.load(id) { return (value, .remembered) }
-        }
+        if let id, let value = SkeletonMemory.lastShown(id: id, as: Value.self) { return (value, .lastShown) }
+        // A sample comes before a shape remembered from an earlier launch: remembered text keeps
+        // its letters' widths only roughly, so near the end of a line it can wrap differently.
         if let sample { return (sample, .sample) }
+        if let id, let codec, let value = codec.load(id) { return (value, .remembered) }
         return nil
     }
 

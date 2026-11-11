@@ -398,14 +398,13 @@ struct QuoteCard: View {
 // MARK: - Gallery
 
 struct GalleryCard: View {
-    var items: [Int]
-    var seed: Int
+    var items: [Int?]
 
     var body: some View {
         Card(padding: 10) {
             LazyVGrid(columns: [GridItem(.flexible(), spacing: 8), GridItem(.flexible(), spacing: 8), GridItem(.flexible(), spacing: 8)], spacing: 8) {
-                ForEach(items, id: \.self) { i in
-                    SkeletonAsyncImage(url: galleryURL(i, seed: seed)) { $0.resizable().scaledToFill() }
+                ForEach(items.indices, id: \.self) { i in
+                    SkeletonAsyncImage(url: galleryURL(items[i])) { $0.resizable().scaledToFill() }
                         .aspectRatio(1, contentMode: .fit)
                         .clipShape(RoundedRectangle(cornerRadius: 14, style: .continuous))
                 }
@@ -414,6 +413,22 @@ struct GalleryCard: View {
     }
 }
 
-func galleryURL(_ i: Int, seed: Int) -> URL? {
-    URL(string: "https://picsum.photos/seed/silhouette-\(seed)-\(i)/600/600")
+/// A photo for a picture number. The sample has none, so its images wait as skeletons.
+func galleryURL(_ picture: Int?) -> URL? {
+    picture.flatMap { URL(string: "https://picsum.photos/seed/silhouette-\($0)/600/600") }
+}
+
+/// The gallery's pictures: a fresh set each load, so each one loads after its data.
+enum Gallery {
+    static let sample: [Int?] = Array(repeating: nil, count: 6)
+    static func pictures() -> [Int?] { (0..<6).map { _ in Int.random(in: 0..<100_000) } }
+}
+
+extension Article {
+    /// The real article with a fresh picture, which starts loading once this arrives.
+    static func withPicture() -> Article {
+        var article = Article.real
+        article.picture = Int.random(in: 0..<100_000)
+        return article
+    }
 }

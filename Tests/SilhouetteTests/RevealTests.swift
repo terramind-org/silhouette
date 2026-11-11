@@ -19,19 +19,13 @@ final class RevealTests: XCTestCase {
         XCTAssertEqual(SkeletonReveal.smart.resolved(for: context(interacting: true)).duration, 0)
     }
 
-    func testSmartQuicklyCrossfadesARefetch() {
-        let spec = SkeletonReveal.smart.resolved(for: context(refetch: true))
-        XCTAssertTrue(isTogether(spec))
-        XCTAssertEqual(spec.duration, 0.12, accuracy: 0.001)
-    }
-
-    func testSmartRevealsSmallContentWhole() {
-        XCTAssertTrue(isTogether(SkeletonReveal.smart.resolved(for: context(height: 60))))
-        XCTAssertTrue(isTogether(SkeletonReveal.smart.resolved(for: context(pieces: 3))))
-    }
-
-    func testSmartCascadesLargeContentByRow() {
+    func testSmartCascadesEverythingThatShowedASkeleton() {
+        // Small, refetched or large, a reveal that had a skeleton comes in row by row: never a
+        // crossfade, so the skeleton and the content never show at once in one place.
         XCTAssertTrue(SkeletonReveal.smart.resolved(for: context()).isOrdered)
+        XCTAssertTrue(SkeletonReveal.smart.resolved(for: context(height: 60, pieces: 2)).isOrdered)
+        XCTAssertTrue(SkeletonReveal.smart.resolved(for: context(refetch: true)).isOrdered)
+        XCTAssertEqual(SkeletonReveal.smart.resolved(for: context()).duration, 0.25, accuracy: 1e-9)
     }
 
     func testSmartHoldsFastDataBack() {
@@ -55,60 +49,61 @@ final class RevealTests: XCTestCase {
 
     private let screen = CGRect(x: 0, y: 0, width: 400, height: 800)
 
-    private func piece(_ rect: CGRect, unit: CGRect? = nil, secondary: Bool = false, late: Double = 0) -> RevealPiece {
-        RevealPiece(rect: rect, reveal: CGRect(x: 0, y: 100, width: 400, height: 400), unit: unit, isSecondary: secondary, late: late, screen: screen)
+    private func piece(_ rect: CGRect, row: Int = 0, rows: Int = 10, regionRow: Int = 0, regionRows: Int = 4) -> RevealPiece {
+        RevealPiece(rect: rect, reveal: CGRect(x: 0, y: 100, width: 400, height: 400), unit: rect, isSecondary: false,
+                    row: row, rows: rows, regionRow: regionRow, regionRows: regionRows, screen: screen)
     }
 
-    func testByPositionGoesDownThenAcrossOverThreeHundredTwentyMilliseconds() throws {
-        let top = try XCTUnwrap(RevealPiece.byPosition(piece(CGRect(x: 0, y: 100, width: 50, height: 10))))
-        let lower = try XCTUnwrap(RevealPiece.byPosition(piece(CGRect(x: 0, y: 300, width: 50, height: 10))))
-        let right = try XCTUnwrap(RevealPiece.byPosition(piece(CGRect(x: 200, y: 100, width: 50, height: 10))))
-        let last = try XCTUnwrap(RevealPiece.byPosition(piece(CGRect(x: 400, y: 500, width: 50, height: 10))))
-        XCTAssertEqual(top, 0, accuracy: 1e-9)
-        XCTAssertGreaterThan(lower, right, "down counts four times as much as across")
-        XCTAssertEqual(last, 0.32, accuracy: 1e-9)
+    func testByRowGivesEachRowItsOwnBeat() throws {
+        let rect = CGRect(x: 0, y: 300, width: 200, height: 16)
+        XCTAssertEqual(try XCTUnwrap(RevealPiece.byRow(piece(rect, row: 0))), 0, accuracy: 1e-9)
+        XCTAssertEqual(try XCTUnwrap(RevealPiece.byRow(piece(rect, row: 3))), 0.18, accuracy: 1e-9, "60 ms apart")
     }
 
-    func testByRowTimesRowsByTheScreenSoRegionsCascadeTogether() throws {
-        let row = CGRect(x: 0, y: 400, width: 400, height: 40)
-        let main = try XCTUnwrap(RevealPiece.byRow(piece(CGRect(x: 0, y: 400, width: 200, height: 16), unit: row)))
-        let caption = try XCTUnwrap(RevealPiece.byRow(piece(CGRect(x: 0, y: 420, width: 120, height: 10), unit: row, secondary: true)))
-        XCTAssertEqual(main, 0.16, accuracy: 1e-9, "halfway down the screen, halfway through the cascade")
-        XCTAssertEqual(caption - main, 0.06, accuracy: 1e-9, "smaller text a beat behind")
-        let lateJoiner = try XCTUnwrap(RevealPiece.byRow(piece(CGRect(x: 0, y: 400, width: 200, height: 16), unit: row, late: 0.1)))
-        XCTAssertEqual(lateJoiner, 0.06, accuracy: 1e-9, "a reveal landing later joins the cascade where it has got to")
+    func testALongPageTightensTheBeatSoTheCascadeStaysUnderASecond() throws {
+        let rect = CGRect(x: 0, y: 300, width: 200, height: 16)
+        let last = try XCTUnwrap(RevealPiece.byRow(piece(rect, row: 29, rows: 30)))
+        XCTAssertEqual(last, 0.9, accuracy: 1e-9)
     }
 
     func testByRowShowsOffScreenRowsAtOnce() {
-        let below = CGRect(x: 0, y: 900, width: 400, height: 40)
-        XCTAssertNil(RevealPiece.byRow(piece(below, unit: below)))
+        XCTAssertNil(RevealPiece.byRow(piece(CGRect(x: 0, y: 900, width: 400, height: 40))))
+    }
+
+    func testByPositionCascadesWithinTheRegion() throws {
+        let rect = CGRect(x: 0, y: 300, width: 200, height: 16)
+        XCTAssertEqual(try XCTUnwrap(RevealPiece.byPosition(piece(rect, regionRow: 2))), 0.12, accuracy: 1e-9)
     }
 
     // MARK: Plans
 
-    func testUnitsGroupPiecesThatSitTogether() {
+    func testRowsMergeAnAvatarWithItsNameButKeepParagraphLinesApart() {
         let avatar = CGRect(x: 0, y: 0, width: 40, height: 40)
         let name = CGRect(x: 50, y: 4, width: 120, height: 14)
         let handle = CGRect(x: 50, y: 22, width: 80, height: 10)
-        let bio = CGRect(x: 0, y: 60, width: 300, height: 14)
-        let units = PieceTracer.units(of: [avatar, name, handle, bio])
-        XCTAssertEqual(units.count, 2)
-        XCTAssertEqual(units[0], avatar.union(name).union(handle))
+        let line1 = CGRect(x: 0, y: 60, width: 300, height: 14)
+        let line2 = CGRect(x: 0, y: 78, width: 260, height: 14)
+        let rows = Rows.of([avatar, name, handle, line1, line2])
+        XCTAssertEqual(rows.count, 3)
+        XCTAssertEqual(rows[0], avatar.union(name).union(handle))
+        XCTAssertEqual(Rows.index(of: line2, in: rows), 2)
     }
 
-    func testPlanTimesEachPieceAndMarksSmallerText() throws {
-        let name = CGRect(x: 50, y: 4, width: 120, height: 16)
-        let handle = CGRect(x: 50, y: 24, width: 80, height: 10)
-        let plan = RevealPlan.make(
-            order: RevealPiece.byRow, content: [name, handle], skeleton: [name, handle],
-            region: CGRect(x: 0, y: 0, width: 300, height: 40), screen: screen, late: 0, delay: 0, fade: 0.2
-        )
-        let nameDelay = try XCTUnwrap(plan.incoming[0].delay)
-        let handleDelay = try XCTUnwrap(plan.incoming[1].delay)
-        XCTAssertEqual(handleDelay - nameDelay, 0.06, accuracy: 1e-9)
-        XCTAssertEqual(plan.end, handleDelay + 0.2, accuracy: 1e-9)
-        XCTAssertEqual(plan.amount(plan.incoming[0], at: nameDelay), 0, accuracy: 1e-9)
-        XCTAssertEqual(plan.amount(plan.incoming[0], at: nameDelay + 0.2), 1, accuracy: 1e-9)
+    func testOnePageCascadesTopToBottomAcrossRegions() throws {
+        // Two cards landing together: the lower card's rows come after every row of the upper.
+        let upper = CGRect(x: 0, y: 100, width: 300, height: 60)
+        let lower = CGRect(x: 0, y: 200, width: 300, height: 60)
+        let upperPieces = [CGRect(x: 10, y: 10, width: 200, height: 14), CGRect(x: 10, y: 34, width: 180, height: 14)]
+        let lowerPieces = [CGRect(x: 10, y: 10, width: 200, height: 14), CGRect(x: 10, y: 34, width: 180, height: 14)]
+        let page = Rows.of(upperPieces.map { $0.offsetBy(dx: upper.minX, dy: upper.minY) } + lowerPieces.map { $0.offsetBy(dx: lower.minX, dy: lower.minY) })
+        let a = RevealPlan.make(order: RevealPiece.byRow, content: upperPieces, skeleton: upperPieces, region: upper, screen: screen, pageRows: page, delay: 0, fade: 0.25)
+        let b = RevealPlan.make(order: RevealPiece.byRow, content: lowerPieces, skeleton: lowerPieces, region: lower, screen: screen, pageRows: page, delay: 0, fade: 0.25)
+        let upperDelays = a.incoming.compactMap(\.delay), lowerDelays = b.incoming.compactMap(\.delay)
+        XCTAssertEqual(upperDelays, [0, 0.06])
+        XCTAssertEqual(lowerDelays, [0.12, 0.18])
+        XCTAssertEqual(b.end, 0.18 + 0.25, accuracy: 1e-9)
+        // A bar and the line that replaces it share their timing exactly.
+        XCTAssertEqual(a.incoming.map(\.delay), a.outgoing.map(\.delay))
     }
 
     func testEaseMatchesCSS() {
@@ -118,11 +113,49 @@ final class RevealTests: XCTestCase {
     }
 
     @MainActor
-    func testBatchJoinsRevealsLandingTogether() {
-        let t0 = Date(timeIntervalSinceReferenceDate: 10_000)
-        XCTAssertEqual(RevealBatch.join(at: t0), 0)
-        XCTAssertEqual(RevealBatch.join(at: t0.addingTimeInterval(0.1)), 0.1, accuracy: 1e-9)
-        XCTAssertEqual(RevealBatch.join(at: t0.addingTimeInterval(0.5)), 0, "a later reveal starts a new cascade")
+    func testRevealsLandingTogetherWaitAndShareOneSetOfRows() async {
+        async let first = RevealBatch.join([CGRect(x: 0, y: 0, width: 10, height: 10)])
+        async let second = RevealBatch.join([CGRect(x: 0, y: 50, width: 10, height: 10)])
+        let (a, b) = await (first, second)
+        XCTAssertEqual(a.count, 2)
+        XCTAssertEqual(a, b)
+    }
+
+    @MainActor
+    func testTheWipeNeverShowsTheBarAndTheLineAtOnce() throws {
+        // Halfway through a line's wipe: on every pixel of the line, the content and its
+        // skeleton add up to one, and neither is half visible except along the soft edge.
+        let line = CGRect(x: 20, y: 20, width: 200, height: 16)
+        var plan = RevealPlan(incoming: [.init(rect: line, delay: 0)], outgoing: [.init(rect: line, delay: 0)], fade: 10, start: Date())
+        plan.start = Date().addingTimeInterval(-4.5)
+        let size = CGSize(width: 240, height: 56)
+        let incoming = try Rendered(RevealMask(role: .incoming, progress: 1, spec: .sequence, plan: plan, shimmerAxis: CGVector(dx: 1, dy: 0)), size: size)
+        let outgoing = try Rendered(RevealMask(role: .outgoing, progress: 1, spec: .sequence, plan: plan, shimmerAxis: CGVector(dx: 1, dy: 0)).padding(0.01), size: size)
+        var both = 0
+        for x in stride(from: 21.0, to: 219.0, by: 2) {
+            let a = incoming.alpha(at: CGPoint(x: x, y: 28)), b = outgoing.alpha(at: CGPoint(x: x, y: 28))
+            XCTAssertEqual(a + b, 1, accuracy: 0.08, "at x \(x)")
+            if a > 0.1 && b > 0.1 { both += 1 }
+        }
+        XCTAssertLessThanOrEqual(both, 12, "only the soft edge, about 18 pt, is shared")
+        XCTAssertGreaterThan(incoming.alpha(at: CGPoint(x: 30, y: 28)), 0.95, "the leading end is in")
+        XCTAssertLessThan(incoming.alpha(at: CGPoint(x: 210, y: 28)), 0.05, "the trailing end isn't yet")
+    }
+
+    @MainActor
+    func testAWaitingLineHidesOnlyItsInkNotTheCardBehindIt() throws {
+        // The line's ink covers half its height; before its wipe, the ink is hidden and the rest
+        // of the line's area (the card's surface) stays visible.
+        let line = CGRect(x: 20, y: 20, width: 200, height: 16)
+        let inkRect = CGRect(x: 20, y: 24, width: 200, height: 8)
+        let size = CGSize(width: 240, height: 56)
+        let ink = ImageRenderer(content: Canvas { context, _ in context.fill(Path(inkRect), with: .color(.black)) }.frame(width: size.width, height: size.height)).cgImage
+        var plan = RevealPlan.make(order: { _ in 5 }, content: [line], skeleton: [line], region: CGRect(origin: .zero, size: size),
+                                   screen: screen, pageRows: [line], delay: 0, fade: 0.25, ink: ink)
+        plan.start = Date()
+        let mask = try Rendered(RevealMask(role: .incoming, progress: 1, spec: .sequence, plan: plan, shimmerAxis: CGVector(dx: 1, dy: 0)).padding(0.02), size: size)
+        XCTAssertLessThan(mask.alpha(at: CGPoint(x: 100, y: 28)), 0.05, "the waiting ink is hidden")
+        XCTAssertGreaterThan(mask.alpha(at: CGPoint(x: 100, y: 21)), 0.95, "the surface around it isn't")
     }
 
     @MainActor

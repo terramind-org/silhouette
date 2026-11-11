@@ -25,7 +25,7 @@ public struct SkeletonReveal: Sendable {
     public var wipe: Wipe?
     /// Seconds to wait before the reveal starts.
     public var delay: Double
-    /// Seconds each piece takes to fade in, or the whole content for a reveal that comes in
+    /// Seconds each piece's wipe takes, or the whole crossfade for a reveal that comes in
     /// together. `0` is instant.
     public var duration: Double
     /// Seconds a skeleton waits before it shows at all, so data that arrives quickly never
@@ -39,7 +39,7 @@ public struct SkeletonReveal: Sendable {
         enter: Enter = .none,
         wipe: Wipe? = nil,
         delay: Double = 0,
-        duration: Double = 0.2,
+        duration: Double = 0.25,
         hold: Double = 0,
         choose: (@Sendable (RevealContext) -> SkeletonReveal?)? = nil
     ) {
@@ -58,21 +58,19 @@ public struct SkeletonReveal: Sendable {
     ///
     /// - at once if the data beat the 150 ms hold (no skeleton ever showed) or someone is
     ///   scrolling,
-    /// - a quick crossfade for a refetch,
-    /// - whole for something small (under 72 points tall, or three pieces or fewer),
-    /// - otherwise row by row, in screen order: rows arrive whole, smaller text a beat behind,
-    ///   rows off screen at once. Regions that land together share one cascade down the screen.
+    /// - otherwise row by row down the screen, one beat apart, each piece wiping in where its
+    ///   skeleton was. Reveals that land within 150 ms of each other share one cascade, so
+    ///   separate cards come in as one page. Rows off screen appear at once.
     public static let smart = SkeletonReveal(hold: 0.15, choose: { context in
         if context.isInteracting || context.skeletonShownFor == nil { return .instant }
-        if context.isRefetch { return SkeletonReveal(duration: 0.12) }
-        if context.size.height < 72 || context.pieces <= 3 { return .together }
         return SkeletonReveal(order: .byRow)
     })
 
     /// Crossfades the whole skeleton into the content.
     public static let together = SkeletonReveal()
 
-    /// Brings each piece in where its skeleton was, top to bottom, then a little left to right.
+    /// Brings each piece in where its skeleton was, row by row down the region, each line wiping
+    /// in from its leading edge.
     public static let sequence = SkeletonReveal(order: .byPosition)
 
     /// Carries the content in behind one diagonal front, at the shimmer's slant and pace.
@@ -87,7 +85,8 @@ public struct SkeletonReveal: Sendable {
     /// When each piece of the content arrives.
     ///
     /// A piece is one bar of text, one image, one control or one painted shape. Ordered reveals
-    /// fade each piece in where its skeleton was, starting at the delay the order gives it.
+    /// wipe each piece in where its skeleton was, starting at the delay the order gives it; the
+    /// skeleton under it wipes out with the same edge, so the two never show at once in one spot.
     public enum Order: Sendable {
         /// Everything at once.
         case together
@@ -95,9 +94,9 @@ public struct SkeletonReveal: Sendable {
         /// it at once. Delays stop at one second.
         case custom(@Sendable (RevealPiece) -> Double?)
 
-        /// Top to bottom, then a little left to right, over 320 ms across the region.
+        /// Row by row down the region, one beat apart.
         public static let byPosition = Order.custom(RevealPiece.byPosition)
-        /// Row by row in screen order, over 320 ms down the screen; smaller text 60 ms behind;
+        /// Row by row down the screen, one beat apart, across every reveal landing together;
         /// rows off screen at once.
         public static let byRow = Order.custom(RevealPiece.byRow)
     }
@@ -180,47 +179,56 @@ public struct RevealPiece: Sendable, Equatable {
     public var rect: CGRect
     /// The whole region being revealed.
     public var reveal: CGRect
-    /// The piece's row: the pieces around it that sit together vertically. `nil` if alone.
+    /// The piece's row: the pieces beside it, merged where their heights overlap. `nil` if alone.
     public var unit: CGRect?
     /// Whether this is smaller text than the largest in its row, such as a caption under a name.
     public var isSecondary: Bool
-    /// Seconds since the first of the reveals landing alongside this one began.
-    public var late: Double
+    /// The piece's row on screen, counting from the top, among every reveal landing with this one.
+    public var row: Int
+    /// How many rows are on screen across the reveals landing together.
+    public var rows: Int
+    /// The piece's row within its own region, counting from the top.
+    public var regionRow: Int
+    /// How many rows its region has.
+    public var regionRows: Int
     /// The screen the reveal is on.
     public var screen: CGRect
 
-    public init(rect: CGRect, reveal: CGRect, unit: CGRect?, isSecondary: Bool, late: Double, screen: CGRect) {
+    public init(
+        rect: CGRect, reveal: CGRect, unit: CGRect?, isSecondary: Bool,
+        row: Int, rows: Int, regionRow: Int, regionRows: Int, screen: CGRect
+    ) {
         self.rect = rect
         self.reveal = reveal
         self.unit = unit
         self.isSecondary = isSecondary
-        self.late = late
+        self.row = row
+        self.rows = rows
+        self.regionRow = regionRow
+        self.regionRows = regionRows
         self.screen = screen
     }
 
-    /// From the first piece of a cascade to the last.
-    public static let cascadeSpread = 0.32
-    /// How far behind its row smaller text arrives.
-    public static let secondaryDelay = 0.06
+    /// The beat between one row and the next.
+    public static let rowStagger = 0.06
+    /// The longest a cascade may take to reach its last row; longer pages tighten the beat.
+    public static let longestCascade = 0.9
 
-    /// `sequence`'s order: each piece by its place in the reveal, top to bottom, then a little
-    /// left to right.
-    @Sendable public static func byPosition(_ piece: RevealPiece) -> Double? {
-        let down = (piece.rect.minY - piece.reveal.minY) / max(piece.reveal.height, 1)
-        let across = (piece.rect.minX - piece.reveal.minX) / max(piece.reveal.width, 1)
-        return min(max(down * 0.8 + across * 0.2, 0), 1) * cascadeSpread
+    /// The beat for a cascade of `rows` rows.
+    public static func stagger(rows: Int) -> Double {
+        min(rowStagger, longestCascade / Double(max(rows - 1, 1)))
     }
 
-    /// `smart`'s order: rows arrive whole, in screen order, on screen only, main text first.
-    ///
-    /// Timed against the screen rather than the region, so regions that land together read as
-    /// one page cascading down.
+    /// `sequence`'s order: row by row down the region, one beat apart.
+    @Sendable public static func byPosition(_ piece: RevealPiece) -> Double? {
+        Double(piece.regionRow) * stagger(rows: piece.regionRows)
+    }
+
+    /// `smart`'s order: row by row down the screen, one beat apart, across every reveal landing
+    /// together, so separate cards cascade as one page. Rows off screen appear at once.
     @Sendable public static func byRow(_ piece: RevealPiece) -> Double? {
-        let screen = piece.screen
-        guard let unit = piece.unit else { return onScreen(piece.rect, screen) ? 0 : nil }
-        guard onScreen(unit, screen) else { return nil }
-        let at = min(max((unit.minY - screen.minY) / max(screen.height, 1), 0), 1) * cascadeSpread
-        return max(at - piece.late, 0) + (piece.isSecondary ? secondaryDelay : 0)
+        guard onScreen(piece.unit ?? piece.rect, piece.screen) else { return nil }
+        return Double(piece.row) * stagger(rows: piece.rows)
     }
 
     static func onScreen(_ rect: CGRect, _ screen: CGRect) -> Bool {
