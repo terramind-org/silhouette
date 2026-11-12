@@ -165,8 +165,9 @@ private struct Sleeper: View {
                 .mask { Image(uiImage: matte).resizable().scaledToFill().luminanceToAlpha() }
                 .frame(maxWidth: .infinity, maxHeight: .infinity)
                 .clipped()
-                .mask(LinearGradient(stops: [.init(color: .clear, location: 0), .init(color: .black, location: 0.12), .init(color: .black, location: 0.82), .init(color: .clear, location: 1)], startPoint: .leading, endPoint: .trailing))
-                .mask(LinearGradient(stops: [.init(color: .black, location: 0.7), .init(color: .clear, location: 1)], startPoint: .top, endPoint: .bottom))
+                // An oval fade, so the bedding dissolves into the page on every side rather than
+                // stopping at the frame.
+                .mask(EllipticalGradient(stops: [.init(color: .black, location: 0.55), .init(color: .clear, location: 1)], center: UnitPoint(x: 0.45, y: 0.42)))
                 // Bundled with the app: it never waits for data.
                 .skeletonKeep()
                 .accessibilityHidden(true)

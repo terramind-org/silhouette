@@ -782,16 +782,18 @@ details p { color: var(--ink-2); }
 .panel .stage {
   display: flex;
   justify-content: center;
-  padding: 22px 16px 0;
+  padding: 24px 16px;
   background: #000;
 }
+/* The whole screen, so every part of the page shows how it comes in. */
 .panel video {
   display: block;
   width: 100%;
-  max-width: 380px;
-  aspect-ratio: 600 / 746;
+  max-width: 300px;
+  aspect-ratio: 1206 / 2622;
+  border-radius: 30px;
+  border: 1px solid var(--line-strong);
   object-fit: cover;
-  object-position: top;
 }
 
 /* ---------- Byline ---------- */

@@ -346,4 +346,32 @@ final class RevealTests: XCTestCase {
         XCTAssertEqual(size.width, 200, accuracy: 0.5)
         XCTAssertEqual(size.height, 290, accuracy: 0.5)
     }
+
+    @MainActor
+    func testARingIsAPieceNotABorder() throws {
+        // A thin ring fills little of its box, like a card's border, but it is a shape of its own:
+        // it must be traced, and found steady when it doesn't depend on the data.
+        func ring(_ value: Double, _ size: CGFloat) -> some View {
+            ZStack {
+                Circle().stroke(.orange.opacity(0.2), lineWidth: 8)
+                Circle().trim(from: 0, to: value).stroke(.orange, style: StrokeStyle(lineWidth: 8, lineCap: .round))
+            }
+            .frame(width: size, height: size)
+        }
+        func page(_ value: String) -> some View {
+            HStack(spacing: 22) {
+                ZStack { ring(0.88, 100); ring(0.74, 74) }.frame(width: 100, height: 100)
+                Text(value).font(.system(size: 22))
+            }
+        }
+        var env = EnvironmentValues()
+        env.colorScheme = .dark
+        let size = CGSize(width: 250, height: 120)
+        let pieces = PieceTracer.pieces(of: page("8,888"), size: size, environment: env)
+        let ringPiece = try XCTUnwrap(pieces.first { !PieceTracer.isTextBar($0) })
+        XCTAssertGreaterThanOrEqual(ringPiece.width, 100)
+        let a = try XCTUnwrap(PieceTracer.inkRender(of: page("8,888"), size: size, environment: env, scale: 1))
+        let b = try XCTUnwrap(PieceTracer.inkRender(of: page("Lpqm"), size: size, environment: env, scale: 1))
+        XCTAssertEqual(PieceTracer.unchanged([ringPiece.insetBy(dx: -2, dy: -2)], a: a, b: b).count, 1)
+    }
 }

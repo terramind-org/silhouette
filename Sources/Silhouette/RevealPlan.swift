@@ -249,7 +249,17 @@ enum PieceTracer {
             let boxW = maxX - minX + 1, boxH = maxY - minY + 1
             // Specks, and outlines that only frame other pieces (a card's border), aren't pieces.
             guard count >= 4 else { continue }
-            if Double(count) / Double(boxW * boxH) < 0.25, boxW * boxH > 2000 { continue }
+            if Double(count) / Double(boxW * boxH) < 0.25, boxW * boxH > 2000 {
+                // A border runs along its box's edges; a ring or an arc only touches them.
+                let band = max(3, min(boxW, boxH) / 20)
+                var alongEdges = 0
+                for y in minY...maxY {
+                    for x in minX...maxX where label[y * width + x] == next {
+                        if x - minX < band || maxX - x < band || y - minY < band || maxY - y < band { alongEdges += 1 }
+                    }
+                }
+                if Double(alongEdges) / Double(count) > 0.8 { continue }
+            }
             rects.append(CGRect(x: CGFloat(minX) * sx, y: CGFloat(minY) * sy, width: CGFloat(boxW) * sx, height: CGFloat(boxH) * sy))
         }
         return merged(rects)
