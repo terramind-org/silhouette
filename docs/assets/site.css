@@ -257,8 +257,13 @@ kbd {
   display: flex;
   align-items: center;
 }
-.top .wrap { display: flex; align-items: center; justify-content: space-between; width: 100%; }
+.top .wrap { display: flex; align-items: center; justify-content: space-between; gap: 24px; width: 100%; }
 .top nav { display: flex; gap: 26px; font-size: 15px; }
+/* On a phone the links wrap under the name rather than running into it or off the edge. */
+@media (max-width: 560px) {
+  .top .wrap { flex-wrap: wrap; row-gap: 12px; }
+  .top nav { gap: 18px; flex-wrap: wrap; }
+}
 .top nav a { color: var(--ink-2); }
 .top nav a:hover { color: var(--ink); text-decoration: none; }
 
