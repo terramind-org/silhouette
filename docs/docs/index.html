@@ -150,7 +150,7 @@ WindowGroup {
       <h2>From your view and a sample</h2>
       <figure class="clip" data-clips="../media/panels/component-{response}.mp4">
         <div class="segmented small" role="group" aria-label="Response" data-key="response"><button type="button" data-value="fast" aria-pressed="false">fast</button><button type="button" data-value="typical" aria-pressed="true">typical</button><button type="button" data-value="slow" aria-pressed="false">slow</button></div>
-        <div class="screen"><video autoplay loop muted playsinline preload="metadata" width="1206" height="2622" src="../media/panels/component-typical.mp4" aria-label="A profile card shimmers as a skeleton traced from its own layout, then the real profile fades in where it was."></video></div>
+        <div class="screen"><video autoplay loop muted playsinline preload="metadata" width="1206" height="2622" src="../media/panels/component-typical.mp4" aria-label="A Today page loading: the greeting, a portrait and three readings wait as skeletons in their own shape, then come in top to bottom."></video></div>
       </figure>
       <div class="prose">
         <p>The skeleton is your own view. Pass the data, which is <code>nil</code> while it loads, and a sample of it. While the data is missing, your content closure is built from the sample, laid out invisibly and traced in its place. There is no second, hand-made skeleton to keep in step with the real one.</p>
@@ -351,7 +351,7 @@ func signOut() async {
           <div class="control"><span>Reveal</span><div class="segmented" role="group" aria-label="Reveal" data-key="reveal"><button type="button" data-value="together" aria-pressed="false">together</button><button type="button" data-value="sequence" aria-pressed="false">sequence</button><button type="button" data-value="smart" aria-pressed="true">smart</button><button type="button" data-value="sweep" aria-pressed="false">sweep</button></div></div>
           <div class="control"><span>Response</span><div class="segmented" role="group" aria-label="Response" data-key="response"><button type="button" data-value="fast" aria-pressed="false">fast</button><button type="button" data-value="typical" aria-pressed="true">typical</button><button type="button" data-value="slow" aria-pressed="false">slow</button></div></div>
         </div>
-        <div class="stage"><video autoplay loop muted playsinline preload="auto" src="../media/reveal-modes/smart-typical.mp4" aria-label="Comments and notifications loading, then revealing with the chosen mode."></video></div>
+        <div class="stage"><video autoplay loop muted playsinline preload="auto" src="../media/reveal-modes/smart-typical.mp4" aria-label="A sleep page loading, then revealing with the chosen mode and response."></video></div>
       </div>
       <div class="prose">
         <p>A reveal is the moment content replaces its skeleton. Set one for every skeleton below a view:</p>
@@ -398,7 +398,7 @@ ScrollView {
       <h2>Images</h2>
       <figure class="clip" data-clips="../media/panels/images-{response}.mp4">
         <div class="segmented small" role="group" aria-label="Response" data-key="response"><button type="button" data-value="fast" aria-pressed="false">fast</button><button type="button" data-value="typical" aria-pressed="true">typical</button><button type="button" data-value="slow" aria-pressed="false">slow</button></div>
-        <div class="screen"><video autoplay loop muted playsinline preload="metadata" width="1206" height="2622" src="../media/panels/images-typical.mp4" aria-label="A gallery's text reveals while each photo keeps shimmering in its frame until it has downloaded, then fades in."></video></div>
+        <div class="screen"><video autoplay loop muted playsinline preload="metadata" width="1206" height="2622" src="../media/panels/images-typical.mp4" aria-label="A meals page loading: each plate photo waits as a round skeleton and comes in as its own piece."></video></div>
       </figure>
       <div class="prose">
         <p>Images never hold a reveal back. Use <code>SkeletonAsyncImage</code> for remote images: the text around it reveals as soon as its data is there, and each image still downloading keeps shimmering in its own frame, then fades in.</p>
@@ -436,7 +436,7 @@ SkeletonAsyncImage(url: photo.url) { image in
         <div class="controls">
           <div class="control"><span>Reveal</span><div class="segmented" role="group" aria-label="Reveal" data-key="reveal"><button type="button" data-value="blur" aria-pressed="true">blur</button><button type="button" data-value="wipe" aria-pressed="false">wipe</button><button type="button" data-value="focus" aria-pressed="false">focus</button><button type="button" data-value="unveil" aria-pressed="false">unveil</button><button type="button" data-value="zoom" aria-pressed="false">zoom</button></div></div>
         </div>
-        <div class="stage"><video autoplay loop muted playsinline preload="auto" src="../media/own-reveal/blur.mp4" aria-label="Notifications revealing with a custom reveal: blurring in, wiping down, clearing from a blur, unveiling from the top, or zooming."></video></div>
+        <div class="stage"><video autoplay loop muted playsinline preload="auto" src="../media/own-reveal/blur.mp4" aria-label="A sleep page revealing with a custom reveal: blurring in, wiping down, clearing from a blur, unveiling from the top, or zooming."></video></div>
       </div>
       <div class="prose">
         <p>Every built-in is a <code>SkeletonReveal</code>. Start from one and change what you need:</p>

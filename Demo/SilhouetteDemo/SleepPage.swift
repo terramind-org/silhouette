@@ -103,7 +103,7 @@ struct SleepPage: View {
             .contentShape(.rect)
             .onTapGesture(perform: reload)
         }
-        .skeletonReveal(ShowcasePage.reveal(UserDefaults.standard.string(forKey: "mode")))
+        .skeletonReveal(DemoReveal.current)
         .skeletonTracksScrolling()
         .background(PaperBackground().ignoresSafeArea())
         .task {
@@ -132,10 +132,29 @@ private struct SleepHero: View {
                 Text("asleep").font(.system(size: 14, weight: .light)).foregroundStyle(Night.quiet)
             }
             Text(night.underGoal).font(.system(size: 13)).foregroundStyle(Night.quiet)
-            Moon()
-                .frame(height: 210)
+            Sleeper()
+                .frame(height: 250)
                 .frame(maxWidth: .infinity)
-                .padding(.top, 8)
+                .padding(.horizontal, -24)
+                .padding(.top, 4)
+        }
+    }
+}
+
+/// The sleeper, from Halo's sleep page, fading softly into the page.
+private struct Sleeper: View {
+    @Environment(\.colorScheme) private var scheme
+
+    var body: some View {
+        if let photo = UIImage(named: "Sleeper.jpg") {
+            Image(uiImage: photo)
+                .resizable()
+                .scaledToFill()
+                .brightness(scheme == .dark ? -0.18 : 0)
+                .mask(EllipticalGradient(colors: [.black, .black, .clear], center: UnitPoint(x: 0.5, y: 0.52), startRadiusFraction: 0, endRadiusFraction: 0.5))
+                // A photograph waits as one shape, whatever its light and dark parts.
+                .skeletonShape { Ellipse().padding(.horizontal, 30).padding(.vertical, 18) }
+                .accessibilityHidden(true)
         }
     }
 }
