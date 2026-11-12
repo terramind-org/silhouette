@@ -220,7 +220,7 @@
 
 // Live panels: segmented controls choose between pre-recorded clips.
 (function () {
-  document.querySelectorAll(".panel[data-clips]").forEach(function (panel) {
+  document.querySelectorAll("[data-clips]").forEach(function (panel) {
     var video = panel.querySelector("video");
     var choice = {};
     panel.querySelectorAll(".segmented").forEach(function (group) {

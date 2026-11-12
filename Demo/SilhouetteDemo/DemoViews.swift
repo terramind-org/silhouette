@@ -144,6 +144,24 @@ struct ArticleCard: View {
     }
 }
 
+// MARK: - Card header
+
+/// A card's title row, as on Skullet's comment list: a title, and a quiet detail or action.
+struct CardHeader: View {
+    var title: String
+    var detail: String? = nil
+    var systemImage: String? = nil
+
+    var body: some View {
+        HStack(alignment: .firstTextBaseline) {
+            Text(title).font(.system(size: 17, weight: .semibold))
+            Spacer()
+            if let detail { Text(detail).font(.system(size: 14, weight: .medium)).foregroundStyle(Palette.secondary) }
+            if let systemImage { Image(systemName: systemImage).font(.system(size: 15, weight: .medium)).foregroundStyle(Palette.secondary) }
+        }
+    }
+}
+
 // MARK: - Chat
 
 struct ChatCard: View {
@@ -153,11 +171,24 @@ struct ChatCard: View {
         Card {
             VStack(alignment: .leading, spacing: 14) {
                 HStack(spacing: 10) {
-                    Avatar(initials: thread.initials, size: 34)
-                    Text(thread.name).font(.system(size: 16, weight: .medium))
+                    Avatar(initials: thread.initials, size: 38)
+                        .overlay(alignment: .bottomTrailing) {
+                            Circle().fill(Color(red: 0.3, green: 0.8, blue: 0.5)).frame(width: 11, height: 11)
+                                .overlay(Circle().strokeBorder(Palette.card, lineWidth: 2))
+                        }
+                    VStack(alignment: .leading, spacing: 1) {
+                        Text(thread.name).font(.system(size: 16, weight: .semibold))
+                        Text("Active now").font(.system(size: 13)).foregroundStyle(Palette.secondary)
+                    }
+                    Spacer()
+                    HStack(spacing: 18) {
+                        Image(systemName: "phone")
+                        Image(systemName: "video")
+                    }
+                    .font(.system(size: 16, weight: .medium))
+                    .foregroundStyle(Palette.secondary)
                 }
-                Divider().overlay(Palette.hairline)
-                VStack(spacing: 8) {
+                VStack(spacing: 6) {
                     ForEach(thread.messages) { message in
                         HStack {
                             if message.mine { Spacer(minLength: 56) }
@@ -166,22 +197,28 @@ struct ChatCard: View {
                                 .foregroundStyle(message.mine ? .white : .primary)
                                 .padding(.horizontal, 14)
                                 .padding(.vertical, 9)
-                                .background(message.mine ? Palette.bubble : Palette.inset, in: RoundedRectangle(cornerRadius: 18, style: .continuous))
+                                .background(message.mine ? Palette.bubble : Palette.inset, in: RoundedRectangle(cornerRadius: 20, style: .continuous))
                             if !message.mine { Spacer(minLength: 56) }
                         }
                     }
+                    Text("Read 9:41").font(.system(size: 12)).foregroundStyle(Palette.secondary)
+                        .frame(maxWidth: .infinity, alignment: .trailing)
                 }
-                Divider().overlay(Palette.hairline)
                 HStack(spacing: 10) {
+                    Image(systemName: "plus").font(.system(size: 16, weight: .semibold)).foregroundStyle(Palette.secondary)
                     Text("Message").font(.system(size: 15)).foregroundStyle(Palette.secondary)
                         .skeletonIgnored()
                     Spacer()
                     Image(systemName: "arrow.up")
                         .font(.system(size: 14, weight: .bold))
                         .foregroundStyle(.black.opacity(0.85))
-                        .frame(width: 32, height: 32)
+                        .frame(width: 30, height: 30)
                         .background(Palette.accent, in: Circle())
                 }
+                .padding(.leading, 14)
+                .padding(.trailing, 5)
+                .padding(.vertical, 5)
+                .background(Palette.inset, in: Capsule())
             }
         }
     }
@@ -194,20 +231,24 @@ struct NotificationsCard: View {
 
     var body: some View {
         Card {
-            VStack(spacing: 16) {
-                ForEach(items) { item in
+            VStack(alignment: .leading, spacing: 16) {
+                CardHeader(title: "Notifications", detail: "Mark all read")
+                ForEach(Array(items.enumerated()), id: \.element.id) { index, item in
                     HStack(alignment: .top, spacing: 12) {
                         Avatar(initials: item.initials, size: 40)
                         VStack(alignment: .leading, spacing: 3) {
-                            HStack {
-                                Text(item.name).font(.system(size: 16, weight: .medium))
-                                Spacer()
+                            HStack(alignment: .firstTextBaseline) {
+                                Text(item.name).font(.system(size: 15, weight: .semibold))
                                 Text(item.time).font(.system(size: 13)).foregroundStyle(Palette.secondary)
+                                Spacer()
+                                if index == 0 {
+                                    Circle().fill(Palette.accent).frame(width: 8, height: 8).skeletonIgnored()
+                                }
                             }
                             Text(item.text)
                                 .font(.system(size: 15))
                                 .foregroundStyle(Palette.secondary)
-                                .lineLimit(1)
+                                .lineLimit(2)
                         }
                     }
                 }
@@ -224,14 +265,18 @@ struct TrackCard: View {
     var body: some View {
         Card {
             VStack(alignment: .leading, spacing: 16) {
+                CardHeader(title: "Now playing", systemImage: "airplayaudio")
                 HStack(spacing: 14) {
-                    RoundedRectangle(cornerRadius: 12, style: .continuous)
-                        .fill(LinearGradient(colors: [Color(red: 0.55, green: 0.42, blue: 0.98), Color(red: 0.98, green: 0.47, blue: 0.42)], startPoint: .topLeading, endPoint: .bottomTrailing))
-                        .frame(width: 64, height: 64)
+                    RoundedRectangle(cornerRadius: 14, style: .continuous)
+                        .fill(LinearGradient(colors: [Color(red: 0.98, green: 0.62, blue: 0.48), Color(red: 0.93, green: 0.36, blue: 0.55)], startPoint: .topLeading, endPoint: .bottomTrailing))
+                        .frame(width: 76, height: 76)
+                        .overlay(Image(systemName: "waveform").font(.system(size: 26, weight: .semibold)).foregroundStyle(.white.opacity(0.9)))
                     VStack(alignment: .leading, spacing: 3) {
-                        Text(track.title).font(.system(size: 19, weight: .medium))
+                        Text(track.title).font(.system(size: 19, weight: .semibold))
                         Text(track.artist).font(.system(size: 15)).foregroundStyle(Palette.secondary)
                     }
+                    Spacer()
+                    Image(systemName: "heart").font(.system(size: 18)).foregroundStyle(Palette.secondary)
                 }
                 VStack(spacing: 6) {
                     GeometryReader { proxy in
@@ -249,13 +294,23 @@ struct TrackCard: View {
                     .font(.system(size: 12).monospacedDigit())
                     .foregroundStyle(Palette.secondary)
                 }
-                HStack(spacing: 40) {
-                    Image(systemName: "backward.end.fill")
-                    Image(systemName: "play.fill").font(.system(size: 30))
-                    Image(systemName: "forward.end.fill")
+                HStack {
+                    Image(systemName: "shuffle").foregroundStyle(Palette.secondary)
+                    Spacer()
+                    Image(systemName: "backward.fill")
+                    Spacer()
+                    Image(systemName: "play.fill")
+                        .font(.system(size: 22))
+                        .foregroundStyle(.black.opacity(0.85))
+                        .frame(width: 58, height: 58)
+                        .background(Palette.accent, in: Circle())
+                    Spacer()
+                    Image(systemName: "forward.fill")
+                    Spacer()
+                    Image(systemName: "repeat").foregroundStyle(Palette.secondary)
                 }
-                .font(.system(size: 20))
-                .frame(maxWidth: .infinity)
+                .font(.system(size: 19))
+                .padding(.horizontal, 6)
             }
         }
     }
@@ -269,6 +324,7 @@ struct StatsCard: View {
     var body: some View {
         Card {
             VStack(alignment: .leading, spacing: 16) {
+                CardHeader(title: "Overview", detail: "12 weeks")
                 HStack(alignment: .top) {
                     metric("Revenue", stats.revenue, stats.revenueChange)
                     Spacer()
@@ -279,11 +335,13 @@ struct StatsCard: View {
                     // A chart traces as one block rather than twelve bars.
                     .skeletonBlock(cornerRadius: 12)
                 HStack {
-                    Text("Last 12 weeks")
+                    Text("Sep")
                     Spacer()
-                    Text("Weekly")
+                    Text("Oct")
+                    Spacer()
+                    Text("Nov")
                 }
-                .font(.system(size: 13))
+                .font(.system(size: 12))
                 .foregroundStyle(Palette.secondary)
             }
         }
@@ -323,10 +381,15 @@ struct PortfolioCard: View {
     var body: some View {
         Card {
             VStack(alignment: .leading, spacing: 16) {
-                VStack(alignment: .leading, spacing: 2) {
-                    Text("Portfolio").font(.system(size: 13)).foregroundStyle(Palette.secondary)
-                    Text("$47,306.75").font(.system(size: 28, weight: .semibold)).monospacedDigit()
+                CardHeader(title: "Portfolio", systemImage: "ellipsis")
+                VStack(alignment: .leading, spacing: 4) {
+                    Text("$47,306.75").font(.system(size: 32, weight: .semibold)).monospacedDigit()
+                    HStack(spacing: 6) {
+                        Text("+$1,204.10").font(.system(size: 14, weight: .semibold)).foregroundStyle(Color(red: 0.3, green: 0.8, blue: 0.5))
+                        Text("today").font(.system(size: 14)).foregroundStyle(Palette.secondary)
+                    }
                 }
+                Divider().overlay(Palette.hairline)
                 ForEach(holdings) { h in
                     HStack(spacing: 12) {
                         Circle().fill(Palette.gradient(for: h.symbol)).frame(width: 36, height: 36)
@@ -354,7 +417,11 @@ struct SettingsCard: View {
 
     var body: some View {
         Card(padding: 8) {
-            VStack(spacing: 0) {
+            VStack(alignment: .leading, spacing: 0) {
+                CardHeader(title: "Settings")
+                    .padding(.horizontal, 10)
+                    .padding(.top, 8)
+                    .padding(.bottom, 6)
                 ForEach(rows) { row in
                     HStack(spacing: 12) {
                         Image(systemName: row.icon)
@@ -387,9 +454,15 @@ struct QuoteCard: View {
 
     var body: some View {
         Card {
-            VStack(alignment: .leading, spacing: 10) {
-                Text("“\(quote.text)”").font(.system(size: 22, weight: .medium))
-                Text(quote.by).font(.system(size: 15)).foregroundStyle(Palette.secondary)
+            VStack(alignment: .leading, spacing: 14) {
+                Image(systemName: "quote.opening")
+                    .font(.system(size: 22, weight: .bold))
+                    .foregroundStyle(Palette.accent)
+                Text(quote.text).font(.system(size: 22, weight: .medium))
+                HStack(spacing: 10) {
+                    Avatar(initials: String(quote.by.split(separator: " ").compactMap(\.first).prefix(2)), size: 28)
+                    Text(quote.by).font(.system(size: 15, weight: .medium)).foregroundStyle(Palette.secondary)
+                }
             }
         }
     }
@@ -401,13 +474,17 @@ struct GalleryCard: View {
     var items: [Int?]
 
     var body: some View {
-        Card(padding: 10) {
+        Card(padding: 12) {
+            VStack(alignment: .leading, spacing: 12) {
+            CardHeader(title: "Photos", detail: "See all")
+                .padding(.horizontal, 4)
             LazyVGrid(columns: [GridItem(.flexible(), spacing: 8), GridItem(.flexible(), spacing: 8), GridItem(.flexible(), spacing: 8)], spacing: 8) {
                 ForEach(items.indices, id: \.self) { i in
                     SkeletonAsyncImage(url: galleryURL(items[i])) { $0.resizable().scaledToFill() }
                         .aspectRatio(1, contentMode: .fit)
                         .clipShape(RoundedRectangle(cornerRadius: 14, style: .continuous))
                 }
+            }
             }
         }
     }

@@ -812,3 +812,6 @@ details p { color: var(--ink-2); }
 .byline a:hover { color: var(--ink); }
 .byline-inline { display: inline-flex; align-items: center; gap: 8px; }
 .byline-inline img { opacity: 0.8; }
+
+.clip .segmented.small { display: flex; width: fit-content; margin: 0 auto 12px; }
+.clip .segmented.small button { padding: 4px 11px; font-size: 12px; }

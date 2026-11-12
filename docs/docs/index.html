@@ -147,8 +147,9 @@ WindowGroup {
 
     <section id="from-your-view" class="demo">
       <h2>From your view and a sample</h2>
-      <figure class="clip">
-        <div class="screen"><video autoplay loop muted playsinline preload="metadata" width="1206" height="2622" src="../media/component.mp4" aria-label="A profile card shimmers as a skeleton traced from its own layout, then the real profile fades in where it was."></video></div>
+      <figure class="clip" data-clips="../media/panels/component-{response}.mp4">
+        <div class="segmented small" role="group" aria-label="Response" data-key="response"><button type="button" data-value="fast" aria-pressed="false">fast</button><button type="button" data-value="typical" aria-pressed="true">typical</button><button type="button" data-value="slow" aria-pressed="false">slow</button></div>
+        <div class="screen"><video autoplay loop muted playsinline preload="metadata" width="1206" height="2622" src="../media/panels/component-typical.mp4" aria-label="A profile card shimmers as a skeleton traced from its own layout, then the real profile fades in where it was."></video></div>
       </figure>
       <div class="prose">
         <p>The skeleton is your own view. Pass the data, which is <code>nil</code> while it loads, and a sample of it. While the data is missing, your content closure is built from the sample, laid out invisibly and traced in its place. There is no second, hand-made skeleton to keep in step with the real one.</p>
@@ -189,8 +190,9 @@ Skeleton(model.user, sample: .sample, isLoading: model.isRefreshing) {
 
     <section id="any-view" class="demo">
       <h2>Any view with a flag</h2>
-      <figure class="clip">
-        <div class="screen"><video autoplay loop muted playsinline preload="metadata" width="1206" height="2622" src="../media/plain.mp4" aria-label="A view built with placeholder strings shows as a skeleton while a flag is on, then shows its real text."></video></div>
+      <figure class="clip" data-clips="../media/panels/plain-{response}.mp4">
+        <div class="segmented small" role="group" aria-label="Response" data-key="response"><button type="button" data-value="fast" aria-pressed="false">fast</button><button type="button" data-value="typical" aria-pressed="true">typical</button><button type="button" data-value="slow" aria-pressed="false">slow</button></div>
+        <div class="screen"><video autoplay loop muted playsinline preload="metadata" width="1206" height="2622" src="../media/panels/plain-typical.mp4" aria-label="A view built with placeholder strings shows as a skeleton while a flag is on, then shows its real text."></video></div>
       </figure>
       <div class="prose">
         <p>When a view doesn't fit the one-value shape, build it however you like and say when it's loading. The view is traced as it is, so give missing values a stand-in of typical length.</p>
@@ -209,8 +211,9 @@ VStack(alignment: .leading, spacing: 6) {
 
     <section id="your-own" class="demo">
       <h2>Your own skeleton</h2>
-      <figure class="clip">
-        <div class="screen"><video autoplay loop muted playsinline preload="metadata" width="1206" height="2622" poster="../media/own.png" src="../media/own.mp4" aria-label="A chart drawn as twelve skeleton bars of rising height, and a round placeholder beside two lines."></video></div>
+      <figure class="clip" data-clips="../media/panels/own-{response}.mp4">
+        <div class="segmented small" role="group" aria-label="Response" data-key="response"><button type="button" data-value="fast" aria-pressed="false">fast</button><button type="button" data-value="typical" aria-pressed="true">typical</button><button type="button" data-value="slow" aria-pressed="false">slow</button></div>
+        <div class="screen"><video autoplay loop muted playsinline preload="metadata" width="1206" height="2622" poster="../media/own.png" src="../media/panels/own-typical.mp4" aria-label="A chart drawn as twelve skeleton bars of rising height, and a round placeholder beside two lines."></video></div>
       </figure>
       <div class="prose">
         <p>Some views don't trace well: a chart, a map, a cluster of tiny icons. Draw their skeleton yourself. Build it from <code>SkeletonBox</code> or any shape, and it joins the shared shimmer, follows the theme and quiets down under Reduce Motion like every traced skeleton.</p>
@@ -260,8 +263,9 @@ Skeleton(forecast, sample: .sample) { WeatherMap(forecast: $0) }
 
     <section id="hints" class="demo">
       <h2>Hints</h2>
-      <figure class="clip">
-        <div class="screen"><video autoplay loop muted playsinline preload="metadata" width="1206" height="2622" poster="../media/hints.png" src="../media/hints.mp4" aria-label="A card whose chart is drawn as one block and whose badge is left out of the skeleton."></video></div>
+      <figure class="clip" data-clips="../media/panels/hints-{response}.mp4">
+        <div class="segmented small" role="group" aria-label="Response" data-key="response"><button type="button" data-value="fast" aria-pressed="false">fast</button><button type="button" data-value="typical" aria-pressed="true">typical</button><button type="button" data-value="slow" aria-pressed="false">slow</button></div>
+        <div class="screen"><video autoplay loop muted playsinline preload="metadata" width="1206" height="2622" poster="../media/hints.png" src="../media/panels/hints-typical.mp4" aria-label="A card whose chart is drawn as one block and whose badge is left out of the skeleton."></video></div>
       </figure>
       <div class="prose">
         <p>Tracing gets most views right. Where it doesn't, mark the view.</p>
@@ -310,8 +314,9 @@ var body: some View {
 
     <section id="memory" class="demo">
       <h2>Memory</h2>
-      <figure class="clip">
-        <div class="screen"><video autoplay loop muted playsinline preload="metadata" width="1206" height="2622" src="../media/memory.mp4" aria-label="An inbox reloads, and its skeleton now matches the messages it showed last time exactly."></video></div>
+      <figure class="clip" data-clips="../media/panels/memory-{response}.mp4">
+        <div class="segmented small" role="group" aria-label="Response" data-key="response"><button type="button" data-value="fast" aria-pressed="false">fast</button><button type="button" data-value="typical" aria-pressed="true">typical</button><button type="button" data-value="slow" aria-pressed="false">slow</button></div>
+        <div class="screen"><video autoplay loop muted playsinline preload="metadata" width="1206" height="2622" src="../media/panels/memory-typical.mp4" aria-label="An inbox reloads, and its skeleton now matches the messages it showed last time exactly."></video></div>
       </figure>
       <div class="prose">
         <p>Every <code>Skeleton</code> remembers what it showed, so its next skeleton is exact rather than drawn from the sample. By default the memory is keyed by where the <code>Skeleton</code> is in your code. Pass an <code>id</code> to share a shape between places, or to tell apart several instances of one line of code, such as a <code>Skeleton</code> inside a <code>ForEach</code>; otherwise they share one shape.</p>
@@ -390,8 +395,9 @@ ScrollView {
 
     <section id="images" class="demo">
       <h2>Images</h2>
-      <figure class="clip">
-        <div class="screen"><video autoplay loop muted playsinline preload="metadata" width="1206" height="2622" src="../media/images.mp4" aria-label="A gallery's text reveals while each photo keeps shimmering in its frame until it has downloaded, then fades in."></video></div>
+      <figure class="clip" data-clips="../media/panels/images-{response}.mp4">
+        <div class="segmented small" role="group" aria-label="Response" data-key="response"><button type="button" data-value="fast" aria-pressed="false">fast</button><button type="button" data-value="typical" aria-pressed="true">typical</button><button type="button" data-value="slow" aria-pressed="false">slow</button></div>
+        <div class="screen"><video autoplay loop muted playsinline preload="metadata" width="1206" height="2622" src="../media/panels/images-typical.mp4" aria-label="A gallery's text reveals while each photo keeps shimmering in its frame until it has downloaded, then fades in."></video></div>
       </figure>
       <div class="prose">
         <p>Images never hold a reveal back. Use <code>SkeletonAsyncImage</code> for remote images: the text around it reveals as soon as its data is there, and each image still downloading keeps shimmering in its own frame, then fades in.</p>
@@ -413,8 +419,9 @@ SkeletonAsyncImage(url: photo.url) { image in
 
     <section id="changing-size" class="demo">
       <h2>Changing size</h2>
-      <figure class="clip">
-        <div class="screen"><video autoplay loop muted playsinline preload="metadata" width="1206" height="2622" src="../media/size.mp4" aria-label="A profile card's sample bio is shorter than the real one; when it loads the card eases to its taller height."></video></div>
+      <figure class="clip" data-clips="../media/panels/size-{response}.mp4">
+        <div class="segmented small" role="group" aria-label="Response" data-key="response"><button type="button" data-value="fast" aria-pressed="false">fast</button><button type="button" data-value="typical" aria-pressed="true">typical</button><button type="button" data-value="slow" aria-pressed="false">slow</button></div>
+        <div class="screen"><video autoplay loop muted playsinline preload="metadata" width="1206" height="2622" src="../media/panels/size-typical.mp4" aria-label="A profile card's sample bio is shorter than the real one; when it loads the card eases to its taller height."></video></div>
       </figure>
       <div class="prose">
         <p>A skeleton drawn from a sample or from old data won't always match the new data's shape. When the real content is a different height, the region eases to it over 280 ms instead of snapping.</p>
@@ -504,8 +511,9 @@ let calm = SkeletonReveal(hold: 0.15, choose: { context in
 
     <section id="async-skeleton" class="demo">
       <h2>AsyncSkeleton</h2>
-      <figure class="clip">
-        <div class="screen"><video autoplay loop muted playsinline preload="metadata" width="1206" height="2622" src="../media/async.mp4" aria-label="A quote card shimmers while its async work runs, then reveals in place; reloading keeps the old quote on screen."></video></div>
+      <figure class="clip" data-clips="../media/panels/async-{response}.mp4">
+        <div class="segmented small" role="group" aria-label="Response" data-key="response"><button type="button" data-value="fast" aria-pressed="false">fast</button><button type="button" data-value="typical" aria-pressed="true">typical</button><button type="button" data-value="slow" aria-pressed="false">slow</button></div>
+        <div class="screen"><video autoplay loop muted playsinline preload="metadata" width="1206" height="2622" src="../media/panels/async-typical.mp4" aria-label="A quote card shimmers while its async work runs, then reveals in place; reloading keeps the old quote on screen."></video></div>
       </figure>
       <div class="prose">
         <p>Give <code>AsyncSkeleton</code> the async work and the view. It runs the work when it appears, shows the skeleton while it waits, and reveals the content in place.</p>
@@ -531,8 +539,9 @@ AsyncSkeleton(sample: Quote.sample, id: "quote", trigger: day) {
 
     <section id="theming" class="demo">
       <h2>Theming</h2>
-      <figure class="clip">
-        <div class="screen"><video autoplay loop muted playsinline preload="metadata" width="1206" height="2622" poster="../media/theming.png" src="../media/theming.mp4" aria-label="One dashboard switching between skeleton themes: tinted colours, pill-shaped lines, a pulse and a faster shimmer."></video></div>
+      <figure class="clip" data-clips="../media/panels/theming-{response}.mp4">
+        <div class="segmented small" role="group" aria-label="Response" data-key="response"><button type="button" data-value="fast" aria-pressed="false">fast</button><button type="button" data-value="typical" aria-pressed="true">typical</button><button type="button" data-value="slow" aria-pressed="false">slow</button></div>
+        <div class="screen"><video autoplay loop muted playsinline preload="metadata" width="1206" height="2622" poster="../media/theming.png" src="../media/panels/theming-typical.mp4" aria-label="One dashboard switching between skeleton themes: tinted colours, pill-shaped lines, a pulse and a faster shimmer."></video></div>
       </figure>
       <div class="prose">
         <p>A <code>SkeletonTheme</code> sets how every skeleton below a view looks and moves. Set one near the root, and change single options for one part of the screen with the closure form.</p>
@@ -664,8 +673,9 @@ CompactList()
 
     <section id="shimmer-text" class="demo">
       <h2>Shimmering text</h2>
-      <figure class="clip">
-        <div class="screen"><video autoplay loop muted playsinline preload="metadata" width="1206" height="2622" src="../media/shimmerText.mp4" aria-label="A line reading Looking at your sleep with a highlight passing over its letters while the work runs."></video></div>
+      <figure class="clip" data-clips="../media/panels/shimmerText-{response}.mp4">
+        <div class="segmented small" role="group" aria-label="Response" data-key="response"><button type="button" data-value="fast" aria-pressed="false">fast</button><button type="button" data-value="typical" aria-pressed="true">typical</button><button type="button" data-value="slow" aria-pressed="false">slow</button></div>
+        <div class="screen"><video autoplay loop muted playsinline preload="metadata" width="1206" height="2622" src="../media/panels/shimmerText-typical.mp4" aria-label="A line reading Looking at your sleep with a highlight passing over its letters while the work runs."></video></div>
       </figure>
       <div class="prose">
         <p>For work that's under way rather than content that's missing, such as an AI tool call that's running, shimmer the line itself. The text rests at a quiet tone and a band of it at full strength passes over, on the same clock as every skeleton.</p>
@@ -689,8 +699,9 @@ Text(call.title)
 
     <section id="accessibility" class="demo">
       <h2>Accessibility</h2>
-      <figure class="clip">
-        <div class="screen"><video autoplay loop muted playsinline preload="metadata" width="1206" height="2622" src="../media/accessibility.mp4" aria-label="VoiceOver reading Loading profile for a skeleton, then the profile once it arrives; text scales with Dynamic Type and the skeleton follows."></video></div>
+      <figure class="clip" data-clips="../media/panels/accessibility-{response}.mp4">
+        <div class="segmented small" role="group" aria-label="Response" data-key="response"><button type="button" data-value="fast" aria-pressed="false">fast</button><button type="button" data-value="typical" aria-pressed="true">typical</button><button type="button" data-value="slow" aria-pressed="false">slow</button></div>
+        <div class="screen"><video autoplay loop muted playsinline preload="metadata" width="1206" height="2622" src="../media/panels/accessibility-typical.mp4" aria-label="VoiceOver reading Loading profile for a skeleton, then the profile once it arrives; text scales with Dynamic Type and the skeleton follows."></video></div>
       </figure>
       <div class="prose">
         <ul>
@@ -715,8 +726,9 @@ Skeleton(user, sample: .sample, label: Text("Loading profile"),
 
     <section id="debugging" class="demo">
       <h2>Debugging</h2>
-      <figure class="clip">
-        <div class="screen"><video autoplay loop muted playsinline preload="metadata" width="1206" height="2622" poster="../media/debug.png" src="../media/debug.mp4" aria-label="The debug overlay: loading regions outlined in blue, then one in green labelled no move and one in red labelled moved 66 points."></video></div>
+      <figure class="clip" data-clips="../media/panels/debug-{response}.mp4">
+        <div class="segmented small" role="group" aria-label="Response" data-key="response"><button type="button" data-value="fast" aria-pressed="false">fast</button><button type="button" data-value="typical" aria-pressed="true">typical</button><button type="button" data-value="slow" aria-pressed="false">slow</button></div>
+        <div class="screen"><video autoplay loop muted playsinline preload="metadata" width="1206" height="2622" poster="../media/debug.png" src="../media/panels/debug-typical.mp4" aria-label="The debug overlay: loading regions outlined in blue, then one in green labelled no move and one in red labelled moved 66 points."></video></div>
       </figure>
       <div class="prose">
         <p>A skeleton that doesn't match its content makes the page jump. The debug overlay finds those. Each loading region is outlined in blue, labelled with where its skeleton came from (<code>sample</code>, <code>last shown</code>, <code>remembered</code>, <code>on screen</code>, <code>custom</code>, <code>content</code> or <code>fallback</code>). When the content arrives the outline turns green if nothing moved, or red with how far it moved.</p>
