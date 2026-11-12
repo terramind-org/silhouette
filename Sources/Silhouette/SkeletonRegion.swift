@@ -249,8 +249,15 @@ struct SkeletonRegion<Content: View, Placeholder: View>: View {
         let scale = min(environment.displayScale, 2)
         surfaceSize = frame.size
         tracedSkeleton = nil
+        // Only when the offscreen trace drew something: otherwise the live shape draws the skeleton.
         skeletonImage = PieceTracer.shape(of: placeholder.map { AnyView($0) } ?? AnyView(content), size: frame.size, environment: environment, scale: scale)
+            .flatMap { PieceTracer.hasCoverage($0) ? $0 : nil }
             .map { Image(decorative: $0, scale: scale) }
+        #if DEBUG
+        if skeletonImage == nil, frame.width >= 1, frame.height >= 1 {
+            SampleTemplate.logger.notice("A skeleton at y \(Int(frame.minY), privacy: .public) couldn't be traced offscreen, so it's drawn live and its reveal crossfades. Views backed by UIKit or AppKit, or reading environment objects that aren't in the environment, can't be drawn offscreen.")
+        }
+        #endif
         surfaceInk = PieceTracer.bareRender(of: content, size: frame.size, environment: environment, scale: scale)
             .flatMap { PieceTracer.coverage(of: $0, page: environment.colorScheme == .dark ? 0 : 1, grow: 1) }
             .map { Image(decorative: $0, scale: scale) }
@@ -322,7 +329,13 @@ struct SkeletonRegion<Content: View, Placeholder: View>: View {
             ?? tracePieces(of: placeholder.map { AnyView($0) } ?? AnyView(content), size: skeletonSize)
         var counted = context
         counted.pieces = skeletonPieces.count
-        let resolved = reveal.resolved(for: counted)
+        var resolved = reveal.resolved(for: counted)
+        // Content that can't be traced offscreen (a view that only exists in the live hierarchy,
+        // say) has no pieces to cascade. Crossfade it rather than show it all at once.
+        if wasShowing, onScreen, case .custom = resolved.order, resolved.wipe == nil, skeletonPieces.isEmpty {
+            resolved.order = .together
+            resolved.duration = max(resolved.duration, 0.25)
+        }
 
         guard wasShowing, onScreen, resolved.duration > 0 else {
             var transaction = Transaction()

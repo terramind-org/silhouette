@@ -138,6 +138,19 @@ enum PieceTracer {
         return renderer.cgImage
     }
 
+    /// Whether an image has any coverage at all: an offscreen render of a view that only
+    /// exists in the live hierarchy comes back empty.
+    nonisolated static func hasCoverage(_ image: CGImage) -> Bool {
+        let w = 64, h = max(1, Int(Double(image.height) / Double(max(image.width, 1)) * 64))
+        var alpha = [UInt8](repeating: 0, count: w * h)
+        guard let context = CGContext(
+            data: &alpha, width: w, height: h, bitsPerComponent: 8, bytesPerRow: w,
+            space: CGColorSpaceCreateDeviceGray(), bitmapInfo: CGImageAlphaInfo.alphaOnly.rawValue
+        ) else { return true }
+        context.draw(image, in: CGRect(x: 0, y: 0, width: w, height: h))
+        return alpha.contains { $0 > 32 }
+    }
+
     /// Connected areas of coverage in an image, as rects in points.
     static func pieces(in image: CGImage, pointSize: CGSize) -> [CGRect] {
         let width = image.width, height = image.height
