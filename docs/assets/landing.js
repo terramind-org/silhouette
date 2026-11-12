@@ -2,7 +2,7 @@
 // measured from its own markup, and the whole wall comes in under one sweep. Now and then it
 // all loads again, the way an app refreshes. Skullet (MIT, Lochie Axon) does the web side;
 // Silhouette does the same in SwiftUI.
-import { Reveal } from "./vendor/skullet/skullet.mjs";
+import { Reveal, forgetShapes } from "./vendor/skullet/skullet.mjs";
 
 const root = document.documentElement;
 const still = matchMedia("(prefers-reduced-motion: reduce)").matches;
@@ -10,10 +10,16 @@ const wait = (ms) => new Promise((done) => setTimeout(done, ms));
 // Fresh nodes each time: Skullet lays them out unseen to measure the skeleton.
 const nodes = (html) => document.createRange().createContextualFragment(html);
 
-function take(el) {
+// Skullet remembers each skeleton's shape. Without an id it keys the shape off the markup's
+// structure, and two cards built alike (a picture beside a few lines) would share one: each
+// card keys its own. Shapes from earlier visits are dropped, so a changed page never starts
+// from an old one.
+forgetShapes();
+
+function take(el, key) {
   const html = `<div class="in">${el.innerHTML}</div>`;
   el.replaceChildren();
-  return { el, html, reveal: new Reveal(el, { reveal: "sweep", label: "Loading" }) };
+  return { el, html, reveal: new Reveal(el, { id: `landing-${key}`, reveal: "sweep", label: "Loading" }) };
 }
 
 function wireCopy(scope) {
@@ -33,8 +39,8 @@ if (still) {
   root.classList.remove("waiting");
   wireCopy(document);
 } else {
-  const lead = take(document.querySelector("[data-loads]"));
-  const pieces = [...document.querySelectorAll("[data-piece]")].map(take);
+  const lead = take(document.querySelector("[data-loads]"), "lead");
+  const pieces = [...document.querySelectorAll("[data-piece]")].map((el, i) => take(el, i));
   let run = 0;
 
   // Everything shown in one go lands in one sweep across the page.
