@@ -26,7 +26,9 @@ The full documentation, with a recording for each feature, a theme playground an
 
 ## For coding agents
 
-[`skills/silhouette/SKILL.md`](skills/silhouette/SKILL.md) teaches a coding agent to adopt Silhouette well: which API to pick, writing samples, hints, side effects, lists, accessibility, testing and a checklist to verify with the debug overlay. Copy the `skills/silhouette` folder into your agent's skills directory (for Claude Code, `.claude/skills/`).
+[`skills/silhouette/SKILL.md`](skills/silhouette/SKILL.md) teaches a coding agent to adopt Silhouette well: which API to pick, writing samples, hints, side effects, lists, accessibility, testing and a checklist to verify with the debug overlay. Copy the `skills/silhouette` folder into your agent's skills directory (for Claude Code, `.claude/skills/`), or fetch it from [silhouette.terramind.io/skill.md](https://silhouette.terramind.io/skill.md). [`llms.txt`](https://silhouette.terramind.io/llms.txt) indexes the docs for tools that read the web.
+
+After changing the skill, run `scripts/sync-site.sh` so the site serves the same file; CI checks it.
 
 ## Install
 

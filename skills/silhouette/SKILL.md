@@ -7,7 +7,7 @@ description: Use when adding loading skeletons, shimmer placeholders or loading 
 
 Silhouette draws a skeleton of a SwiftUI view by laying the real view out unseen with sample data and tracing it: a bar per line of text, a block per image, control and painted shape. When the data arrives, the content replaces the skeleton in place. Your job is to wrap the right views, give them good samples, and verify nothing moves.
 
-Full docs: `docs/docs/index.html` in the Silhouette repo. The API's doc comments in `Sources/Silhouette/` are the source of truth.
+Full docs: https://silhouette.terramind.io/docs/ (an index for agents is at https://silhouette.terramind.io/llms.txt). The API's doc comments in `Sources/Silhouette/` (https://github.com/terramind-org/silhouette) are the source of truth.
 
 ## Install
 

@@ -1,0 +1,44 @@
+# Silhouette
+
+> Skeleton loading states for SwiftUI, traced from your real layout. While data loads, Silhouette lays out the real view with sample data, unseen, and draws a skeleton in exactly its shape: a bar per line of text as it wraps, a block per image, control and painted shape. Every skeleton shimmers in step, and when the data arrives the content replaces its skeleton in place, so nothing on the page moves. MIT licensed, by Terramind.
+
+Install with Swift Package Manager: `.package(url: "https://github.com/terramind-org/silhouette.git", from: "0.1.0")`, then add the `Silhouette` product to the app target and `import Silhouette`. Requires iOS 17, macOS 14, tvOS 17, watchOS 10 or visionOS 1.
+
+The three ways in: `Skeleton(data, sample:) { content }` for a view built from one value (preferred); `.skeleton(isLoading:)` for any view; `AsyncSkeleton` for async work. Give samples typical lengths. The API's doc comments in `Sources/Silhouette/` are the source of truth.
+
+## For coding agents
+
+- [Skill](https://silhouette.terramind.io/skill.md): how to adopt Silhouette well, choosing an API, writing samples, hints, side effects, lists, accessibility, testing and a verification checklist. Save it as `SKILL.md` in a `silhouette` skills folder.
+
+## Docs
+
+- [Getting started](https://silhouette.terramind.io/docs/#getting-started): install, and the 30-second version
+- [From your view and a sample](https://silhouette.terramind.io/docs/#from-your-view): `Skeleton(data, sample:)`, the preferred API
+- [Any view with a flag](https://silhouette.terramind.io/docs/#any-view): `.skeleton(isLoading:)` and nested regions
+- [Your own skeleton](https://silhouette.terramind.io/docs/#your-own): drawing a skeleton for views that don't trace well
+- [Hints](https://silhouette.terramind.io/docs/#hints): `skeletonBlock`, `skeletonIgnored`, `skeletonKeep`
+- [Memory](https://silhouette.terramind.io/docs/#memory): shapes remembered by `id`, in a launch and across launches
+- [Reveal modes](https://silhouette.terramind.io/docs/#reveal-modes): together, sequence, smart and sweep
+- [Images](https://silhouette.terramind.io/docs/#images): `SkeletonAsyncImage`
+- [Changing size](https://silhouette.terramind.io/docs/#changing-size): content of a different height
+- [Your own reveal](https://silhouette.terramind.io/docs/#your-own-reveal): custom wipes and entrances
+- [AsyncSkeleton](https://silhouette.terramind.io/docs/#async-skeleton): loading from async work
+- [Theming](https://silhouette.terramind.io/docs/#theming): colours, radius, text metrics, animation and speed
+- [Shimmering text](https://silhouette.terramind.io/docs/#shimmer-text): `ShimmerText` for a single loading line
+- [Accessibility](https://silhouette.terramind.io/docs/#accessibility): VoiceOver, Reduce Motion, Dynamic Type
+- [Debugging](https://silhouette.terramind.io/docs/#debugging): the debug overlay and x-ray
+- [Data fetching](https://silhouette.terramind.io/docs/#data-fetching): side effects, refetching, lists
+- [Testing](https://silhouette.terramind.io/docs/#testing): UI tests and instant reveals
+- [Troubleshooting](https://silhouette.terramind.io/docs/#troubleshooting): skeletons that jump or look wrong
+- [API reference](https://silhouette.terramind.io/docs/#api)
+
+## Source
+
+- [GitHub repository](https://github.com/terramind-org/silhouette): the package, the demo app, these docs and the skill
+- [README](https://github.com/terramind-org/silhouette/blob/main/README.md)
+
+## Optional
+
+- [How it works](https://silhouette.terramind.io/docs/#how-it-works): layout, tracing, coverage, the shared clock and the reveal
+- [Platforms](https://silhouette.terramind.io/docs/#platforms)
+- [Changelog](https://silhouette.terramind.io/docs/#changelog)

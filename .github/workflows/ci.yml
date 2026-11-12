@@ -10,6 +10,16 @@ concurrency:
   cancel-in-progress: true
 
 jobs:
+  site:
+    name: Site copy of the skill
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+      - name: docs/skill.md matches skills/silhouette/SKILL.md
+        run: |
+          ./scripts/sync-site.sh
+          git diff --exit-code -- docs/skill.md || { echo "Run scripts/sync-site.sh and commit docs/skill.md"; exit 1; }
+
   test-macos:
     name: Test (macOS)
     runs-on: macos-15
