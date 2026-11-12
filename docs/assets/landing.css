@@ -236,11 +236,12 @@ img { display: block; max-width: 100%; }
 .foot a { color: var(--ink-2); }
 
 /* Skullet holds a piece's content in a pane of its own, and while loading lays out the skeleton's
-   copy in a container of its own: both take the piece's full height, so the skeleton is laid out
+   copy (a ghost on a first visit, a snapshot after) in a container of its own: all take the piece's full height, so the skeleton is laid out
    exactly as the content will be. */
 .piece [skullet-pane], .lead [skullet-pane],
 .piece [skullet-loading], .lead [skullet-loading],
-.piece [skullet-snapshot], .lead [skullet-snapshot] { height: 100%; }
+.piece [skullet-snapshot], .lead [skullet-snapshot],
+.piece [skullet-ghost], .lead [skullet-ghost] { height: 100%; }
 
 /* Until the skeletons are drawn, what they stand for stays out of sight. */
 .waiting [data-piece] > *, .waiting [data-loads] > * { visibility: hidden; }

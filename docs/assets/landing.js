@@ -5,7 +5,11 @@
 import { Reveal, applyTheme, forgetShapes } from "./vendor/skullet/skullet.mjs";
 
 const root = document.documentElement;
-const still = matchMedia("(prefers-reduced-motion: reduce)").matches;
+// ?static shows the page as it is and ?hold keeps it loading: for checking that every skeleton
+// sits exactly on what it stands for.
+const params = new URLSearchParams(location.search);
+const still = params.has("static") || matchMedia("(prefers-reduced-motion: reduce)").matches;
+const hold = params.has("hold");
 const wait = (ms) => new Promise((done) => setTimeout(done, ms));
 // Fresh nodes each time: Skullet lays them out unseen to measure the skeleton.
 const nodes = (html) => document.createRange().createContextualFragment(html);
@@ -54,6 +58,7 @@ if (still) {
     const id = ++run;
     load([lead, ...pieces]);
     root.classList.remove("waiting");
+    if (hold) return;
     await wait(1200);
     if (id !== run) return;
     show([lead, ...pieces]);
