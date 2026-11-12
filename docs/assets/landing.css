@@ -68,7 +68,9 @@ img { display: block; max-width: 100%; }
 .wall {
   display: grid;
   grid-template-columns: repeat(6, minmax(0, 1fr));
-  grid-auto-rows: minmax(150px, auto);
+  /* Rows never depend on what is in them: a card is the same size loading and loaded, so the
+     wall never reflows when its content lands. */
+  grid-auto-rows: 150px;
   grid-auto-flow: dense;
   gap: 12px;
   max-width: 1320px;
@@ -158,17 +160,17 @@ img { display: block; max-width: 100%; }
 
 /* Photo cards */
 .photo-card { padding: 10px 10px 14px; }
-.photo-card img { width: 100%; flex: 1; min-height: 120px; object-fit: cover; border-radius: 16px; }
+.photo-card img { width: 100%; flex: 1; min-height: 0; object-fit: cover; border-radius: 16px; }
 .photo-card strong { margin: 10px 8px 0; font-size: 16px; font-weight: 500; letter-spacing: -0.02em; }
 .photo-card span { margin: 0 8px; }
 
 /* Sleep stages */
-.stages { position: relative; flex: 1; min-height: 56px; margin-top: 12px; }
+.stages { position: relative; flex: 1; min-height: 28px; margin-top: 10px; }
 .stages i { position: absolute; left: var(--x); width: var(--w); top: calc(var(--y) * 26%); height: 14%; border-radius: 999px; background: var(--violet); }
 
 /* Chat */
-.chat .in { justify-content: center; gap: 12px; }
-.chat p { margin: 0; padding: 9px 14px; border-radius: 18px; font-size: 14px; line-height: 1.35; max-width: 90%; }
+.chat .in { justify-content: center; gap: 10px; }
+.chat p { margin: 0; padding: 7px 13px; border-radius: 16px; font-size: 13.5px; line-height: 1.35; max-width: 92%; }
 .chat .them { align-self: flex-end; background: var(--ink); color: #000; }
 .chat .coach { background: var(--raised); }
 
@@ -196,8 +198,8 @@ img { display: block; max-width: 100%; }
 .meter i { display: block; height: 100%; border-radius: inherit; background: var(--green); }
 
 /* Day */
-.day .in { gap: 8px; }
-.event { margin: 0; padding: 3px 10px; border-left: 2px solid; font-size: 13px; font-weight: 500; color: var(--ink-2); }
+.day .in { gap: 6px; }
+.event { margin: 0; padding: 1px 10px; border-left: 2px solid; font-size: 13px; font-weight: 500; color: var(--ink-2); }
 .lilac-ink { border-color: var(--violet); }
 .peach-ink { border-color: var(--orange); }
 .sky-ink { border-color: var(--blue); }
@@ -208,10 +210,10 @@ img { display: block; max-width: 100%; }
 .drops i.off { background: rgb(255 255 255 / 0.08); }
 
 /* Training load */
-.bars { flex: 1; min-height: 64px; display: flex; align-items: flex-end; gap: 12px; margin-top: 12px; }
+.bars { flex: 1; min-height: 30px; display: flex; align-items: flex-end; gap: 12px; margin-top: 8px; }
 .bars i { flex: 1; height: var(--h); border-radius: 6px; background: rgb(255 255 255 / 0.08); }
 .bars i.today { background: var(--orange); }
-.days { display: flex; gap: 12px; margin-top: 8px; }
+.days { display: flex; gap: 12px; margin-top: 6px; }
 .days b { flex: 1; text-align: center; font-size: 11px; font-weight: 500; color: var(--ink-3); }
 
 /* Tags */
@@ -244,13 +246,13 @@ img { display: block; max-width: 100%; }
 /* Tablets and small laptops: four columns, the lead across the top. */
 @media (max-width: 1180px) {
   .wall { grid-template-columns: repeat(4, minmax(0, 1fr)); }
-  .lead { grid-column: 1 / -1; grid-row: auto; padding: 40px 6px 32px; }
+  .lead { grid-column: 1 / -1; grid-row: 1 / span 3; padding: 24px 6px; }
 }
 /* Phones: two columns, wide pieces across both. */
 @media (max-width: 720px) {
   .bar { padding: 16px 16px 4px; }
   .bar nav { gap: 18px; font-size: 14px; }
-  .wall { grid-template-columns: repeat(2, minmax(0, 1fr)); grid-auto-rows: minmax(140px, auto); gap: 10px; padding: 8px 16px 24px; }
+  .wall { grid-template-columns: repeat(2, minmax(0, 1fr)); grid-auto-rows: 150px; gap: 10px; padding: 8px 16px 24px; }
   .lead { padding: 28px 2px 22px; }
   .lead p { margin-top: 16px; }
   .install { margin-top: 20px; max-width: 100%; }
