@@ -43,8 +43,8 @@
     --ink-3: #6e6e75;
     --line: rgba(255, 255, 255, 0.09);
     --line-strong: rgba(255, 255, 255, 0.16);
-    --accent: #f5a63d;
-    --accent-soft: rgba(245, 166, 61, 0.12);
+    --accent: #f5f5f7;
+    --accent-soft: rgba(255, 255, 255, 0.08);
     --bone: rgba(255, 255, 255, 0.08);
     --bone-hi: rgba(255, 255, 255, 0.1);
 

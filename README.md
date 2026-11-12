@@ -9,10 +9,6 @@ While your data loads, Silhouette lays out your own view with sample data, unsee
   <img src="docs/media/loading-to-loaded-dark.gif" width="300" alt="The same four reveal modes in dark mode.">
 </p>
 
-<p align="center">
-  <img src="docs/media/comments-dark.png" width="300" alt="A comments card with three comments, avatars as initials on gradients, likes and reply links.">
-  <img src="docs/media/cards-light.png" width="300" alt="A profile header with a cover, avatar, bio and follower counts, above a feed post.">
-</p>
 
 - **No second skeleton to maintain.** The skeleton *is* your view. Change the view and the skeleton follows.
 - **One shimmer.** Every skeleton keeps time by the same clock and its place on screen, however late it appeared.
@@ -25,36 +21,6 @@ Requires iOS 17, macOS 14, tvOS 17, watchOS 10 or visionOS 1. Text is traced fro
 
 The full documentation, with a recording for each feature, a theme playground and the API reference, is in [`docs/`](docs/): open [`docs/index.html`](docs/index.html) or serve the folder (`python3 -m http.server -d docs`). It's a static site with no build step.
 
-
-## Parity with Skullet
-
-Silhouette follows [Skullet](https://skullet.lochie.me/docs)'s design and shares no code with it. Every Skullet feature works here too, each with a screen in the demo app:
-
-| Skullet | Silhouette | Demo screen |
-| --- | --- | --- |
-| <Skeleton data sample> | `Skeleton(data, sample:) { }` | From your view |
-| `loading` on plain children | `.skeleton(isLoading:)` | Any view, with a flag |
-| `.Skeleton` static, `SkeletonBox` | `.placeholder { }`, `SkeletonBox` | Your own skeleton |
-| `skullet-block`, `skullet-ignore` | `.skeletonBlock()`, `.skeletonIgnored()`, `.skeletonShape { }` | Hints |
-| Memory, `id`, `forgetShapes()` | `id:`, `forgetSkeletonShapes()` | Memory |
-| `empty`, `emptyMessage`, `error` | `.empty(_:message:)`, `.failure(_:)` | From your view |
-| Reveal modes: smart, together, sequence, sweep | `.smart`, `.together`, `.sequence`, `.sweep` (uncovers the content behind the shimmer's front) | Reveal modes, and the panel above |
-| 150 ms hold under smart | `hold`, 0.15 s | Reveal modes (Response: fast) |
-| Changing size | Eases to the new height over 0.28 s | Changing size |
-| RevealSpec `order` | `.together`, `.byPosition`, `.byRow`, `.custom { piece in }` | Your own reveal |
-| RevealSpec `enter`: filter, translate, scale, rotate, clipPath | `Enter(blur:offset:scale:rotation:clip:)` | Your own reveal: blur, unveil, zoom |
-| RevealSpec `wipe`: mask, `out`, `effect` | `.custom(_:outgoing:effect:)` | Your own reveal: wipe, focus |
-| `delay`, `duration`, `hold`, 1 s limits | Same, same limits | Your own reveal |
-| `choose` | `choose: (RevealContext) -> SkeletonReveal?` | Reveal modes (smart is built on it) |
-| Images wait behind their own skeleton | `SkeletonAsyncImage` | Images |
-| `SkeletonSuspense` | `AsyncSkeleton` | AsyncSkeleton |
-| Theme: mode, colours, animation, speed, radius, text | `.skeletonTheme`: colour scheme, colours, shimmer / groupShimmer / pulse / none, speed, radius, text metrics | Theming |
-| Accessibility: aria-busy, label, reduced motion, onReveal | Hidden skeletons, `label:`, Reduce Motion, `onReveal:` | Accessibility |
-| Debug overlay, `skullet-xray`, `setDebug()` | `.skeletonDebug([.outlines, .xray])`, `setSkeletonDebug(_:)`, a launch argument | Debugging |
-| Data fetching: pass data as it arrives | Observation, `.task`, refetch with `isLoading:` | The showcase; AsyncSkeleton |
-| Testing: instant reveals, hidden skeleton text | `-SilhouetteInstant YES`, skeletons hidden from accessibility | None; covered by unit tests |
-
-Web-only, so not carried over: server rendering (iOS has none), the web component (there is no DOM), and CSS custom properties and the CSP `nonce` (no CSS).
 
 ## For coding agents
 
@@ -308,5 +274,5 @@ MIT. See [LICENSE](LICENSE).
 
 <p>
   <img src="docs/assets/terramind-mark.png" width="16" height="16" alt="">
-  Silhouette by <a href="https://terramind.com">Terramind</a>. Designed and built in <a href="https://nucleus.terramind.com">Nucleus</a>, Terramind's agent workspace.
+  Silhouette by <a href="https://terramind.com">Terramind</a>. Designed and built in <a href="https://nucleus.terramind.com">Nucleus</a>, Terramind's agent workspace. Loading states in <a href="https://halo.terramind.io">Halo</a> are built with it. Inspired by <a href="https://skullet.lochie.me">Skullet</a>.
 </p>

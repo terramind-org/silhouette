@@ -62,13 +62,14 @@
         <li><a href="#api">API</a></li>
         <li><a href="#platforms">Platform support</a></li>
         <li><a href="#how-it-works">How it works</a></li>
-        <li><a href="#parity">Parity with Skullet</a></li>
         <li><a href="#changelog">Changelog</a></li>
       </ul>
     </nav>
     <div class="side-links">
       <a href="../">Home</a>
       <a href="https://github.com/terramind-org/silhouette">GitHub</a>
+      <a href="https://halo.terramind.io">Halo</a>
+      <a href="https://terramind.com">Terramind</a>
     </div>
   </aside>
 
@@ -1086,94 +1087,6 @@ ContentView()
       </div>
     </section>
 
-    <section id="parity">
-      <h2>Parity with Skullet</h2>
-      <div class="prose">
-        <p>Silhouette follows <a href="https://skullet.lochie.me/docs">Skullet</a>'s design closely and shares no code with it. Here is every Skullet feature and where it stands.</p>
-        <h3 id="parity-by-section">Feature by feature</h3>
-        <p>Every Skullet feature, the Silhouette API that does the same, and the demo screen where it works.</p>
-        <div class="table loose"><table>
-          <thead><tr><th>Skullet</th><th>Silhouette</th><th>Demo</th><th></th></tr></thead>
-          <tbody>
-            <tr><td>&lt;Skeleton data sample&gt;</td><td><code>Skeleton(data, sample:) { }</code></td><td>From your view</td><td><span class="status full">Has it</span></td></tr>
-            <tr><td><code>loading</code> on plain children</td><td><code>.skeleton(isLoading:)</code></td><td>Any view, with a flag</td><td><span class="status full">Has it</span></td></tr>
-            <tr><td><code>.Skeleton</code> static, <code>SkeletonBox</code></td><td><code>.placeholder { }</code>, <code>SkeletonBox</code></td><td>Your own skeleton</td><td><span class="status full">Has it</span></td></tr>
-            <tr><td><code>skullet-block</code>, <code>skullet-ignore</code></td><td><code>.skeletonBlock()</code>, <code>.skeletonIgnored()</code>, <code>.skeletonShape { }</code></td><td>Hints</td><td><span class="status full">Has it</span></td></tr>
-            <tr><td>Memory, <code>id</code>, <code>forgetShapes()</code></td><td><code>id:</code>, <code>forgetSkeletonShapes()</code></td><td>Memory</td><td><span class="status full">Has it</span></td></tr>
-            <tr><td><code>empty</code>, <code>emptyMessage</code>, <code>error</code></td><td><code>.empty(_:message:)</code>, <code>.failure(_:)</code></td><td>From your view</td><td><span class="status full">Has it</span></td></tr>
-            <tr><td>Reveal modes: smart, together, sequence, sweep</td><td><code>.smart</code>, <code>.together</code>, <code>.sequence</code>, <code>.sweep</code> (uncovers the content behind the shimmer's front)</td><td>Reveal modes, and the panel above</td><td><span class="status full">Has it</span></td></tr>
-            <tr><td>150 ms hold under smart</td><td><code>hold</code>, 0.15 s</td><td>Reveal modes (Response: fast)</td><td><span class="status full">Has it</span></td></tr>
-            <tr><td>Changing size</td><td>Eases to the new height over 0.28 s</td><td>Changing size</td><td><span class="status full">Has it</span></td></tr>
-            <tr><td>RevealSpec <code>order</code></td><td><code>.together</code>, <code>.byPosition</code>, <code>.byRow</code>, <code>.custom { piece in }</code></td><td>Your own reveal</td><td><span class="status full">Has it</span></td></tr>
-            <tr><td>RevealSpec <code>enter</code>: filter, translate, scale, rotate, clipPath</td><td><code>Enter(blur:offset:scale:rotation:clip:)</code></td><td>Your own reveal: blur, unveil, zoom</td><td><span class="status full">Has it</span></td></tr>
-            <tr><td>RevealSpec <code>wipe</code>: mask, <code>out</code>, <code>effect</code></td><td><code>.custom(_:outgoing:effect:)</code></td><td>Your own reveal: wipe, focus</td><td><span class="status full">Has it</span></td></tr>
-            <tr><td><code>delay</code>, <code>duration</code>, <code>hold</code>, 1 s limits</td><td>Same, same limits</td><td>Your own reveal</td><td><span class="status full">Has it</span></td></tr>
-            <tr><td><code>choose</code></td><td><code>choose: (RevealContext) -&gt; SkeletonReveal?</code></td><td>Reveal modes (smart is built on it)</td><td><span class="status full">Has it</span></td></tr>
-            <tr><td>Images wait behind their own skeleton</td><td><code>SkeletonAsyncImage</code></td><td>Images</td><td><span class="status full">Has it</span></td></tr>
-            <tr><td><code>SkeletonSuspense</code></td><td><code>AsyncSkeleton</code></td><td>AsyncSkeleton</td><td><span class="status full">Has it</span></td></tr>
-            <tr><td>Theme: mode, colours, animation, speed, radius, text</td><td><code>.skeletonTheme</code>: colour scheme, colours, shimmer / groupShimmer / pulse / none, speed, radius, text metrics</td><td>Theming</td><td><span class="status full">Has it</span></td></tr>
-            <tr><td>Accessibility: aria-busy, label, reduced motion, onReveal</td><td>Hidden skeletons, <code>label:</code>, Reduce Motion, <code>onReveal:</code></td><td>Accessibility</td><td><span class="status full">Has it</span></td></tr>
-            <tr><td>Debug overlay, <code>skullet-xray</code>, <code>setDebug()</code></td><td><code>.skeletonDebug([.outlines, .xray])</code>, <code>setSkeletonDebug(_:)</code>, a launch argument</td><td>Debugging</td><td><span class="status full">Has it</span></td></tr>
-            <tr><td>Data fetching: pass data as it arrives</td><td>Observation, <code>.task</code>, refetch with <code>isLoading:</code></td><td>The showcase; AsyncSkeleton</td><td><span class="status full">Has it</span></td></tr>
-            <tr><td>Testing: instant reveals, hidden skeleton text</td><td><code>-SilhouetteInstant YES</code>, skeletons hidden from accessibility</td><td>None; covered by unit tests</td><td><span class="status full">Has it</span></td></tr>
-            <tr><td>Server rendering, styles.css import</td><td>Web only: there is no server rendering on iOS</td><td></td><td><span class="status web">Web only</span></td></tr>
-            <tr><td>Web component, <code>new Reveal()</code></td><td>Web only: there is no DOM</td><td></td><td><span class="status web">Web only</span></td></tr>
-            <tr><td>CSS custom properties, CSP <code>nonce</code></td><td>Web only: no CSS on iOS</td><td></td><td><span class="status web">Web only</span></td></tr>
-          </tbody>
-        </table></div>
-        <h3 id="parity-by-feature">In more detail</h3>
-        <h3 id="parity-by-feature">Feature by feature</h3>
-        <div class="table loose"><table>
-          <thead><tr><th>Skullet</th><th>Silhouette</th><th>Status</th></tr></thead>
-          <tbody>
-            <tr><td><code>&lt;Skeleton data sample&gt;</code></td><td><code>Skeleton(data, sample:)</code></td><td><span class="status full">Full</span></td></tr>
-            <tr><td><code>&lt;Skeleton loading&gt;</code></td><td><code>.skeleton(isLoading:)</code></td><td><span class="status full">Full</span></td></tr>
-            <tr><td>A sample logged in development</td><td>Logged in debug builds</td><td><span class="status full">Full</span></td></tr>
-            <tr><td>Component <code>.Skeleton</code>, <code>skeleton</code> prop</td><td><code>.skeletonShape { }</code>, <code>.placeholder { }</code></td><td><span class="status full">Full</span></td></tr>
-            <tr><td><code>&lt;SkeletonBox&gt;</code></td><td><code>SkeletonBox</code> with points, fractions and em</td><td><span class="status full">Full</span></td></tr>
-            <tr><td><code>skullet-block</code>, <code>skullet-ignore</code></td><td><code>.skeletonBlock()</code>, <code>.skeletonIgnored()</code></td><td><span class="status full">Full</span></td></tr>
-            <tr><td><code>empty</code>, <code>emptyMessage</code>, <code>error</code></td><td><code>.empty(_:message:)</code>, <code>.failure(_:content:)</code></td><td><span class="status full">Full</span></td></tr>
-            <tr><td><code>label</code>, <code>onReveal</code></td><td><code>label:</code>, <code>onReveal:</code></td><td><span class="status full">Full</span></td></tr>
-            <tr><td>Memory, by <code>id</code> or automatically</td><td><code>id:</code> or the place in code, in memory and <code>UserDefaults</code></td><td><span class="status partial">Partial</span><br>Keyed by place in code without an <code>id</code>, as Skullet keys by page and markup. Across launches only for <code>Codable</code> data.</td></tr>
-            <tr><td><code>forgetShapes()</code></td><td><code>forgetSkeletonShapes()</code></td><td><span class="status full">Full</span></td></tr>
-            <tr><td>Reveals: smart, together, sequence, sweep</td><td><code>.smart</code>, <code>.together</code>, <code>.sequence</code>, <code>.sweep</code></td><td><span class="status full">Full</span></td></tr>
-            <tr><td><code>RevealSpec</code> <code>order</code> function</td><td><code>.custom((RevealPiece) -&gt; Double?)</code>, with <code>byPosition</code> and <code>byRow</code> exported</td><td><span class="status full">Full</span></td></tr>
-            <tr><td><code>enter</code></td><td><code>Enter</code>: blur, offset, scale, rotation</td><td><span class="status partial">Partial</span><br>No arbitrary filters or clip paths.</td></tr>
-            <tr><td><code>wipe</code> with <code>mask</code>, <code>out</code>, <code>effect</code></td><td><code>Wipe.custom(_:outgoing:)</code> returning gradient <code>WipeMask</code>s</td><td><span class="status partial">Partial</span><br>Gradient masks, not arbitrary CSS masks; the outgoing skeleton can have its own. No separate <code>effect</code> pane: use <code>enter</code>.</td></tr>
-            <tr><td><code>delay</code>, <code>duration</code>, <code>hold</code>, <code>choose</code></td><td>The same fields, in seconds</td><td><span class="status full">Full</span></td></tr>
-            <tr><td>Images never hold a reveal</td><td><code>SkeletonAsyncImage</code></td><td><span class="status partial">Partial</span><br>Needs the wrapper; plain <code>AsyncImage</code> isn't tracked.</td></tr>
-            <tr><td>Changing size eases</td><td>Eases over 280 ms</td><td><span class="status full">Full</span></td></tr>
-            <tr><td><code>SkeletonSuspense</code></td><td><code>AsyncSkeleton</code>, with <code>.failure { }</code></td><td><span class="status full">Full</span><br>Runs the work itself, so there's no suspending child to wrap; an <code>id</code> alone draws the shape last shown.</td></tr>
-            <tr><td><code>SkulletProvider</code> theme and reveal</td><td><code>.skeletonTheme</code>, <code>.skeletonReveal</code></td><td><span class="status full">Full</span></td></tr>
-            <tr><td><code>mode</code> light, dark, system</td><td><code>colorScheme</code></td><td><span class="status full">Full</span></td></tr>
-            <tr><td>Provider <code>text</code></td><td><code>.skeletonText(_:)</code></td><td><span class="status full">Full</span></td></tr>
-            <tr><td>Animation: shimmer, group-shimmer, pulse, none</td><td><code>SkeletonAnimation</code></td><td><span class="status full">Full</span></td></tr>
-            <tr><td>Speed: slow, fast</td><td><code>.slow</code>, <code>.normal</code>, <code>.fast</code>, <code>.seconds</code></td><td><span class="status full">Full</span></td></tr>
-            <tr><td><code>radius</code> as any CSS length</td><td><code>.auto</code>, <code>.points</code>, <code>.fraction</code>, <code>.pill</code></td><td><span class="status full">Full</span><br>Points, or a share of the height for a percentage.</td></tr>
-            <tr><td>Text top and bottom</td><td><code>SkeletonTextMetrics</code></td><td><span class="status full">Full</span><br>Glyph-exact from iOS 18.</td></tr>
-            <tr><td>Custom properties per element</td><td><code>.skeletonTheme { }</code> on any view</td><td><span class="status full">Full</span></td></tr>
-            <tr><td>Debug overlay, x-ray, <code>setDebug</code>, <code>?skullet-debug</code></td><td><code>.skeletonDebug</code>, <code>setSkeletonDebug</code>, <code>-SilhouetteDebug</code></td><td><span class="status full">Full</span></td></tr>
-            <tr><td><code>aria-busy</code>, hidden skeleton, label</td><td>One VoiceOver element, skeleton hidden</td><td><span class="status full">Full</span></td></tr>
-            <tr><td>Reduced motion: skeletons hold still, reveals instant</td><td>The same; a quiet pulse is an opt-in (<code>reducedMotion: .pulse</code>)</td><td><span class="status full">Full</span></td></tr>
-            <tr><td><code>useReveal()</code></td><td><code>@Environment(\.skeletonReveal)</code></td><td><span class="status full">Full</span></td></tr>
-            <tr><td>Testing in jsdom</td><td>XCUITest and snapshot guidance</td><td><span class="status full">Full</span></td></tr>
-            <tr><td>Server rendering</td><td>&mdash;</td><td><span class="status web">Web-only</span><br>There's no server HTML in a SwiftUI app.</td></tr>
-            <tr><td>CSP <code>nonce</code></td><td>&mdash;</td><td><span class="status web">Web-only</span><br>No inline scripts.</td></tr>
-            <tr><td>Web component, <code>new Reveal()</code>, <code>createSkeletonBox</code></td><td>&mdash;</td><td><span class="status web">Web-only</span><br>DOM APIs; SwiftUI views cover it.</td></tr>
-            <tr><td>Vue and Svelte wrappers, Nuxt, SvelteKit</td><td>&mdash;</td><td><span class="status web">Web-only</span></td></tr>
-            <tr><td><code>applyTheme</code>, <code>themeVariables</code>, <code>skulletCSS</code></td><td>&mdash;</td><td><span class="status web">Web-only</span><br>CSS output; the environment does this natively.</td></tr>
-            <tr><td>Re-measure when web fonts load</td><td>&mdash;</td><td><span class="status web">Web-only</span><br>SwiftUI lays out again on any change.</td></tr>
-            <tr><td>&mdash;</td><td><code>ShimmerText</code>, <code>.shimmer(_:)</code></td><td><span class="status extra">Native extra</span></td></tr>
-            <tr><td>&mdash;</td><td><code>.instant</code> reveal</td><td><span class="status extra">Native extra</span></td></tr>
-            <tr><td>&mdash;</td><td><code>.skeletonTracksScrolling()</code></td><td><span class="status extra">Native extra</span></td></tr>
-            <tr><td>&mdash;</td><td><code>direction</code> and <code>bandWidth</code></td><td><span class="status extra">Native extra</span></td></tr>
-            <tr><td>&mdash;</td><td><code>SkeletonColors.tinted</code></td><td><span class="status extra">Native extra</span></td></tr>
-            <tr><td>&mdash;</td><td>Dynamic Type and right-to-left shimmer</td><td><span class="status extra">Native extra</span></td></tr>
-          </tbody>
-        </table></div>
-      </div>
-    </section>
-
     <section id="changelog">
       <h2>Changelog</h2>
       <div class="prose">
@@ -1202,7 +1115,7 @@ ContentView()
 
     <footer class="byline">
       <img src="../assets/terramind-mark.png" alt="" width="18" height="18">
-      <span>Silhouette by <a href="https://terramind.com">Terramind</a>. Designed and built in <a href="https://nucleus.terramind.com">Nucleus</a>, Terramind's agent workspace.</span>
+      <span>Silhouette by <a href="https://terramind.com">Terramind</a>. Designed and built in <a href="https://nucleus.terramind.com">Nucleus</a>, Terramind's agent workspace. Loading states in <a href="https://halo.terramind.io">Halo</a> are built with it. Inspired by <a href="https://skullet.lochie.me">Skullet</a>.</span>
     </footer>
   </article>
 
