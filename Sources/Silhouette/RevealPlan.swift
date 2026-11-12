@@ -344,6 +344,9 @@ final class RevealBatch {
     private let opened = Date()
     private var closed = false
     private var rects: [CGRect] = []
+    /// Regions that have said they're coming, and how many have arrived or left.
+    private var expected = 0
+    private var settled = 0
     /// When the last cascade under way ends.
     private(set) static var busyUntil = Date.distantPast
     /// When each row of earlier batches starts its wipe: its top in screen coordinates.
@@ -356,18 +359,43 @@ final class RevealBatch {
     }
 
     static func joinBatch(_ pieces: [CGRect], now: Date = Date()) async -> (rows: [CGRect], batch: ObjectIdentifier) {
+        let batch = reserve(now: now)
+        return (await batch.join(pieces), ObjectIdentifier(batch))
+    }
+
+    /// Takes a place in the batch the moment a region's data arrives, before it does any
+    /// tracing. Regions that arrive in the same update share one batch however long each takes
+    /// to trace, because the batch waits for every place taken. Within the window, later
+    /// arrivals join too.
+    static func reserve(now: Date = Date()) -> RevealBatch {
         let batch: RevealBatch
-        if let current, !current.closed, now.timeIntervalSince(current.opened) < window {
+        if let current, !current.closed, current.settled < current.expected || now.timeIntervalSince(current.opened) < window {
             batch = current
         } else {
             batch = RevealBatch()
             current = batch
         }
-        batch.rects += pieces
-        let wait = window - Date().timeIntervalSince(batch.opened)
-        if wait > 0 { try? await Task.sleep(for: .seconds(wait)) }
-        batch.closed = true
-        return (Rows.of(batch.rects), ObjectIdentifier(batch))
+        batch.expected += 1
+        return batch
+    }
+
+    /// Adds a region's pieces, in screen coordinates, and returns every row of the batch once
+    /// everyone who took a place has arrived or left, and the window has passed.
+    func join(_ pieces: [CGRect]) async -> [CGRect] {
+        rects += pieces
+        settled += 1
+        // Never longer than a second, should a region stop on its way.
+        let latest = opened.addingTimeInterval(1)
+        while (settled < expected || Date().timeIntervalSince(opened) < Self.window), Date() < latest {
+            try? await Task.sleep(for: .seconds(0.01))
+        }
+        closed = true
+        return Rows.of(rects)
+    }
+
+    /// Gives up a place: the region revealed some other way.
+    func leave() {
+        settled += 1
     }
 
     /// Keeps the page's cascade strictly top to bottom across batches: a line never starts

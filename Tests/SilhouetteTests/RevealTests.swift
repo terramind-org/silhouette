@@ -263,4 +263,24 @@ final class RevealTests: XCTestCase {
         XCTAssertEqual(effect(1).blur, 0)
         XCTAssertEqual(SkeletonReveal.Enter.unveil.clip, .top)
     }
+
+    func testAModifiersContentIsKnownToBeUntraceable() {
+        struct Wrap: ViewModifier { func body(content: Content) -> some View { content } }
+        XCTAssertTrue(SkeletonRegion<_ViewModifier_Content<Wrap>, EmptyView>.isProxy(_ViewModifier_Content<Wrap>.self))
+        XCTAssertFalse(SkeletonRegion<Text, EmptyView>.isProxy(Text.self))
+    }
+
+    @MainActor
+    func testRegionsArrivingTogetherShareABatchHoweverLongTheyTakeToTrace() async {
+        let first = RevealBatch.reserve()
+        let second = RevealBatch.reserve()
+        XCTAssertTrue(first === second)
+        async let a = first.join([CGRect(x: 0, y: 0, width: 10, height: 10)])
+        // The second region spends longer than the window tracing before it arrives.
+        try? await Task.sleep(for: .seconds(0.3))
+        let b = await second.join([CGRect(x: 0, y: 400, width: 10, height: 10)])
+        let rowsA = await a
+        XCTAssertEqual(rowsA.count, 2)
+        XCTAssertEqual(rowsA, b)
+    }
 }

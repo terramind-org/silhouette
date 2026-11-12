@@ -5,8 +5,8 @@ Skeleton loading states for SwiftUI, traced from your real layout.
 While your data loads, Silhouette lays out your own view with sample data, unseen, and draws a skeleton in exactly its shape: a bar for each line of text as it wraps, a block for each image, control and painted shape. Every skeleton on screen shimmers in step. When the data arrives, the content replaces its skeleton in place, so nothing on the page moves.
 
 <p align="center">
-  <img src="docs/media/loading-to-loaded.gif" width="300" alt="A page of cards loading four times, once per reveal mode: together, sequence, smart and sweep.">
-  <img src="docs/media/loading-to-loaded-dark.gif" width="300" alt="The same four reveal modes in dark mode.">
+  <img src="docs/media/loading-to-loaded.gif" width="300" alt="A sleep page loading four times, once per reveal mode: together, sequence, smart and sweep. Its title, moon, stages chart and readings each wait as skeletons in their own shape.">
+  <img src="docs/media/loading-to-loaded-dark.gif" width="300" alt="The same sleep page and four reveal modes in dark mode.">
 </p>
 
 

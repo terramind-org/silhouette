@@ -12,6 +12,7 @@
 		52CD8727CC7AB1EA04442D7C /* Silhouette in Frameworks */ = {isa = PBXBuildFile; productRef = 79A286B6C423786DCAD396A3 /* Silhouette */; };
 		548790179F20D43015260438 /* DemoViews.swift in Sources */ = {isa = PBXBuildFile; fileRef = 8BAAAEA7549BF6F40B7E86B5 /* DemoViews.swift */; };
 		55BA028905D1AACE2FDCD8CF /* DemoSupport.swift in Sources */ = {isa = PBXBuildFile; fileRef = 9AEA885A2B8CE93C5942546D /* DemoSupport.swift */; };
+		584B2C8C6DF9E642692F43C0 /* SleepPage.swift in Sources */ = {isa = PBXBuildFile; fileRef = 11A94772105DD9AAE507EE05 /* SleepPage.swift */; };
 		5CBB03BAD0824227FD9AED60 /* MoreCards.swift in Sources */ = {isa = PBXBuildFile; fileRef = 48D2C200791650A9B1202281 /* MoreCards.swift */; };
 		716C29175752367F6C746C69 /* ThemingPage.swift in Sources */ = {isa = PBXBuildFile; fileRef = 18EAE98FB84AED39A6FF975E /* ThemingPage.swift */; };
 		8437D2DFC180A1757624024D /* ShowcasePage.swift in Sources */ = {isa = PBXBuildFile; fileRef = 117443FC73DEB13022E851E1 /* ShowcasePage.swift */; };
@@ -21,6 +22,7 @@
 
 /* Begin PBXFileReference section */
 		117443FC73DEB13022E851E1 /* ShowcasePage.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = ShowcasePage.swift; sourceTree = "<group>"; };
+		11A94772105DD9AAE507EE05 /* SleepPage.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = SleepPage.swift; sourceTree = "<group>"; };
 		18EAE98FB84AED39A6FF975E /* ThemingPage.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = ThemingPage.swift; sourceTree = "<group>"; };
 		3E78EB1FEBB9328990561DCB /* silhouette */ = {isa = PBXFileReference; lastKnownFileType = folder; name = silhouette; path = ..; sourceTree = SOURCE_ROOT; };
 		48D2C200791650A9B1202281 /* MoreCards.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = MoreCards.swift; sourceTree = "<group>"; };
@@ -81,6 +83,7 @@
 				48D2C200791650A9B1202281 /* MoreCards.swift */,
 				117443FC73DEB13022E851E1 /* ShowcasePage.swift */,
 				54C4F611890EFC1505CBEA95 /* SilhouetteDemoApp.swift */,
+				11A94772105DD9AAE507EE05 /* SleepPage.swift */,
 				18EAE98FB84AED39A6FF975E /* ThemingPage.swift */,
 			);
 			path = SilhouetteDemo;
@@ -154,6 +157,7 @@
 				5CBB03BAD0824227FD9AED60 /* MoreCards.swift in Sources */,
 				8437D2DFC180A1757624024D /* ShowcasePage.swift in Sources */,
 				268C2133C15204E9518BFDA3 /* SilhouetteDemoApp.swift in Sources */,
+				584B2C8C6DF9E642692F43C0 /* SleepPage.swift in Sources */,
 				716C29175752367F6C746C69 /* ThemingPage.swift in Sources */,
 			);
 			runOnlyForDeploymentPostprocessing = 0;

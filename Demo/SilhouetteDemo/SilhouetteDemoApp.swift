@@ -24,6 +24,7 @@ enum DemoRoute: String, CaseIterable, Identifiable, Hashable {
     case component, plain, own, hints, memory
     case reveals, images, size, ownReveal, async
     case theming, shimmerText, accessibility, debug
+    case sleep
 
     var id: Self { self }
 
@@ -44,6 +45,7 @@ enum DemoRoute: String, CaseIterable, Identifiable, Hashable {
         case .shimmerText: "ShimmerText"
         case .accessibility: "Accessibility"
         case .debug: "Debugging"
+        case .sleep: "Last night"
         }
     }
 
@@ -64,6 +66,7 @@ enum DemoRoute: String, CaseIterable, Identifiable, Hashable {
         case .shimmerText: "text.badge.checkmark"
         case .accessibility: "accessibility"
         case .debug: "ladybug"
+        case .sleep: "moon.stars"
         }
     }
 
@@ -85,6 +88,7 @@ enum DemoRoute: String, CaseIterable, Identifiable, Hashable {
         case .shimmerText: ShimmerTextPage()
         case .accessibility: AccessibilityPage()
         case .debug: DebugPage()
+        case .sleep: SleepPage()
         }
     }
 

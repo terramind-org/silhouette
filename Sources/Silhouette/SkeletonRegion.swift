@@ -75,6 +75,13 @@ struct SkeletonRegion<Content: View, Placeholder: View>: View {
     /// where the live shape takes a frame or two to appear.
     @State private var skeletonImage: Image?
 
+    /// A stand-in for a view that only draws in place: a ViewModifier's content or a Group
+    /// subview. Neither can be rendered offscreen, so neither can be traced.
+    static func isProxy(_ type: Any.Type) -> Bool {
+        let name = String(reflecting: type)
+        return name.contains("_ViewModifier_Content") || name.contains("SwiftUI.Subview")
+    }
+
     /// Sizes that differ by less than half a point trace the same.
     static func same(_ a: CGSize, _ b: CGSize) -> Bool {
         abs(a.width - b.width) < 0.5 && abs(a.height - b.height) < 0.5
@@ -255,7 +262,11 @@ struct SkeletonRegion<Content: View, Placeholder: View>: View {
             .map { Image(decorative: $0, scale: scale) }
         #if DEBUG
         if skeletonImage == nil, frame.width >= 1, frame.height >= 1 {
-            SampleTemplate.logger.notice("A skeleton at y \(Int(frame.minY), privacy: .public) couldn't be traced offscreen, so it's drawn live and its reveal crossfades. Views backed by UIKit or AppKit, or reading environment objects that aren't in the environment, can't be drawn offscreen.")
+            if Self.isProxy(Content.self) {
+                SampleTemplate.logger.fault("A skeleton at y \(Int(frame.minY), privacy: .public) was given a stand-in for a view (\(String(describing: Content.self), privacy: .public)): a ViewModifier's content or a Group subview. Those only draw in place, so it can't be traced, and it's drawn live and crossfades in. Call .skeleton(isLoading:) on the view itself.")
+            } else {
+                SampleTemplate.logger.notice("A skeleton at y \(Int(frame.minY), privacy: .public) couldn't be traced offscreen, so it's drawn live and its reveal crossfades. Views backed by UIKit or AppKit can't be drawn offscreen.")
+            }
         }
         #endif
         surfaceInk = PieceTracer.bareRender(of: content, size: frame.size, environment: environment, scale: scale)
@@ -308,6 +319,9 @@ struct SkeletonRegion<Content: View, Placeholder: View>: View {
     private func finishLoading() {
         let wasShowing = held
         fade = nil
+        // A place in the page's batch, taken before any tracing, so regions arriving together
+        // cascade together however long each takes to trace.
+        let ticket = RevealBatch.reserve()
         let screen = ScreenBounds.current
         revealID += 1
         let id = revealID
@@ -347,6 +361,7 @@ struct SkeletonRegion<Content: View, Placeholder: View>: View {
                 held = false
                 pinnedHeight = nil
             }
+            ticket.leave()
             done(id: id, revealed: wasShowing)
             return
         }
@@ -377,7 +392,8 @@ struct SkeletonRegion<Content: View, Placeholder: View>: View {
                     (inkRender.flatMap { PieceTracer.coverage(of: $0, page: page) },
                      bareRender.flatMap { PieceTracer.coverage(of: $0, page: page, grow: 1) })
                 }.value
-                let (pageRows, batch) = await RevealBatch.joinBatch(global)
+                let pageRows = await ticket.join(global)
+                let batch = ObjectIdentifier(ticket)
                 let (inkMask, bareCut) = await masks
                 guard id == revealID else { return }
                 var next = RevealPlan.make(
@@ -418,6 +434,7 @@ struct SkeletonRegion<Content: View, Placeholder: View>: View {
             return
         }
 
+        ticket.leave()
         // Together, or a wipe: one animated progress.
         var duration = resolved.duration
         var chosen = resolved
@@ -553,3 +570,5 @@ struct FrameFadeMask: ViewModifier {
         }
     }
 }
+
+
