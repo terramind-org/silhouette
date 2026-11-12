@@ -21,7 +21,7 @@ Requires iOS 17, macOS 14, tvOS 17, watchOS 10 or visionOS 1. Text is traced fro
 
 ## Docs
 
-The full documentation, with a recording for each feature, a theme playground and the API reference, is in [`docs/`](docs/): open [`docs/index.html`](docs/index.html) or serve the folder (`python3 -m http.server -d docs`). It's a static site with no build step.
+The full documentation, with a recording for each feature, a theme playground and the API reference, is at **[silhouette.terramind.io](https://silhouette.terramind.io/docs/)**. Its source is [`docs/`](docs/), a static site with no build step: serve the folder (`python3 -m http.server -d docs`) to work on it.
 
 
 ## For coding agents
@@ -278,7 +278,9 @@ The closest data is the data on screen, the data last shown under the same `id` 
 
 ## Acknowledgements
 
-Silhouette is a native take on the ideas in [Skullet](https://skullet.lochie.me) by Lochie Axon, a skeleton library for the web. It shares no code with it.
+Silhouette is a native take on the ideas in [Skullet](https://skullet.lochie.me) by Lochie Axon, a skeleton library for the web. The Swift package shares no code with it.
+
+The website uses Skullet itself to load its landing page (MIT, bundled in [`docs/assets/vendor/skullet`](docs/assets/vendor/skullet) with its licence) and is set in [Geist](https://github.com/vercel/geist-font) (SIL Open Font License, in [`docs/assets/fonts`](docs/assets/fonts)).
 
 ## Licence
 

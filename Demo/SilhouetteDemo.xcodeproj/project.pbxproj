@@ -21,7 +21,6 @@
 		5CBB03BAD0824227FD9AED60 /* MoreCards.swift in Sources */ = {isa = PBXBuildFile; fileRef = 48D2C200791650A9B1202281 /* MoreCards.swift */; };
 		652B32996DE6FBC7A02DEA88 /* plate-salmon.jpg in Resources */ = {isa = PBXBuildFile; fileRef = 56ED0E18A61E52FB44E6E827 /* plate-salmon.jpg */; };
 		8437D2DFC180A1757624024D /* ShowcasePage.swift in Sources */ = {isa = PBXBuildFile; fileRef = 117443FC73DEB13022E851E1 /* ShowcasePage.swift */; };
-		8C1007B159F0C91D8457D190 /* FrameRecorder.swift in Sources */ = {isa = PBXBuildFile; fileRef = ABEEBDF189E012F23BA35660 /* FrameRecorder.swift */; };
 		935BFD23707429AFF2304E86 /* plate-quinoa-bowl.jpg in Resources */ = {isa = PBXBuildFile; fileRef = B14DEE34ABEB54D6348950AA /* plate-quinoa-bowl.jpg */; };
 		960FA16CA100B217BFCD2065 /* Sleeper.jpg in Resources */ = {isa = PBXBuildFile; fileRef = 31D7603C88CF75DBACD540B1 /* Sleeper.jpg */; };
 		9C7A342D099470790C4F9D87 /* plate-edamame.jpg in Resources */ = {isa = PBXBuildFile; fileRef = 502937183B9BC0400D1E0315 /* plate-edamame.jpg */; };
@@ -49,7 +48,6 @@
 		885E14C74328CDE709C7CD00 /* plate-steak.jpg */ = {isa = PBXFileReference; lastKnownFileType = image.jpeg; path = "plate-steak.jpg"; sourceTree = "<group>"; };
 		8BAAAEA7549BF6F40B7E86B5 /* DemoViews.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = DemoViews.swift; sourceTree = "<group>"; };
 		9AEA885A2B8CE93C5942546D /* DemoSupport.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = DemoSupport.swift; sourceTree = "<group>"; };
-		ABEEBDF189E012F23BA35660 /* FrameRecorder.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = FrameRecorder.swift; sourceTree = "<group>"; };
 		B14DEE34ABEB54D6348950AA /* plate-quinoa-bowl.jpg */ = {isa = PBXFileReference; lastKnownFileType = image.jpeg; path = "plate-quinoa-bowl.jpg"; sourceTree = "<group>"; };
 		B69837BA7243189E98F29CEF /* HeroMatte.png */ = {isa = PBXFileReference; lastKnownFileType = image.png; path = HeroMatte.png; sourceTree = "<group>"; };
 		B95288469224FDB71DF57752 /* StudioPages.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = StudioPages.swift; sourceTree = "<group>"; };
@@ -117,7 +115,6 @@
 				F64D99BBE84DAF6A36AC311A /* DemoPages.swift */,
 				9AEA885A2B8CE93C5942546D /* DemoSupport.swift */,
 				8BAAAEA7549BF6F40B7E86B5 /* DemoViews.swift */,
-				ABEEBDF189E012F23BA35660 /* FrameRecorder.swift */,
 				034E2B23F72A3F9B3FE5A5F1 /* HaloFeaturePages.swift */,
 				FB68FC46E685156570298C3E /* Models.swift */,
 				48D2C200791650A9B1202281 /* MoreCards.swift */,
@@ -214,7 +211,6 @@
 				08290E011AE074EC99EB89C3 /* DemoPages.swift in Sources */,
 				55BA028905D1AACE2FDCD8CF /* DemoSupport.swift in Sources */,
 				548790179F20D43015260438 /* DemoViews.swift in Sources */,
-				8C1007B159F0C91D8457D190 /* FrameRecorder.swift in Sources */,
 				4016898ACD9630606BD8F68D /* HaloFeaturePages.swift in Sources */,
 				B43542891D65735010C4656E /* Models.swift in Sources */,
 				5CBB03BAD0824227FD9AED60 /* MoreCards.swift in Sources */,
