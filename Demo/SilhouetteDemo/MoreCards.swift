@@ -93,7 +93,6 @@ struct ProfileHeaderCard: View {
             VStack(alignment: .leading, spacing: 0) {
                 Palette.gradient(for: profile.name + "cover")
                     .frame(height: 86)
-                    .skeletonIgnored()
                 VStack(alignment: .leading, spacing: 10) {
                     HStack(alignment: .bottom) {
                         Avatar(initials: profile.initials, size: 72)

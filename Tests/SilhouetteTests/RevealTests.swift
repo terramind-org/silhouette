@@ -25,7 +25,7 @@ final class RevealTests: XCTestCase {
         XCTAssertTrue(SkeletonReveal.smart.resolved(for: context()).isOrdered)
         XCTAssertTrue(SkeletonReveal.smart.resolved(for: context(height: 60, pieces: 2)).isOrdered)
         XCTAssertTrue(SkeletonReveal.smart.resolved(for: context(refetch: true)).isOrdered)
-        XCTAssertEqual(SkeletonReveal.smart.resolved(for: context()).duration, 0.25, accuracy: 1e-9)
+        XCTAssertEqual(SkeletonReveal.smart.resolved(for: context()).duration, 0.3, accuracy: 1e-9)
     }
 
     func testSmartHoldsFastDataBack() {
@@ -57,13 +57,13 @@ final class RevealTests: XCTestCase {
     func testByRowGivesEachRowItsOwnBeat() throws {
         let rect = CGRect(x: 0, y: 300, width: 200, height: 16)
         XCTAssertEqual(try XCTUnwrap(RevealPiece.byRow(piece(rect, row: 0))), 0, accuracy: 1e-9)
-        XCTAssertEqual(try XCTUnwrap(RevealPiece.byRow(piece(rect, row: 3))), 0.18, accuracy: 1e-9, "60 ms apart")
+        XCTAssertEqual(try XCTUnwrap(RevealPiece.byRow(piece(rect, row: 3))), 0.12, accuracy: 1e-9, "40 ms apart")
     }
 
     func testALongPageTightensTheBeatSoTheCascadeStaysUnderASecond() throws {
         let rect = CGRect(x: 0, y: 300, width: 200, height: 16)
         let last = try XCTUnwrap(RevealPiece.byRow(piece(rect, row: 29, rows: 30)))
-        XCTAssertEqual(last, 0.9, accuracy: 1e-9)
+        XCTAssertEqual(last, 0.45, accuracy: 1e-9)
     }
 
     func testByRowShowsOffScreenRowsAtOnce() {
@@ -72,7 +72,7 @@ final class RevealTests: XCTestCase {
 
     func testByPositionCascadesWithinTheRegion() throws {
         let rect = CGRect(x: 0, y: 300, width: 200, height: 16)
-        XCTAssertEqual(try XCTUnwrap(RevealPiece.byPosition(piece(rect, regionRow: 2))), 0.12, accuracy: 1e-9)
+        XCTAssertEqual(try XCTUnwrap(RevealPiece.byPosition(piece(rect, regionRow: 2))), 0.08, accuracy: 1e-9)
     }
 
     // MARK: Plans
@@ -99,9 +99,9 @@ final class RevealTests: XCTestCase {
         let a = RevealPlan.make(order: RevealPiece.byRow, content: upperPieces, skeleton: upperPieces, region: upper, screen: screen, pageRows: page, delay: 0, fade: 0.25)
         let b = RevealPlan.make(order: RevealPiece.byRow, content: lowerPieces, skeleton: lowerPieces, region: lower, screen: screen, pageRows: page, delay: 0, fade: 0.25)
         let upperDelays = a.incoming.compactMap(\.delay), lowerDelays = b.incoming.compactMap(\.delay)
-        XCTAssertEqual(upperDelays, [0, 0.06])
-        XCTAssertEqual(lowerDelays, [0.12, 0.18])
-        XCTAssertEqual(b.end, 0.18 + 0.25, accuracy: 1e-9)
+        XCTAssertEqual(upperDelays, [0, 0.04])
+        XCTAssertEqual(lowerDelays, [0.08, 0.12])
+        XCTAssertEqual(b.end, 0.12 + 0.25, accuracy: 1e-9)
         // A bar and the line that replaces it share their timing exactly.
         XCTAssertEqual(a.incoming.map(\.delay), a.outgoing.map(\.delay))
     }
@@ -137,7 +137,7 @@ final class RevealTests: XCTestCase {
             XCTAssertEqual(a + b, 1, accuracy: 0.08, "at x \(x)")
             if a > 0.1 && b > 0.1 { both += 1 }
         }
-        XCTAssertLessThanOrEqual(both, 12, "only the soft edge, about 18 pt, is shared")
+        XCTAssertLessThanOrEqual(both, 26, "only the soft edge, about 48 pt, is shared")
         XCTAssertGreaterThan(incoming.alpha(at: CGPoint(x: 30, y: 28)), 0.95, "the leading end is in")
         XCTAssertLessThan(incoming.alpha(at: CGPoint(x: 210, y: 28)), 0.05, "the trailing end isn't yet")
     }

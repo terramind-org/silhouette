@@ -373,14 +373,14 @@ ContentView()
         <ul>
           <li>A skeleton waits 150 ms before it shows. If the data beats that, there's never a skeleton, and the content simply appears.</li>
           <li>If someone scrolled in the last 400 ms, content appears at once rather than animating under their thumb.</li>
-          <li>Otherwise content comes in row by row down the screen, 60 ms apart. On a long page the beat tightens so the last row starts within 0.9 s. An avatar beside a name and a handle is one row; each line of a paragraph is its own.</li>
+          <li>Otherwise content comes in row by row down the screen, 40 ms apart. On a long page the beat tightens so the last row starts within 0.45 s. An avatar beside a name and a handle is one row; each line of a paragraph is its own.</li>
           <li>Each line wipes in from its leading edge where its bar was, and the bar wipes out behind the same edge, so a line and its skeleton never show at once in one place. A waiting line hides only its letters, never the card behind them.</li>
           <li>Regions landing within 150 ms of each other wait for one another and rank every row together, so a page of cards reads as one motion. A region landing later waits for the lines above it, so the page always reads top to bottom. Rows off screen appear at once.</li>
           <li>The cascade keeps time by the frames it draws: if the app stalls, it waits rather than jumping ahead and showing every line at once.</li>
           <li>On reload, the content fades off its skeleton, which comes up underneath it as it goes.</li>
           <li>While loading, a region keeps its skeleton's height, so data arriving can't move the page; if the content is a different height, it eases there over 280 ms once the reveal starts.</li>
         </ul>
-        <p>Each line's wipe takes 0.25 s by default. A reveal never moves the page: the content was laid out in its skeleton's place all along. Under Reduce Motion, every reveal is instant.</p>
+        <p>Each line's wipe takes 0.3 s by default. A reveal never moves the page: the content was laid out in its skeleton's place all along. Under Reduce Motion, every reveal is instant.</p>
 
         <h3 id="tracks-scrolling">Scrolling</h3>
         <p>For smart to know someone is scrolling, mark your scroll views. It needs iOS 18, macOS 15, tvOS 18, watchOS 11 or visionOS 2, and does nothing earlier.</p>
@@ -464,7 +464,7 @@ let focus = SkeletonReveal(
             <tr><td><code>enter</code></td><td>Where content starts as it fades in: <code>blur</code>, <code>offset</code>, <code>scale</code>, <code>rotation</code> and <code>clip</code>, an edge to unveil from, like a CSS clip path. Presets <code>.none</code>, <code>.blur</code>, <code>.rise</code>, <code>.zoom</code>.</td></tr>
             <tr><td><code>wipe</code></td><td>A mask across the content for each moment of the reveal: <code>.sweep</code> or <code>.custom</code>. Replaces <code>order</code>; the outgoing skeleton gets its inverse.</td></tr>
             <tr><td><code>delay</code></td><td>Seconds before the reveal starts.</td></tr>
-            <tr><td><code>duration</code></td><td>Seconds each piece's wipe takes, or the whole crossfade for a reveal that comes in together. 0.25 by default; <code>0</code> is instant.</td></tr>
+            <tr><td><code>duration</code></td><td>Seconds each piece's wipe takes, or the whole crossfade for a reveal that comes in together. 0.3 by default; <code>0</code> is instant.</td></tr>
             <tr><td><code>hold</code></td><td>Seconds a skeleton waits before it shows at all, so fast data never shows one.</td></tr>
             <tr><td><code>choose</code></td><td>Decides as content lands, from a <code>RevealContext</code>. Return a reveal to use, or <code>nil</code> to keep this one.</td></tr>
           </tbody>
@@ -1035,7 +1035,7 @@ ContentView()
             <tr><td><code>regionRow</code>, <code>regionRows</code></td><td>Its row within its own region, and how many that region has.</td></tr>
             <tr><td><code>screen</code></td><td>The screen the reveal is on.</td></tr>
             <tr><td><code>byPosition(_:)</code>, <code>byRow(_:)</code></td><td>The built-in orders, to build on.</td></tr>
-            <tr><td><code>rowStagger</code>, <code>longestCascade</code>, <code>stagger(rows:)</code></td><td>0.06 s between rows; the last row starts within 0.9 s; the beat for a given number of rows.</td></tr>
+            <tr><td><code>rowStagger</code>, <code>longestCascade</code>, <code>stagger(rows:)</code></td><td>0.04 s between rows; the last row starts within 0.45 s; the beat for a given number of rows.</td></tr>
           </tbody>
         </table></div>
 

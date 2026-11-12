@@ -6,10 +6,10 @@ import SwiftUI
 struct ShowcasePage: View {
     @State private var hero = DemoLoad { true }
     @State private var person = DemoLoad { Person.real }
-    @State private var header = DemoLoad(latency: 0.95) { ProfileHeader.real }
-    @State private var post = DemoLoad(latency: 1.05) { FeedPost.real() }
-    @State private var comments = DemoLoad(latency: 1.1) { Comment.real }
-    @State private var listing = DemoLoad(latency: 1.15) { Listing.real() }
+    @State private var header = DemoLoad { ProfileHeader.real }
+    @State private var post = DemoLoad { FeedPost.real() }
+    @State private var comments = DemoLoad { Comment.real }
+    @State private var listing = DemoLoad { Listing.real() }
     @State private var article = DemoLoad { Article.withPicture() }
     @State private var chat = DemoLoad { ChatThread.real }
     @State private var notices = DemoLoad { Notice.real }
@@ -51,6 +51,8 @@ struct ShowcasePage: View {
             .frame(maxWidth: 560)
             .frame(maxWidth: .infinity)
         }
+        // `-mode sweep` shows the page with one reveal, for recordings.
+        .skeletonReveal(Self.reveal(UserDefaults.standard.string(forKey: "mode")))
         .skeletonTracksScrolling()
         .background(Palette.page.ignoresSafeArea())
         .toolbar(.hidden, for: .navigationBar)
@@ -69,6 +71,15 @@ struct ShowcasePage: View {
             .contentShape(.rect)
             .onTapGesture(perform: reload)
             .accessibilityAction(named: "Reload", reload)
+    }
+
+    static func reveal(_ mode: String?) -> SkeletonReveal {
+        switch mode {
+        case "together": .together
+        case "sequence": .sequence
+        case "sweep": .sweep
+        default: .smart
+        }
     }
 
     private func reloadAll() {

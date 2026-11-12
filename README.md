@@ -5,8 +5,8 @@ Skeleton loading states for SwiftUI, traced from your real layout.
 While your data loads, Silhouette lays out your own view with sample data, unseen, and draws a skeleton in exactly its shape: a bar for each line of text as it wraps, a block for each image, control and painted shape. Every skeleton on screen shimmers in step. When the data arrives, the content replaces its skeleton in place, so nothing on the page moves.
 
 <p align="center">
-  <img src="docs/media/loading-to-loaded.gif" width="300" alt="A page of cards shimmers as skeletons in their exact shape, then their content wipes in line by line, top to bottom, where the skeletons were.">
-  <img src="docs/media/loading-to-loaded-dark.gif" width="300" alt="The same cards loading in dark mode.">
+  <img src="docs/media/loading-to-loaded.gif" width="300" alt="A page of cards loading four times, once per reveal mode: together, sequence, smart and sweep.">
+  <img src="docs/media/loading-to-loaded-dark.gif" width="300" alt="The same four reveal modes in dark mode.">
 </p>
 
 <p align="center">
@@ -179,7 +179,7 @@ ContentView().skeletonReveal(.smart)
 
 | Reveal | What it does |
 | --- | --- |
-| `.smart` | The default. A skeleton waits 150 ms before it shows, so fast data never shows one, and content appears at once if someone is scrolling. Otherwise it comes in row by row down the screen, 60 ms apart (tighter on a long page, so the last row starts within 0.9 s), each line wiping in from its leading edge where its bar was, and the bar wiping out with it. Regions landing within 150 ms of each other wait for one another and share one cascade, and a region landing later waits for the lines above it, so the page always reads top to bottom. Rows off screen appear at once. The cascade keeps time by the frames it draws, so if the app stalls it waits rather than jumping ahead. |
+| `.smart` | The default. A skeleton waits 150 ms before it shows, so fast data never shows one, and content appears at once if someone is scrolling. Otherwise it comes in row by row down the screen, 40 ms apart (tighter on a long page, so the last row starts within 0.45 s), each line wiping in from its leading edge where its bar was, and the bar wiping out with it. Regions landing within 150 ms of each other wait for one another and share one cascade, and a region landing later waits for the lines above it, so the page always reads top to bottom. Rows off screen appear at once. The cascade keeps time by the frames it draws, so if the app stalls it waits rather than jumping ahead. |
 | `.together` | Crossfades the whole skeleton into the content. |
 | `.sequence` | The same wipe, row by row down its own region rather than the page. |
 | `.sweep` | Uncovers the content behind one diagonal front at the shimmer's slant and pace. Content taller than one and a half screens crossfades instead. |

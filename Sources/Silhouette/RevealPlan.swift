@@ -596,7 +596,7 @@ struct RevealMask: View {
     /// One edge passing along a piece: opaque on the side already revealed when `showing`, or on
     /// the side still waiting when not, with a soft edge between.
     static func wipe(area: CGRect, shown: Double, rightToLeft: Bool, showing: Bool) -> GraphicsContext.Shading {
-        let feather = min(0.3, 18 / max(area.width, 1))
+        let feather = min(0.5, 48 / max(area.width, 1))
         let edge = shown * (1 + feather)
         let solid = Color.black, none = Color.black.opacity(0)
         let (before, after) = showing ? (solid, none) : (none, solid)

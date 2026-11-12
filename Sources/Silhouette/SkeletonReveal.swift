@@ -39,7 +39,7 @@ public struct SkeletonReveal: Sendable {
         enter: Enter = .none,
         wipe: Wipe? = nil,
         delay: Double = 0,
-        duration: Double = 0.25,
+        duration: Double = 0.3,
         hold: Double = 0,
         choose: (@Sendable (RevealContext) -> SkeletonReveal?)? = nil
     ) {
@@ -217,9 +217,9 @@ public struct RevealPiece: Sendable, Equatable {
     }
 
     /// The beat between one row and the next.
-    public static let rowStagger = 0.06
+    public static let rowStagger = 0.04
     /// The longest a cascade may take to reach its last row; longer pages tighten the beat.
-    public static let longestCascade = 0.9
+    public static let longestCascade = 0.45
 
     /// The beat for a cascade of `rows` rows.
     public static func stagger(rows: Int) -> Double {
