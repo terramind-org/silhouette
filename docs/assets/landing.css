@@ -1,0 +1,269 @@
+/* The landing page: one dark wall of things loading. Quiet surfaces; colour only where the content has it. */
+
+:root {
+  --page: #000;
+  --surface: #121214;
+  --raised: #1c1c1f;
+  --ink: #f2f0ec;
+  --ink-2: #a3a1a8;
+  --ink-3: #6c6a72;
+  --line: rgb(255 255 255 / 0.06);
+  --green: #5fcf95;
+  --violet: #9b8cf2;
+  --orange: #f08a4b;
+  --rose: #f0718f;
+  --blue: #6ea2ff;
+  --font: "Geist", -apple-system, BlinkMacSystemFont, system-ui, sans-serif;
+  --mono: "Geist Mono", ui-monospace, "SF Mono", Menlo, monospace;
+}
+
+@font-face {
+  font-family: "Geist";
+  src: url("fonts/geist.woff2") format("woff2");
+  font-weight: 100 900;
+  font-display: swap;
+}
+@font-face {
+  font-family: "Geist Mono";
+  src: url("fonts/geist-mono.woff2") format("woff2");
+  font-weight: 100 900;
+  font-display: swap;
+}
+
+* { box-sizing: border-box; }
+html { background: var(--page); color-scheme: dark; }
+body {
+  margin: 0;
+  color: var(--ink);
+  font: 15px/1.5 var(--font);
+  letter-spacing: -0.005em;
+  -webkit-font-smoothing: antialiased;
+  -moz-osx-font-smoothing: grayscale;
+  text-rendering: optimizeLegibility;
+}
+a { color: inherit; }
+img { display: block; max-width: 100%; }
+
+/* ---------- Bar ---------- */
+
+.bar {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  flex-wrap: wrap;
+  gap: 12px 24px;
+  max-width: 1320px;
+  margin: 0 auto;
+  padding: 22px 24px 10px;
+}
+.brand { display: inline-flex; align-items: center; gap: 10px; font-weight: 500; font-size: 16px; letter-spacing: -0.02em; text-decoration: none; }
+.brand svg { width: 24px; height: 24px; fill: var(--ink); }
+.brand svg rect { opacity: 0.35; }
+.bar nav { display: flex; flex-wrap: wrap; gap: 22px; font-size: 15px; }
+.bar nav a { color: var(--ink-2); text-decoration: none; }
+.bar nav a:hover { color: var(--ink); }
+
+/* ---------- The wall ---------- */
+
+.wall {
+  display: grid;
+  grid-template-columns: repeat(6, minmax(0, 1fr));
+  grid-auto-rows: minmax(150px, auto);
+  grid-auto-flow: dense;
+  gap: 12px;
+  max-width: 1320px;
+  margin: 0 auto;
+  padding: 14px 24px 28px;
+}
+
+.lead {
+  grid-column: 2 / span 4;
+  grid-row: 1 / span 3;
+  padding: 8px 18px;
+}
+/* Each piece's content sits in one wrapper that carries its layout, so the copy Skullet measures
+   lays out exactly like the content it stands for. */
+.in { display: flex; flex-direction: column; gap: 4px; height: 100%; min-height: 0; min-width: 0; }
+.lead .in { justify-content: center; gap: 0; }
+.lead h1 {
+  margin: 0;
+  font: 300 clamp(56px, 9.5vw, 144px)/0.95 var(--font);
+  letter-spacing: -0.06em;
+}
+.lead p {
+  margin: 22px 0 0;
+  max-width: 34em;
+  font-size: clamp(16px, 1.5vw, 19px);
+  line-height: 1.5;
+  font-weight: 350;
+  color: var(--ink-2);
+}
+.install {
+  display: inline-flex;
+  align-items: center;
+  gap: 12px;
+  align-self: flex-start;
+  margin-top: 26px;
+  padding: 8px 8px 8px 16px;
+  border-radius: 999px;
+  background: var(--surface);
+  box-shadow: inset 0 0 0 1px var(--line);
+}
+.install code { font: 14px var(--mono); color: var(--ink); }
+.copy, .button {
+  font: inherit;
+  font-size: 14px;
+  font-weight: 500;
+  border: 0;
+  border-radius: 999px;
+  padding: 8px 16px;
+  cursor: pointer;
+  background: var(--raised);
+  color: var(--ink);
+  text-decoration: none;
+}
+.copy.done { color: var(--green); }
+.go { display: flex; gap: 10px; margin-top: 14px; }
+.button { padding: 12px 22px; font-size: 15px; background: var(--surface); box-shadow: inset 0 0 0 1px var(--line); }
+.button.dark { background: var(--ink); color: #000; box-shadow: none; }
+
+/* ---------- Pieces ---------- */
+
+.piece {
+  position: relative;
+  min-width: 0;
+  overflow: hidden;
+  border-radius: 24px;
+  padding: 18px 20px;
+  background: var(--surface);
+  box-shadow: inset 0 0 0 1px var(--line);
+  --skullet-base: rgb(255 255 255 / 0.06);
+  --skullet-highlight: rgb(255 255 255 / 0.1);
+}
+.piece.wide { grid-column: span 2; }
+.piece.tall { grid-row: span 2; }
+
+.label { font-size: 13px; font-weight: 500; color: var(--ink-3); }
+.piece span:not(.label) { font-size: 14px; color: var(--ink-2); }
+.piece small { font-size: 12px; color: var(--ink-3); }
+.big { font: 300 40px/1.05 var(--font); letter-spacing: -0.045em; color: var(--ink); }
+.big small { font-size: 16px; font-weight: 500; letter-spacing: 0; color: var(--ink-2); }
+
+/* Readiness ring */
+.dial { position: relative; width: 120px; height: 120px; margin: 14px 0 10px; }
+.dial .big { position: absolute; inset: 0; display: grid; place-items: center; font-size: 42px; }
+.ring { width: 100%; height: 100%; transform: rotate(-90deg); }
+.ring circle { fill: none; stroke: rgb(255 255 255 / 0.07); stroke-width: 10; }
+.ring .on { stroke: var(--green); stroke-linecap: round; }
+
+/* Photo cards */
+.photo-card { padding: 10px 10px 14px; }
+.photo-card img { width: 100%; flex: 1; min-height: 120px; object-fit: cover; border-radius: 16px; }
+.photo-card strong { margin: 10px 8px 0; font-size: 16px; font-weight: 500; letter-spacing: -0.02em; }
+.photo-card span { margin: 0 8px; }
+
+/* Sleep stages */
+.stages { position: relative; flex: 1; min-height: 56px; margin-top: 12px; }
+.stages i { position: absolute; left: var(--x); width: var(--w); top: calc(var(--y) * 26%); height: 14%; border-radius: 999px; background: var(--violet); }
+
+/* Chat */
+.chat .in { justify-content: center; gap: 12px; }
+.chat p { margin: 0; padding: 9px 14px; border-radius: 18px; font-size: 14px; line-height: 1.35; max-width: 90%; }
+.chat .them { align-self: flex-end; background: var(--ink); color: #000; }
+.chat .coach { background: var(--raised); }
+
+/* Heart line */
+.line { width: 100%; height: 40px; margin-top: auto; padding-top: 10px; overflow: visible; }
+.line polyline { fill: none; stroke: var(--rose); stroke-width: 2; stroke-linejoin: round; stroke-linecap: round; vector-effect: non-scaling-stroke; }
+
+/* Person */
+.person .in { flex-direction: row; align-items: center; gap: 14px; }
+.person img { width: 64px; height: 64px; border-radius: 50%; object-fit: cover; object-position: 50% 20%; }
+.person .meta { display: flex; flex-direction: column; gap: 2px; }
+.person strong { font-size: 16px; font-weight: 500; letter-spacing: -0.02em; }
+
+/* Now playing */
+.playing { padding: 12px; }
+.playing .in { flex-direction: row; gap: 16px; }
+.playing img { width: 114px; height: 114px; border-radius: 14px; object-fit: cover; flex: none; }
+.playing .meta { display: flex; flex-direction: column; justify-content: center; gap: 3px; min-width: 0; flex: 1; padding-right: 8px; }
+.playing strong { font-size: 17px; font-weight: 500; letter-spacing: -0.02em; }
+.track { height: 3px; border-radius: 3px; background: rgb(255 255 255 / 0.1); margin-top: 14px; }
+.track i { display: block; width: 38%; height: 100%; border-radius: inherit; background: var(--ink); }
+
+/* Steps */
+.meter { height: 6px; border-radius: 99px; background: rgb(255 255 255 / 0.07); margin-top: auto; }
+.meter i { display: block; height: 100%; border-radius: inherit; background: var(--green); }
+
+/* Day */
+.day .in { gap: 8px; }
+.event { margin: 0; padding: 3px 10px; border-left: 2px solid; font-size: 13px; font-weight: 500; color: var(--ink-2); }
+.lilac-ink { border-color: var(--violet); }
+.peach-ink { border-color: var(--orange); }
+.sky-ink { border-color: var(--blue); }
+
+/* Water */
+.drops { display: flex; gap: 8px; margin-top: auto; }
+.drops i { width: 12px; height: 16px; border-radius: 50% 50% 50% 50% / 60% 60% 40% 40%; background: var(--blue); }
+.drops i.off { background: rgb(255 255 255 / 0.08); }
+
+/* Training load */
+.bars { flex: 1; min-height: 64px; display: flex; align-items: flex-end; gap: 12px; margin-top: 12px; }
+.bars i { flex: 1; height: var(--h); border-radius: 6px; background: rgb(255 255 255 / 0.08); }
+.bars i.today { background: var(--orange); }
+.days { display: flex; gap: 12px; margin-top: 8px; }
+.days b { flex: 1; text-align: center; font-size: 11px; font-weight: 500; color: var(--ink-3); }
+
+/* Tags */
+.tags .chips { display: flex; flex-wrap: wrap; gap: 10px; margin-top: 12px; }
+.tags b { font-weight: 500; font-size: 13px; padding: 6px 12px; border-radius: 999px; background: var(--raised); color: var(--ink-2); }
+
+/* ---------- Foot ---------- */
+
+.foot {
+  display: flex;
+  flex-wrap: wrap;
+  justify-content: space-between;
+  gap: 8px 24px;
+  max-width: 1320px;
+  margin: 0 auto;
+  padding: 8px 24px 40px;
+  font-size: 13px;
+  color: var(--ink-3);
+}
+.foot a { color: var(--ink-2); }
+
+/* Skullet holds a piece's content in a pane of its own, the piece's full height. */
+.piece [skullet-pane], .lead [skullet-pane] { height: 100%; }
+
+/* Until the skeletons are drawn, what they stand for stays out of sight. */
+.waiting [data-piece] > *, .waiting [data-loads] > * { visibility: hidden; }
+
+/* ---------- Narrower screens ---------- */
+
+/* Tablets and small laptops: four columns, the lead across the top. */
+@media (max-width: 1180px) {
+  .wall { grid-template-columns: repeat(4, minmax(0, 1fr)); }
+  .lead { grid-column: 1 / -1; grid-row: auto; padding: 40px 6px 32px; }
+}
+/* Phones: two columns, wide pieces across both. */
+@media (max-width: 720px) {
+  .bar { padding: 16px 16px 4px; }
+  .bar nav { gap: 18px; font-size: 14px; }
+  .wall { grid-template-columns: repeat(2, minmax(0, 1fr)); grid-auto-rows: minmax(140px, auto); gap: 10px; padding: 8px 16px 24px; }
+  .lead { padding: 28px 2px 22px; }
+  .lead p { margin-top: 16px; }
+  .install { margin-top: 20px; max-width: 100%; }
+  .install code { font-size: 12.5px; overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
+  .piece { border-radius: 20px; padding: 16px; }
+  .big { font-size: 34px; }
+  .playing img { width: 88px; height: 88px; }
+  .foot { padding: 8px 16px 32px; }
+}
+/* The narrowest phones: wide pieces stay wide, everything else halves. */
+@media (max-width: 380px) {
+  .bar nav { gap: 14px; }
+  .lead h1 { font-size: 52px; }
+  .dial { width: 96px; height: 96px; }
+  .dial .big { font-size: 32px; }
+}

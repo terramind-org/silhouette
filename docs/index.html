@@ -5,130 +5,152 @@
   <meta name="viewport" content="width=device-width, initial-scale=1">
   <title>Silhouette: skeleton loading states for SwiftUI</title>
   <meta name="description" content="Silhouette draws a skeleton of exactly what is about to load in your SwiftUI app, traced from your real layout, so nothing on the page moves when the data arrives.">
-  <meta name="color-scheme" content="dark">
   <meta name="theme-color" content="#000000">
+  <meta name="color-scheme" content="dark">
+  <meta property="og:type" content="website">
+  <meta property="og:title" content="Silhouette: skeleton loading states for SwiftUI">
+  <meta property="og:description" content="Skeletons traced from the SwiftUI view you already have, revealed as one sweep. Nothing on the page moves when the data lands.">
+  <meta property="og:image" content="https://silhouette.terramind.io/assets/og.png">
+  <meta name="twitter:card" content="summary_large_image">
   <link rel="icon" href="assets/mark.svg" type="image/svg+xml">
-  <link rel="stylesheet" href="assets/site.css?v=3">
-  <script>if (!matchMedia("(prefers-reduced-motion: reduce)").matches) { document.documentElement.classList.add("landing-wait"); setTimeout(() => document.documentElement.classList.remove("landing-wait"), 1500); }</script>
+  <link rel="preload" href="assets/fonts/geist.woff2" as="font" type="font/woff2" crossorigin>
+  <link rel="stylesheet" href="assets/landing.css?v=9">
+  <script>if (!matchMedia("(prefers-reduced-motion: reduce)").matches) { document.documentElement.classList.add("waiting"); setTimeout(() => document.documentElement.classList.remove("waiting"), 1500); }</script>
 </head>
 <body>
-  <header class="top">
-    <div class="wrap">
-      <a class="brand" href="./" aria-label="Silhouette home">
-        <svg viewBox="0 0 26 26" aria-hidden="true"><circle class="mark-fill" cx="7.5" cy="13" r="5.5"/><rect class="mark-bar" x="15" y="8" width="10" height="3.4" rx="1.7"/><rect class="mark-bar" x="15" y="14.6" width="6.5" height="3.4" rx="1.7"/></svg>
-        Silhouette
-      </a>
-      <nav>
-        <a href="docs/">Docs</a>
-        <a href="https://tmnd.link/22sx1GlC">Halo</a>
-        <a href="https://tmnd.link/O5UfLjI8">Terramind</a>
-        <a href="https://github.com/terramind-org/silhouette">GitHub</a>
-      </nav>
-    </div>
+  <header class="bar">
+    <a class="brand" href="./" aria-label="Silhouette home">
+      <svg viewBox="0 0 26 26" aria-hidden="true"><circle cx="7.5" cy="13" r="5.5"/><rect x="15" y="8" width="10" height="3.4" rx="1.7"/><rect x="15" y="14.6" width="6.5" height="3.4" rx="1.7"/></svg>
+      Silhouette
+    </a>
+    <nav>
+      <a href="docs/">Docs</a>
+      <a href="https://tmnd.link/22sx1GlC">Halo</a>
+      <a href="https://tmnd.link/O5UfLjI8">Terramind</a>
+      <a href="https://github.com/terramind-org/silhouette">GitHub</a>
+    </nav>
   </header>
 
-  <main>
-    <section class="hero">
-      <div class="wrap">
-        <div data-loads="hero">
-          <h1>Silhouette</h1>
-          <p class="pitch">Skeleton loading states for SwiftUI, traced from the view you already have. Nothing to draw twice, and nothing on the page moves when the data lands.</p>
-          <div class="install">
-            <span class="via">Swift Package</span>
-            <code>https://github.com/terramind-org/silhouette.git</code>
-          </div>
-          <div class="actions">
-            <a class="button primary" href="docs/">Read the docs</a>
-            <a class="button" href="https://github.com/terramind-org/silhouette">View on GitHub</a>
-          </div>
-        </div>
-        <figure class="clip">
-          <div class="screen">
-            <video autoplay loop muted playsinline preload="metadata" width="1206" height="2622" src="media/showcase.mp4" aria-label="A sleep page loading: its title, portrait, stages chart and readings wait as skeletons in their own shape, then come in top to bottom."></video>
-          </div>
-        </figure>
+  <main class="wall">
+    <div class="lead" data-loads>
+      <h1>Silhouette</h1>
+      <p>Skeletons for SwiftUI, traced from the view you already have. Everything on this page is loading, all the time, and nothing ever moves.</p>
+      <div class="install"><code>github.com/terramind-org/silhouette</code><button type="button" class="copy">Copy</button></div>
+      <div class="go">
+        <a class="button dark" href="docs/">Read the docs</a>
+        <a class="button" href="https://github.com/terramind-org/silhouette">GitHub</a>
       </div>
-    </section>
+    </div>
 
-    <section class="features">
-      <div class="wrap">
-        <h2>The skeleton is your view.</h2>
-        <p class="lede">Silhouette lays out your own view with sample data, out of sight, and shimmers in its exact outline until the real data arrives.</p>
-        <div data-loads="features"><div class="grid">
-          <div class="feature">
-            <span class="glyph" aria-hidden="true"><i class="dot"></i><span class="lines"><i style="width:70%"></i><i style="width:45%"></i></span></span>
-            <h3>Traced, not hand-drawn</h3>
-            <p>A bar for every line of text as it actually wraps, a block for each image, control and painted shape. Change the view and the skeleton follows.</p>
-          </div>
-          <div class="feature">
-            <span class="glyph" aria-hidden="true"><span class="lines"><i style="width:90%"></i><i class="accent" style="width:90%"></i><i style="width:90%"></i></span></span>
-            <h3>No layout jump</h3>
-            <p>The content has held its space the whole time, so it fades in where its skeleton was. New data of a different height eases into place.</p>
-          </div>
-          <div class="feature">
-            <span class="glyph" aria-hidden="true"><span class="lines"><i style="width:40%"></i><i style="width:80%"></i><i style="width:60%"></i></span></span>
-            <h3>One shimmer</h3>
-            <p>Every skeleton keeps time by the same clock and its place on screen, so a card that appears late joins the band already in step.</p>
-          </div>
-          <div class="feature">
-            <span class="glyph" aria-hidden="true"><span class="lines"><i style="width:30%"></i><i style="width:55%"></i><i style="width:80%"></i></span></span>
-            <h3>Reveals that read well</h3>
-            <p>Fast data never shows a skeleton. Slower data comes in row by row down the screen, each line wiping in where its bar was.</p>
-          </div>
-          <div class="feature">
-            <span class="glyph" aria-hidden="true"><span class="lines"><i style="width:75%"></i><i style="width:75%"></i><i style="width:35%"></i></span></span>
-            <h3>Remembers the shape</h3>
-            <p>Each skeleton is drawn next time from what was really shown, even after a relaunch, keeping only the layout and never the data.</p>
-          </div>
-          <div class="feature">
-            <span class="glyph" aria-hidden="true"><i class="dot"></i><span class="lines"><i style="width:50%"></i><i style="width:65%"></i></span></span>
-            <h3>At home on Apple platforms</h3>
-            <p>Dynamic Type, dark mode, VoiceOver, Reduce Motion and right-to-left layouts, on iOS, macOS, tvOS, watchOS and visionOS.</p>
-          </div>
-        </div></div>
+    <article class="piece tall readiness" data-piece>
+      <span class="label">Readiness</span>
+      <div class="dial">
+        <svg class="ring" viewBox="0 0 120 120" aria-hidden="true"><circle cx="60" cy="60" r="50"/><circle class="on" cx="60" cy="60" r="50" pathLength="100" stroke-dasharray="83 100"/></svg>
+        <strong class="big">83</strong>
       </div>
-    </section>
+      <span>Recovered</span>
+      <small>HRV above your 7-day baseline</small>
+    </article>
 
-    <section class="snippet">
-      <div class="wrap">
-        <h2>Wrap it once.</h2>
-        <p class="lede">Pass the data, which is <code>nil</code> while it loads, and a sample of it. That is the whole integration.</p>
-        <div class="pair">
-          <div class="code">
-            <pre><code class="swift">
-import Silhouette
+    <article class="piece peach tall photo-card" data-piece>
+      <img src="assets/img/plate-shakshuka.jpg" alt="A pan of shakshuka" width="640" height="640">
+      <strong>Shakshuka</strong>
+      <span>410 kcal · 24 g protein</span>
+    </article>
 
-struct ProfileScreen: View {
-    @State private var user: User?
-
-    var body: some View {
-        Skeleton(user, sample: .sample) { user in
-            ProfileCard(user: user)
-        }
-        .task { user = try? await api.user() }
-    }
-}
-</code></pre>
-          </div>
-          <ol>
-            <li><strong>Your view is built from the sample</strong>laid out where the real one will go, at full size but never seen.</li>
-            <li><strong>A copy is traced</strong>each line of text becomes a bar trimmed to the font, everything else keeps its shape.</li>
-            <li><strong>The real data lands</strong>and the content replaces its skeleton in the space it already held.</li>
-          </ol>
-        </div>
+    <article class="piece lilac wide" data-piece>
+      <span class="label">Last night</span>
+      <strong class="big">6h 52m</strong>
+      <div class="stages" aria-hidden="true">
+        <i style="--x:2%;--w:9%;--y:1"></i><i style="--x:14%;--w:12%;--y:2"></i><i style="--x:29%;--w:8%;--y:3"></i><i style="--x:40%;--w:14%;--y:2"></i><i style="--x:57%;--w:6%;--y:0"></i><i style="--x:66%;--w:11%;--y:3"></i><i style="--x:80%;--w:9%;--y:2"></i><i style="--x:91%;--w:7%;--y:1"></i>
       </div>
-    </section>
+    </article>
+
+    <article class="piece sky" data-piece>
+      <span class="label">Lisbon</span>
+      <strong class="big">18°</strong>
+      <span>Light rain at 4 pm</span>
+    </article>
+
+    <article class="piece butter wide chat" data-piece>
+      <p class="them">How did I sleep?</p>
+      <p class="coach">Well. Deep sleep ran long, so keep tonight's run easy and save the intervals for Thursday.</p>
+    </article>
+
+    <article class="piece blush" data-piece>
+      <span class="label">Heart</span>
+      <strong class="big">72 <small>bpm</small></strong>
+      <svg class="line" viewBox="0 0 200 50" preserveAspectRatio="none" aria-hidden="true"><polyline points="0,32 18,30 30,34 42,20 50,38 60,28 80,30 96,24 110,31 124,18 136,36 150,27 170,29 186,22 200,26"/></svg>
+    </article>
+
+    <article class="piece ice person" data-piece>
+      <img src="assets/img/Hero.jpg" alt="" width="640" height="640">
+      <div class="meta"><strong>Sam Reyes</strong><span>41-day streak</span></div>
+    </article>
+
+    <article class="piece ink wide playing" data-piece>
+      <img src="assets/img/Sleeper.jpg" alt="" width="640" height="427">
+      <div class="meta">
+        <span class="label">Wind down</span>
+        <strong>Rain on a slow evening</strong>
+        <span>Night sounds · 24 min</span>
+        <div class="track"><i></i></div>
+      </div>
+    </article>
+
+    <article class="piece mint" data-piece>
+      <span class="label">Steps</span>
+      <strong class="big">8,214</strong>
+      <div class="meter"><i style="width:82%"></i></div>
+    </article>
+
+    <article class="piece paper day" data-piece>
+      <span class="label">Thursday 13</span>
+      <p class="event lilac-ink">7:00 Easy run</p>
+      <p class="event peach-ink">12:30 Lunch</p>
+      <p class="event sky-ink">22:30 Wind down</p>
+    </article>
+
+    <article class="piece butter photo-card" data-piece>
+      <img src="assets/img/plate-edamame.jpg" alt="A bowl of edamame" width="640" height="640">
+      <strong>Edamame</strong>
+    </article>
+
+    <article class="piece sky" data-piece>
+      <span class="label">Water</span>
+      <strong class="big">1.6 <small>L</small></strong>
+      <div class="drops" aria-hidden="true"><i></i><i></i><i></i><i></i><i></i><i class="off"></i><i class="off"></i></div>
+    </article>
+
+    <article class="piece lilac tall photo-card" data-piece>
+      <img src="assets/img/plate-quinoa-bowl.jpg" alt="A quinoa bowl" width="640" height="640">
+      <strong>Quinoa bowl</strong>
+      <span>540 kcal · 21 g protein</span>
+    </article>
+
+    <article class="piece ice" data-piece>
+      <span class="label">Breathing</span>
+      <strong class="big">14 <small>rpm</small></strong>
+      <span>Steady through the night</span>
+    </article>
+
+    <article class="piece peach wide week" data-piece>
+      <span class="label">Training load</span>
+      <div class="bars" aria-hidden="true"><i style="--h:42%"></i><i style="--h:70%"></i><i style="--h:30%"></i><i style="--h:88%"></i><i style="--h:56%"></i><i style="--h:18%"></i><i class="today" style="--h:64%"></i></div>
+      <div class="days" aria-hidden="true"><b>M</b><b>T</b><b>W</b><b>T</b><b>F</b><b>S</b><b>S</b></div>
+    </article>
+
+    <article class="piece blush wide tags" data-piece>
+      <span class="label">This week</span>
+      <div class="chips"><b>Zone 2</b><b>Protein first</b><b>Mobility</b><b>Deep sleep</b><b>No screens after 10</b></div>
+    </article>
   </main>
 
-  <footer class="footer">
-    <div class="wrap">
-      <span>Inspired by <a href="https://skullet.lochie.me">Skullet</a> by Lochie Axon, which loads this page. Loading states in <a href="https://tmnd.link/22sx1GlC">Halo</a> are built with Silhouette.</span>
-      <span><a href="docs/">Docs</a> &middot; <a href="https://github.com/terramind-org/silhouette">GitHub</a> &middot; MIT licence</span>
-      <span class="byline-inline"><img src="assets/terramind-mark.png" alt="" width="16" height="16"> Silhouette by <a href="https://tmnd.link/O5UfLjI8">Terramind</a>. Designed and built in <a href="https://tmnd.link/MptXVvgz">Nucleus</a>, Terramind's agent workspace.</span>
-    </div>
+  <footer class="foot">
+    <span>Inspired by <a href="https://skullet.lochie.me">Skullet</a> by Lochie Axon, which loads this page on the web. Silhouette does it in SwiftUI, in <a href="https://tmnd.link/22sx1GlC">Halo</a>.</span>
+    <span>By <a href="https://tmnd.link/O5UfLjI8">Terramind</a>. Designed and built in <a href="https://tmnd.link/MptXVvgz">Nucleus</a>.</span>
   </footer>
 
-  <script src="assets/site.js?v=2"></script>
-  <script type="module" src="assets/landing.js?v=5"></script>
+  <script type="module" src="assets/landing.js?v=9"></script>
 </body>
 </html>
