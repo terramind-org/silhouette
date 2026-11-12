@@ -2,7 +2,7 @@
 // measured from its own markup, and the whole wall comes in under one sweep. Now and then it
 // all loads again, the way an app refreshes. Skullet (MIT, Lochie Axon) does the web side;
 // Silhouette does the same in SwiftUI.
-import { Reveal, forgetShapes } from "./vendor/skullet/skullet.mjs";
+import { Reveal, applyTheme, forgetShapes } from "./vendor/skullet/skullet.mjs";
 
 const root = document.documentElement;
 const still = matchMedia("(prefers-reduced-motion: reduce)").matches;
@@ -15,6 +15,9 @@ const nodes = (html) => document.createRange().createContextualFragment(html);
 // card keys its own. Shapes from earlier visits are dropped, so a changed page never starts
 // from an old one.
 forgetShapes();
+// Each line's bar runs from the cap height to the baseline: it covers the letters, not the
+// air above and below them.
+applyTheme({ text: { top: "cap-height", bottom: "baseline" } }, "dark");
 
 function take(el, key) {
   const html = `<div class="in">${el.innerHTML}</div>`;
@@ -65,7 +68,12 @@ if (still) {
     }
   }
 
-  play();
+  // A skeleton is measured from the text as it will be set: wait for the page's own fonts (never
+  // longer than a moment), or the bars would be laid out in a fallback face and miss the words.
+  Promise.race([
+    Promise.all([document.fonts.load('300 40px "Geist"'), document.fonts.load('400 15px "Geist"'), document.fonts.load('400 14px "Geist Mono"')]),
+    wait(1200),
+  ]).then(play);
   // The mark is a skeleton itself: press it to load the whole page again.
   document.querySelector(".brand")?.addEventListener("click", (event) => {
     event.preventDefault();
