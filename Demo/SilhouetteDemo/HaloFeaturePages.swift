@@ -16,8 +16,8 @@ struct ReadinessPage: View {
                 Text("Readiness").font(.system(size: 15, weight: .medium)).foregroundStyle(Studio.ink).skeletonKeep()
                 HStack(spacing: 22) {
                     ZStack {
-                        Circle().stroke(Studio.mint.opacity(0.2), lineWidth: 12)
-                        Circle().trim(from: 0, to: loading ? 0.88 : 0.83).stroke(Studio.mint, style: StrokeStyle(lineWidth: 12, lineCap: .round)).rotationEffect(.degrees(-90))
+                        Circle().inset(by: 6).stroke(Studio.mint.opacity(0.2), lineWidth: 12)
+                        Circle().inset(by: 6).trim(from: 0, to: loading ? 0.88 : 0.83).stroke(Studio.mint, style: StrokeStyle(lineWidth: 12, lineCap: .round)).rotationEffect(.degrees(-90))
                         Text(loading ? "88" : "83").font(.system(size: 44, weight: .ultraLight)).foregroundStyle(Studio.ink)
                     }
                     .frame(width: 140, height: 140)

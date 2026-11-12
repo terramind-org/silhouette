@@ -266,8 +266,8 @@ private struct DayRings: View {
 
     private func ring(_ value: Double, _ color: Color, _ size: CGFloat) -> some View {
         ZStack {
-            Circle().stroke(color.opacity(0.2), lineWidth: 8)
-            Circle().trim(from: 0, to: value).stroke(color, style: StrokeStyle(lineWidth: 8, lineCap: .round)).rotationEffect(.degrees(-90))
+            Circle().inset(by: 4).stroke(color.opacity(0.2), lineWidth: 8)
+            Circle().inset(by: 4).trim(from: 0, to: value).stroke(color, style: StrokeStyle(lineWidth: 8, lineCap: .round)).rotationEffect(.degrees(-90))
         }
         .frame(width: size, height: size)
     }
