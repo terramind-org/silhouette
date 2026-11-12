@@ -56,6 +56,13 @@
     button.className = "copy";
     button.textContent = "Copy";
     button.setAttribute("aria-label", "Copy code");
+    wireCopy(button, getText);
+    container.appendChild(button);
+    return button;
+  }
+
+  // Also used again on the landing page, whose hero is drawn afresh once its skeleton goes.
+  function wireCopy(button, getText) {
     button.addEventListener("click", function () {
       var text = getText();
       var done = function () {
@@ -73,8 +80,6 @@
         done();
       }
     });
-    container.appendChild(button);
-    return button;
   }
 
   function fallbackCopy(text) {
@@ -90,6 +95,14 @@
   }
 
   window.SilhouetteCopy = addCopyButton;
+  // The install box's Copy button, wired again after the landing page redraws it.
+  window.SilhouetteWireInstall = function (root) {
+    root.querySelectorAll(".install").forEach(function (box) {
+      var button = box.querySelector(".copy");
+      var code = box.querySelector("code");
+      if (button && code) wireCopy(button, function () { return code.textContent; });
+    });
+  };
 
   document.querySelectorAll(".code pre code").forEach(function (code) {
     var raw = code.textContent.replace(/^\n/, "").replace(/\s+$/, "");

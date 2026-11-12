@@ -173,4 +173,4 @@ Turn it on while adopting: `.skeletonDebug(.outlines)` on the root, `setSkeleton
 
 ---
 
-Silhouette by Terramind (https://terramind.com). Designed and built in Nucleus, Terramind's agent workspace (https://nucleus.terramind.com).
+Silhouette by Terramind (https://tmnd.link/O5UfLjI8). Designed and built in Nucleus, Terramind's agent workspace (https://tmnd.link/MptXVvgz).

@@ -825,3 +825,7 @@ details p { color: var(--ink-2); }
 
 .credit { margin-top: 48px; font-size: 13px; color: var(--ink-3); }
 .credit a { color: var(--ink-2); }
+
+/* Until the landing page's skeleton is drawn, its copy stays out of sight, so it never shows
+   and then turns into a skeleton. */
+.landing-wait [data-loads] { visibility: hidden; }

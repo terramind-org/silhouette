@@ -8,7 +8,8 @@
   <meta name="color-scheme" content="dark">
   <meta name="theme-color" content="#000000">
   <link rel="icon" href="assets/mark.svg" type="image/svg+xml">
-  <link rel="stylesheet" href="assets/site.css?v=2">
+  <link rel="stylesheet" href="assets/site.css?v=3">
+  <script>if (!matchMedia("(prefers-reduced-motion: reduce)").matches) { document.documentElement.classList.add("landing-wait"); setTimeout(() => document.documentElement.classList.remove("landing-wait"), 1500); }</script>
 </head>
 <body>
   <header class="top">
@@ -19,8 +20,8 @@
       </a>
       <nav>
         <a href="docs/">Docs</a>
-        <a href="https://halo.terramind.io">Halo</a>
-        <a href="https://terramind.com">Terramind</a>
+        <a href="https://tmnd.link/22sx1GlC">Halo</a>
+        <a href="https://tmnd.link/O5UfLjI8">Terramind</a>
         <a href="https://github.com/terramind-org/silhouette">GitHub</a>
       </nav>
     </div>
@@ -29,7 +30,7 @@
   <main>
     <section class="hero">
       <div class="wrap">
-        <div>
+        <div data-loads="hero">
           <h1>Silhouette</h1>
           <p class="pitch">Skeleton loading states for SwiftUI, traced from the view you already have. Nothing to draw twice, and nothing on the page moves when the data lands.</p>
           <div class="install">
@@ -53,7 +54,7 @@
       <div class="wrap">
         <h2>The skeleton is your view.</h2>
         <p class="lede">Silhouette lays out your own view with sample data, out of sight, and shimmers in its exact outline until the real data arrives.</p>
-        <div class="grid">
+        <div data-loads="features"><div class="grid">
           <div class="feature">
             <span class="glyph" aria-hidden="true"><i class="dot"></i><span class="lines"><i style="width:70%"></i><i style="width:45%"></i></span></span>
             <h3>Traced, not hand-drawn</h3>
@@ -84,7 +85,7 @@
             <h3>At home on Apple platforms</h3>
             <p>Dynamic Type, dark mode, VoiceOver, Reduce Motion and right-to-left layouts, on iOS, macOS, tvOS, watchOS and visionOS.</p>
           </div>
-        </div>
+        </div></div>
       </div>
     </section>
 
@@ -121,12 +122,13 @@ struct ProfileScreen: View {
 
   <footer class="footer">
     <div class="wrap">
-      <span>Inspired by <a href="https://skullet.lochie.me">Skullet</a> by Lochie Axon. Loading states in <a href="https://halo.terramind.io">Halo</a> are built with Silhouette.</span>
+      <span>Inspired by <a href="https://skullet.lochie.me">Skullet</a> by Lochie Axon, which loads this page. Loading states in <a href="https://tmnd.link/22sx1GlC">Halo</a> are built with Silhouette.</span>
       <span><a href="docs/">Docs</a> &middot; <a href="https://github.com/terramind-org/silhouette">GitHub</a> &middot; MIT licence</span>
-      <span class="byline-inline"><img src="assets/terramind-mark.png" alt="" width="16" height="16"> Silhouette by <a href="https://terramind.com">Terramind</a>. Designed and built in <a href="https://nucleus.terramind.com">Nucleus</a>, Terramind's agent workspace.</span>
+      <span class="byline-inline"><img src="assets/terramind-mark.png" alt="" width="16" height="16"> Silhouette by <a href="https://tmnd.link/O5UfLjI8">Terramind</a>. Designed and built in <a href="https://tmnd.link/MptXVvgz">Nucleus</a>, Terramind's agent workspace.</span>
     </div>
   </footer>
 
-  <script src="assets/site.js"></script>
+  <script src="assets/site.js?v=2"></script>
+  <script type="module" src="assets/landing.js?v=5"></script>
 </body>
 </html>
