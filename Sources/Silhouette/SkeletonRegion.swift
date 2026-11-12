@@ -30,6 +30,8 @@ struct SkeletonRegion<Content: View, Placeholder: View>: View {
     var content: Content
     /// Drawn as the skeleton's shape instead of the content, when given.
     var placeholder: Placeholder?
+    /// The content built from scrambled data, when there is data to scramble.
+    var variant: AnyView?
     var isLoading: Bool
     var source: SkeletonSource
     var label: Text?
@@ -74,6 +76,14 @@ struct SkeletonRegion<Content: View, Placeholder: View>: View {
     /// The skeleton's shape as an image, traced with the surfaces: drawn from its first frame,
     /// where the live shape takes a frame or two to appear.
     @State private var skeletonImage: Image?
+    /// Areas that don't depend on the data, found by comparing the content with its variant:
+    /// labels, bundled pictures, fixed values. They show while the rest loads.
+    @State private var steady: [CGRect] = []
+    /// Views marked `.skeletonKeep()`, in the region's coordinates.
+    @State private var kept: [CGRect] = []
+
+    /// Everything that shows as it is while the region loads.
+    private var fixed: [CGRect] { steady + kept }
 
     /// A stand-in for a view that only draws in place: a ViewModifier's content or a Group
     /// subview. Neither can be rendered offscreen, so neither can be traced.
@@ -90,9 +100,10 @@ struct SkeletonRegion<Content: View, Placeholder: View>: View {
     /// How long content takes to fade back to its skeleton on reload, and the skeleton to come in.
     static var exitFade: Double { 0.22 }
 
-    init(content: Content, placeholder: Placeholder?, isLoading: Bool, source: SkeletonSource, label: Text?, onReveal: (() -> Void)?) {
+    init(content: Content, placeholder: Placeholder?, variant: AnyView? = nil, isLoading: Bool, source: SkeletonSource, label: Text?, onReveal: (() -> Void)?) {
         self.content = content
         self.placeholder = placeholder
+        self.variant = variant
         self.isLoading = isLoading
         self.source = source
         self.label = label
@@ -139,7 +150,10 @@ struct SkeletonRegion<Content: View, Placeholder: View>: View {
                 if isLoading { pinnedHeight = height }
             }
             .modifier(EnterEffect(enter: spec.enter, rest: enterRest))
-            .modifier(RevealLayer(progress: incomingProgress, role: .incoming, spec: spec, plan: isLoading ? nil : plan, shimmerAxis: shimmerAxis))
+            .modifier(RevealLayer(progress: incomingProgress, role: .incoming, spec: spec, plan: isLoading ? nil : plan, shimmerAxis: shimmerAxis, fixed: fixed))
+            .coordinateSpace(.named(SkeletonKeepKey.space))
+            .onPreferenceChange(SkeletonKeepKey.self) { kept = $0 }
+            .transformPreference(SkeletonKeepKey.self) { $0 = [] }
             .modifier(FrameFadeMask(fade: fade?.fadesOutContent == true ? fade : nil, fadingIn: false))
             .accessibilityHidden(isLoading)
             .allowsHitTesting(!isLoading)
@@ -201,6 +215,14 @@ struct SkeletonRegion<Content: View, Placeholder: View>: View {
                     SkeletonShape(content: content)
                 }
             }
+            // No skeleton over what shows as it is.
+            .mask(alignment: .topLeading) {
+                Canvas(opaque: false, rendersAsynchronously: false) { [fixed] context, size in
+                    context.fill(Path(CGRect(origin: .zero, size: size)), with: .color(.black))
+                    context.blendMode = .destinationOut
+                    for rect in fixed { context.fill(Path(rect), with: .color(.black)) }
+                }
+            }
     }
 
     // MARK: Loading
@@ -224,6 +246,8 @@ struct SkeletonRegion<Content: View, Placeholder: View>: View {
         if surfaceInk == nil || !Self.same(surfaceSize, frame.size) {
             // On screen the surfaces come with the skeleton; below it they can wait.
             if frame.intersects(ScreenBounds.current) { traceSurfaces() } else { traceWhenIdle() }
+        } else if variant != nil, frame.intersects(ScreenBounds.current) {
+            steady = findSteady()
         }
         held = true
         heldSince = Date()
@@ -256,6 +280,7 @@ struct SkeletonRegion<Content: View, Placeholder: View>: View {
         let scale = min(environment.displayScale, 2)
         surfaceSize = frame.size
         tracedSkeleton = nil
+        steady = findSteady()
         // Only when the offscreen trace drew something: otherwise the live shape draws the skeleton.
         skeletonImage = PieceTracer.shape(of: placeholder.map { AnyView($0) } ?? AnyView(content), size: frame.size, environment: environment, scale: scale)
             .flatMap { PieceTracer.hasCoverage($0) ? $0 : nil }
@@ -278,6 +303,19 @@ struct SkeletonRegion<Content: View, Placeholder: View>: View {
             tracedSkeleton = tracePieces(of: placeholder.map { AnyView($0) } ?? AnyView(content), size: frame.size)
             return true
         }
+    }
+
+    /// Pieces that look the same whether built from the stand-in or from scrambled data.
+    private func findSteady() -> [CGRect] {
+        guard let variant, frame.width >= 1, frame.height >= 1 else { return [] }
+        let size = frame.size
+        guard let a = PieceTracer.inkRender(of: content, size: size, environment: environment, scale: 1),
+              let b = PieceTracer.inkRender(of: variant, size: size, environment: environment, scale: 1) else { return [] }
+        let pieces = tracePieces(of: content, size: size)
+        // A line of text reaches past its bar (ascenders, descenders); a picture or a control
+        // doesn't, and growing it would take in whatever sits beside it.
+        let areas = pieces.map { PieceTracer.isTextBar($0) ? RevealMask.area(of: $0) : $0.insetBy(dx: -2, dy: -2) }
+        return PieceTracer.unchanged(areas, a: a, b: b)
     }
 
     private func traceWhenIdle() {
@@ -371,6 +409,7 @@ struct SkeletonRegion<Content: View, Placeholder: View>: View {
             // then each piece wipes in on one cascade down the page.
             let region = frame
             let contentPieces = tracePieces(of: content, size: frame.size)
+            let fixedAreas = fixed
             // One pixel a point is enough: the ink is grown past the letters' edges, and the wipe
             // is feathered.
             let inkScale: CGFloat = 1
@@ -396,10 +435,12 @@ struct SkeletonRegion<Content: View, Placeholder: View>: View {
                 let batch = ObjectIdentifier(ticket)
                 let (inkMask, bareCut) = await masks
                 guard id == revealID else { return }
+                // What shows as it is never waits.
+                let moving = { (rect: CGRect) in !fixedAreas.contains { $0.contains(CGPoint(x: rect.midX, y: rect.midY)) } }
                 var next = RevealPlan.make(
                     order: order,
-                    content: contentPieces,
-                    skeleton: skeletonPieces,
+                    content: contentPieces.filter(moving),
+                    skeleton: skeletonPieces.filter(moving),
                     region: region,
                     screen: screen,
                     pageRows: pageRows,

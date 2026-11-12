@@ -4,6 +4,8 @@ Skeleton loading states for SwiftUI, traced from your real layout.
 
 While your data loads, Silhouette lays out your own view with sample data, unseen, and draws a skeleton in exactly its shape: a bar for each line of text as it wraps, a block for each image, control and painted shape. Every skeleton on screen shimmers in step. When the data arrives, the content replaces its skeleton in place, so nothing on the page moves.
 
+<p align="center"><sub>Screens styled after <a href="https://halo.terramind.io">Halo</a>, built with Silhouette.</sub></p>
+
 <p align="center">
   <img src="docs/media/loading-to-loaded.gif" width="300" alt="A sleep page loading four times, once per reveal mode: together, sequence, smart and sweep. Its title, moon, stages chart and readings each wait as skeletons in their own shape.">
   <img src="docs/media/loading-to-loaded-dark.gif" width="300" alt="The same sleep page and four reveal modes in dark mode.">
@@ -108,6 +110,18 @@ Text(call.title).shimmer(call.isRunning)
   <img src="docs/media/own-loading.png" width="260" alt="A chart drawn as twelve skeleton bars of rising height, and a round SkeletonBox beside two lines.">
   <img src="docs/media/debug.png" width="260" alt="The debug overlay: a card outlined in red, labelled moved +66pt, and one in green, labelled no move.">
 </p>
+
+## Only what loads, loads
+
+Bundled pictures, labels and other fixed values don't wait for data, so they don't wait for the skeleton either. `Skeleton` finds them on its own: it also lays your view out from a scrambled copy of the sample, and every piece that looks the same both ways shows as it is from the first frame. Only the parts that come from the data shimmer and animate in. For a view without sample data, mark what's fixed:
+
+```swift
+VStack {
+    Text("Readiness").skeletonKeep()   // shows as it is; never a skeleton
+    ReadinessRing(score: score)
+}
+.skeleton(isLoading: score == nil)
+```
 
 ## Hints
 
@@ -250,7 +264,7 @@ Skeletons are hidden from accessibility, so UI tests that query by accessibility
 
 ## The demo app
 
-`Demo/` has an app with a page for every feature, each beside the part of Skullet it mirrors. Open `Demo/SilhouetteDemo.xcodeproj` and run it on an iPhone simulator or a Mac. The project is generated from `Demo/project.yml` with [XcodeGen](https://github.com/yonaskolb/XcodeGen); CI checks it's up to date.
+`Demo/` has an app with a page for every feature. Its screens are styled after [Halo](https://halo.terramind.io), Terramind's health app, which uses Silhouette for its loading states, and use Halo's photographs with permission. Open `Demo/SilhouetteDemo.xcodeproj` and run it on an iPhone simulator or a Mac. The project is generated from `Demo/project.yml` with [XcodeGen](https://github.com/yonaskolb/XcodeGen); CI checks it's up to date.
 
 ## How it works
 

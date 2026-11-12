@@ -137,6 +137,9 @@ public struct Skeleton<Value, Content: View>: View {
                 }
             },
             placeholder: placeholder(standIn: standIn?.value),
+            // The same view from scrambled data: whatever looks the same in both doesn't depend
+            // on the data, so it shows at once instead of loading.
+            variant: loading ? standIn.flatMap { codec?.variant($0.value) }.map { AnyView(content($0)) } : nil,
             isLoading: loading,
             source: customSkeleton != nil ? .custom : (standIn?.source ?? .fallback),
             label: label,
@@ -184,6 +187,8 @@ public struct Skeleton<Value, Content: View>: View {
 struct ShapeCodec<Value> {
     var save: @MainActor (Value, String) -> Void
     var load: @MainActor (String) -> Value?
+    /// The value with its text and numbers scrambled, to tell what of a view depends on its data.
+    var variant: (Value) -> Value? = { _ in nil }
 }
 
 extension ShapeCodec where Value: Codable {
@@ -196,7 +201,10 @@ extension ShapeCodec where Value: Codable {
                       (try? JSONDecoder().decode(Value.self, from: data)) != nil else { return }
                 SkeletonMemory.defaults.set(data, forKey: SkeletonMemory.defaultsPrefix + id)
             },
-            load: { id in SkeletonMemory.remembered(id: id, as: Value.self) }
+            load: { id in SkeletonMemory.remembered(id: id, as: Value.self) },
+            variant: { value in
+                (try? ShapeScrubber.variant(value)).flatMap { try? JSONDecoder().decode(Value.self, from: $0) }
+            }
         )
     }
 }

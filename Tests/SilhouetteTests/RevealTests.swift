@@ -283,4 +283,24 @@ final class RevealTests: XCTestCase {
         XCTAssertEqual(rowsA.count, 2)
         XCTAssertEqual(rowsA, b)
     }
+
+    @MainActor
+    func testWhatDoesntDependOnTheDataIsFoundSteady() throws {
+        // A fixed label above a value that changes with the data.
+        func page(_ value: String) -> some View {
+            VStack(alignment: .leading, spacing: 20) {
+                Text("Fourteen nights").font(.system(size: 20))
+                Text(value).font(.system(size: 20))
+            }
+            .frame(width: 240, height: 80, alignment: .topLeading)
+        }
+        var env = EnvironmentValues()
+        env.colorScheme = .light
+        let size = CGSize(width: 240, height: 80)
+        let a = try XCTUnwrap(PieceTracer.inkRender(of: page("Average 6h 59m"), size: size, environment: env, scale: 1))
+        let b = try XCTUnwrap(PieceTracer.inkRender(of: page("Nnaaaaa 0n 00n"), size: size, environment: env, scale: 1))
+        let label = CGRect(x: 0, y: 2, width: 160, height: 22)
+        let value = CGRect(x: 0, y: 46, width: 160, height: 22)
+        XCTAssertEqual(PieceTracer.unchanged([label, value], a: a, b: b), [label])
+    }
 }

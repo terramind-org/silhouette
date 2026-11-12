@@ -152,3 +152,36 @@ struct FractionalFrame: Layout {
         }
     }
 }
+
+extension View {
+    /// Shows this view as it is while its region loads: something bundled or fixed that never
+    /// waits for data. It gets no skeleton and isn't part of the reveal.
+    ///
+    /// ``Skeleton`` finds such parts on its own for `Codable` data. Use this where it can't, for
+    /// example with `.skeleton(isLoading:)`.
+    public func skeletonKeep() -> some View {
+        modifier(SkeletonKept())
+    }
+}
+
+/// The frames of kept views, in their region's coordinates.
+struct SkeletonKeepKey: PreferenceKey {
+    static let space = "silhouette.region"
+    static let defaultValue: [CGRect] = []
+    static func reduce(value: inout [CGRect], nextValue: () -> [CGRect]) { value += nextValue() }
+}
+
+private struct SkeletonKept: ViewModifier {
+    @Environment(\.isDrawingSkeleton) private var isDrawingSkeleton
+
+    func body(content: Content) -> some View {
+        // Left out of every traced copy, so it's neither a skeleton nor a piece of the reveal.
+        content
+            .opacity(isDrawingSkeleton ? 0 : 1)
+            .background {
+                GeometryReader { proxy in
+                    Color.clear.preference(key: SkeletonKeepKey.self, value: isDrawingSkeleton ? [] : [proxy.frame(in: .named(SkeletonKeepKey.space))])
+                }
+            }
+    }
+}

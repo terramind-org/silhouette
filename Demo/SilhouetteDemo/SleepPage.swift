@@ -83,6 +83,8 @@ private struct PaperBackground: View {
 // MARK: - Page
 
 struct SleepPage: View {
+    /// Shows one feature on the page: `hints`, `theme`, `still` or `debug`.
+    var variant: String? = nil
     @State private var night = DemoLoad { SleepNight.real }
     @State private var weeks = DemoLoad { SleepWeeks.real }
     @State private var overnight = DemoLoad { Overnight.real }
@@ -94,7 +96,7 @@ struct SleepPage: View {
             VStack(alignment: .leading, spacing: 34) {
                 Skeleton(night.value, sample: .sample) { SleepHero(night: $0) }
                 Skeleton(night.value, sample: .sample) { StagesSection(night: $0) }
-                Skeleton(weeks.value, sample: .sample) { NightsSection(weeks: $0) }
+                Skeleton(weeks.value, sample: .sample) { NightsSection(weeks: $0, chartAsBlock: variant == "hints") }
                 Skeleton(overnight.value, sample: .sample) { OvernightSection(overnight: $0) }
             }
             .padding(.horizontal, 24)
@@ -104,6 +106,14 @@ struct SleepPage: View {
             .onTapGesture(perform: reload)
         }
         .skeletonReveal(DemoReveal.current)
+        .skeletonTheme { theme in
+            switch variant {
+            case "theme": theme.animation = .pulse; theme.speed = .fast; theme.radius = .fraction(0.5)
+            case "still": theme.animation = .none
+            default: break
+            }
+        }
+        .skeletonDebug(variant == "debug" ? .outlines : [])
         .skeletonTracksScrolling()
         .background(PaperBackground().ignoresSafeArea())
         .task {
@@ -234,6 +244,8 @@ private struct StagesSection: View {
 
 private struct NightsSection: View {
     var weeks: SleepWeeks
+    /// Draws the chart as one block rather than fourteen bars.
+    var chartAsBlock = false
 
     var body: some View {
         VStack(alignment: .leading, spacing: 14) {
@@ -247,6 +259,7 @@ private struct NightsSection: View {
                 }
             }
             .frame(height: 96, alignment: .bottom)
+            .modifier(BlockWhen(on: chartAsBlock))
             .overlay(alignment: .top) {
                 Rectangle().fill(Night.faint.opacity(0.6)).frame(height: 0.5).offset(y: 96 * 0.1)
                     .skeletonIgnored()
@@ -292,5 +305,13 @@ private struct Trend: Shape {
                 if i == 0 { p.move(to: pt) } else { p.addLine(to: pt) }
             }
         }
+    }
+}
+
+/// The hint, on one page only: the chart traced as one block.
+private struct BlockWhen: ViewModifier {
+    var on: Bool
+    func body(content: Content) -> some View {
+        if on { content.skeletonBlock(cornerRadius: 14) } else { content }
     }
 }

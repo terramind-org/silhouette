@@ -151,6 +151,36 @@ enum PieceTracer {
         return alpha.contains { $0 > 32 }
     }
 
+    /// The areas that look the same in two renders of one size, at one pixel a point.
+    nonisolated static func unchanged(_ areas: [CGRect], a: CGImage, b: CGImage) -> [CGRect] {
+        guard a.width == b.width, a.height == b.height else { return [] }
+        let w = a.width, h = a.height
+        func pixels(_ image: CGImage) -> [UInt8]? {
+            var bytes = [UInt8](repeating: 0, count: w * h * 4)
+            guard let context = CGContext(data: &bytes, width: w, height: h, bitsPerComponent: 8, bytesPerRow: w * 4,
+                                          space: CGColorSpaceCreateDeviceRGB(), bitmapInfo: CGImageAlphaInfo.premultipliedLast.rawValue) else { return nil }
+            context.draw(image, in: CGRect(x: 0, y: 0, width: w, height: h))
+            return bytes
+        }
+        guard let pa = pixels(a), let pb = pixels(b) else { return [] }
+        return areas.filter { area in
+            let x0 = max(Int(area.minX), 0), x1 = min(Int(area.maxX), w)
+            let y0 = max(Int(area.minY), 0), y1 = min(Int(area.maxY), h)
+            guard x1 > x0, y1 > y0 else { return false }
+            // Two renders of the same view match pixel for pixel, so any pixel that clearly
+            // differs means the area depends on the data, however thin the stroke.
+            var changed = 0
+            for y in y0..<y1 {
+                for x in x0..<x1 {
+                    let i = (y * w + x) * 4
+                    let d = max(abs(Int(pa[i]) - Int(pb[i])), abs(Int(pa[i + 1]) - Int(pb[i + 1])), abs(Int(pa[i + 2]) - Int(pb[i + 2])))
+                    if d > 24 { changed += 1 }
+                }
+            }
+            return changed <= 1
+        }
+    }
+
     /// Connected areas of coverage in an image, as rects in points.
     static func pieces(in image: CGImage, pointSize: CGSize) -> [CGRect] {
         let width = image.width, height = image.height
@@ -764,6 +794,8 @@ struct RevealLayer: ViewModifier, Animatable {
     var spec: SkeletonReveal
     var plan: RevealPlan?
     var shimmerAxis: CGVector
+    /// Areas of the content that show as they are throughout.
+    var fixed: [CGRect] = []
 
     nonisolated var animatableData: Double {
         get { progress }
@@ -783,8 +815,15 @@ struct RevealLayer: ViewModifier, Animatable {
             .scaleEffect(effect.scale)
             .rotationEffect(effect.rotation)
             .offset(effect.offset)
-            .mask {
-                RevealMask(role: role, progress: min(max(progress, 0), 1), spec: spec, plan: plan, shimmerAxis: shimmerAxis)
+            .mask(alignment: .topLeading) {
+                ZStack(alignment: .topLeading) {
+                    RevealMask(role: role, progress: min(max(progress, 0), 1), spec: spec, plan: plan, shimmerAxis: shimmerAxis)
+                    if role == .incoming, !fixed.isEmpty {
+                        Canvas(opaque: false, rendersAsynchronously: false) { context, _ in
+                            for rect in fixed { context.fill(Path(rect), with: .color(.black)) }
+                        }
+                    }
+                }
             }
     }
 }

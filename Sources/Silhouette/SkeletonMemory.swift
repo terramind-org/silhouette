@@ -52,6 +52,33 @@ enum ShapeScrubber {
         return try JSONSerialization.data(withJSONObject: scrubbed, options: [.fragmentsAllowed])
     }
 
+    /// A copy that looks different wherever the data shows, and is safe to build a view from:
+    /// text is scrambled and fractional numbers shrink, but whole numbers, often an index or a
+    /// count, and booleans stay as they are.
+    static func variant<Value: Encodable>(_ value: Value) throws -> Data {
+        let encoded = try JSONEncoder().encode(value)
+        let object = try JSONSerialization.jsonObject(with: encoded, options: [.fragmentsAllowed])
+        return try JSONSerialization.data(withJSONObject: variant(object: object), options: [.fragmentsAllowed])
+    }
+
+    static func variant(object: Any) -> Any {
+        switch object {
+        case let dict as [String: Any]:
+            return dict.mapValues { variant(object: $0) }
+        case let array as [Any]:
+            return array.map { variant(object: $0) }
+        case let string as String:
+            return scrub(string: string)
+        case let number as NSNumber:
+            if CFGetTypeID(number) == CFBooleanGetTypeID() { return number }
+            let value = number.doubleValue
+            guard value.isFinite, value.rounded() != value else { return number }
+            return NSNumber(value: value * 0.8)
+        default:
+            return object
+        }
+    }
+
     static func scrub(object: Any) -> Any {
         switch object {
         case let dict as [String: Any]:
