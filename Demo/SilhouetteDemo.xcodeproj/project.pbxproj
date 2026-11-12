@@ -9,7 +9,9 @@
 /* Begin PBXBuildFile section */
 		0002D00B6D8FFB4E35FB7363 /* Hero.jpg in Resources */ = {isa = PBXBuildFile; fileRef = 357D7C226C1C6073400FAE11 /* Hero.jpg */; };
 		08290E011AE074EC99EB89C3 /* DemoPages.swift in Sources */ = {isa = PBXBuildFile; fileRef = F64D99BBE84DAF6A36AC311A /* DemoPages.swift */; };
+		1F123D5D7EEDCA37423D58E8 /* HeroMatte.png in Resources */ = {isa = PBXBuildFile; fileRef = B69837BA7243189E98F29CEF /* HeroMatte.png */; };
 		268C2133C15204E9518BFDA3 /* SilhouetteDemoApp.swift in Sources */ = {isa = PBXBuildFile; fileRef = 54C4F611890EFC1505CBEA95 /* SilhouetteDemoApp.swift */; };
+		2A3C3A7AD5A3335C31D48BF0 /* SleeperMatte.png in Resources */ = {isa = PBXBuildFile; fileRef = 479A8A4BADF8AE3130691811 /* SleeperMatte.png */; };
 		2F242D7F7D1CA9AC2AAA77CF /* plate-palak-paneer.jpg in Resources */ = {isa = PBXBuildFile; fileRef = 40436BA240A0E72366F6AB97 /* plate-palak-paneer.jpg */; };
 		4016898ACD9630606BD8F68D /* HaloFeaturePages.swift in Sources */ = {isa = PBXBuildFile; fileRef = 034E2B23F72A3F9B3FE5A5F1 /* HaloFeaturePages.swift */; };
 		52CD8727CC7AB1EA04442D7C /* Silhouette in Frameworks */ = {isa = PBXBuildFile; productRef = 79A286B6C423786DCAD396A3 /* Silhouette */; };
@@ -38,6 +40,7 @@
 		3E78EB1FEBB9328990561DCB /* silhouette */ = {isa = PBXFileReference; lastKnownFileType = folder; name = silhouette; path = ..; sourceTree = SOURCE_ROOT; };
 		40436BA240A0E72366F6AB97 /* plate-palak-paneer.jpg */ = {isa = PBXFileReference; lastKnownFileType = image.jpeg; path = "plate-palak-paneer.jpg"; sourceTree = "<group>"; };
 		45D111887C32857B432CF5B2 /* plate-shakshuka.jpg */ = {isa = PBXFileReference; lastKnownFileType = image.jpeg; path = "plate-shakshuka.jpg"; sourceTree = "<group>"; };
+		479A8A4BADF8AE3130691811 /* SleeperMatte.png */ = {isa = PBXFileReference; lastKnownFileType = image.png; path = SleeperMatte.png; sourceTree = "<group>"; };
 		48D2C200791650A9B1202281 /* MoreCards.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = MoreCards.swift; sourceTree = "<group>"; };
 		502937183B9BC0400D1E0315 /* plate-edamame.jpg */ = {isa = PBXFileReference; lastKnownFileType = image.jpeg; path = "plate-edamame.jpg"; sourceTree = "<group>"; };
 		54C4F611890EFC1505CBEA95 /* SilhouetteDemoApp.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = SilhouetteDemoApp.swift; sourceTree = "<group>"; };
@@ -48,6 +51,7 @@
 		9AEA885A2B8CE93C5942546D /* DemoSupport.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = DemoSupport.swift; sourceTree = "<group>"; };
 		ABEEBDF189E012F23BA35660 /* FrameRecorder.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = FrameRecorder.swift; sourceTree = "<group>"; };
 		B14DEE34ABEB54D6348950AA /* plate-quinoa-bowl.jpg */ = {isa = PBXFileReference; lastKnownFileType = image.jpeg; path = "plate-quinoa-bowl.jpg"; sourceTree = "<group>"; };
+		B69837BA7243189E98F29CEF /* HeroMatte.png */ = {isa = PBXFileReference; lastKnownFileType = image.png; path = HeroMatte.png; sourceTree = "<group>"; };
 		B95288469224FDB71DF57752 /* StudioPages.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = StudioPages.swift; sourceTree = "<group>"; };
 		F64D99BBE84DAF6A36AC311A /* DemoPages.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = DemoPages.swift; sourceTree = "<group>"; };
 		FB68FC46E685156570298C3E /* Models.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = Models.swift; sourceTree = "<group>"; };
@@ -77,6 +81,7 @@
 			isa = PBXGroup;
 			children = (
 				357D7C226C1C6073400FAE11 /* Hero.jpg */,
+				B69837BA7243189E98F29CEF /* HeroMatte.png */,
 				502937183B9BC0400D1E0315 /* plate-edamame.jpg */,
 				40436BA240A0E72366F6AB97 /* plate-palak-paneer.jpg */,
 				B14DEE34ABEB54D6348950AA /* plate-quinoa-bowl.jpg */,
@@ -84,6 +89,7 @@
 				45D111887C32857B432CF5B2 /* plate-shakshuka.jpg */,
 				885E14C74328CDE709C7CD00 /* plate-steak.jpg */,
 				31D7603C88CF75DBACD540B1 /* Sleeper.jpg */,
+				479A8A4BADF8AE3130691811 /* SleeperMatte.png */,
 			);
 			path = Resources;
 			sourceTree = "<group>";
@@ -186,7 +192,9 @@
 			buildActionMask = 2147483647;
 			files = (
 				0002D00B6D8FFB4E35FB7363 /* Hero.jpg in Resources */,
+				1F123D5D7EEDCA37423D58E8 /* HeroMatte.png in Resources */,
 				960FA16CA100B217BFCD2065 /* Sleeper.jpg in Resources */,
+				2A3C3A7AD5A3335C31D48BF0 /* SleeperMatte.png in Resources */,
 				9C7A342D099470790C4F9D87 /* plate-edamame.jpg in Resources */,
 				2F242D7F7D1CA9AC2AAA77CF /* plate-palak-paneer.jpg in Resources */,
 				935BFD23707429AFF2304E86 /* plate-quinoa-bowl.jpg in Resources */,

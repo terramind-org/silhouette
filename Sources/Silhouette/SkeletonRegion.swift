@@ -50,6 +50,8 @@ struct SkeletonRegion<Content: View, Placeholder: View>: View {
     @State private var progress: Double
     /// 1 at the start of an entrance, 0 once arrived.
     @State private var enterRest: Double = 0
+    /// The content as it will rest, for what stays put while an entrance moves the rest.
+    @State private var restingStill: Image?
     /// Whether the skeleton is showing: past the reveal's hold, or back after a reload.
     @State private var held = false
     /// The skeleton coming up, and on a reload the content going, timed by drawn frames.
@@ -70,6 +72,14 @@ struct SkeletonRegion<Content: View, Placeholder: View>: View {
     @State private var revealID = 0
     /// What of the content stays out of its surfaces while it loads, for ``SurfaceLayer``.
     @State private var surfaceInk: Image?
+    /// The stand-in's surfaces as traced, shown in their place once the real content is in.
+    @State private var surfaceStill: Image?
+    /// Whether the traces were drawn from what shows while loading. Traced after a reveal, they
+    /// are of the real content, which a data-driven skeleton swaps for its stand-in on reload.
+    @State private var tracedWhileLoading = false
+    /// The data is in, but a reload's fade is still taking the old content off. The skeleton
+    /// stays up meanwhile: its frames time that fade.
+    @State private var waitingOutFade = false
     @State private var surfaceSize: CGSize = .zero
     /// The skeleton's pieces, traced ahead with the surfaces so a reveal doesn't have to.
     @State private var tracedSkeleton: [CGRect]?
@@ -79,6 +89,8 @@ struct SkeletonRegion<Content: View, Placeholder: View>: View {
     /// Areas that don't depend on the data, found by comparing the content with its variant:
     /// labels, bundled pictures, fixed values. They show while the rest loads.
     @State private var steady: [CGRect] = []
+    /// The stand-in as drawn when `steady` was found, to check it against the real content.
+    @State private var steadyBase: CGImage?
     /// Views marked `.skeletonKeep()`, in the region's coordinates.
     @State private var kept: [CGRect] = []
 
@@ -140,7 +152,7 @@ struct SkeletonRegion<Content: View, Placeholder: View>: View {
     }
 
     private var showsSkeleton: Bool {
-        (isLoading && held) || isRevealing
+        (held && (isLoading || waitingOutFade)) || isRevealing
     }
 
     private var region: some View {
@@ -149,7 +161,7 @@ struct SkeletonRegion<Content: View, Placeholder: View>: View {
                 naturalHeight = height
                 if isLoading { pinnedHeight = height }
             }
-            .modifier(EnterEffect(enter: spec.enter, rest: enterRest))
+            .modifier(EnterEffect(enter: spec.enter, rest: enterRest, fixed: fixed, still: restingStill))
             .modifier(RevealLayer(progress: incomingProgress, role: .incoming, spec: spec, plan: isLoading ? nil : plan, shimmerAxis: shimmerAxis, fixed: fixed))
             .coordinateSpace(.named(SkeletonKeepKey.space))
             .onPreferenceChange(SkeletonKeepKey.self) { kept = $0 }
@@ -162,7 +174,8 @@ struct SkeletonRegion<Content: View, Placeholder: View>: View {
             .frame(height: pinnedHeight, alignment: .top)
             .background(alignment: .topLeading) {
                 if showsSkeleton, let cut = surfaceInk ?? plan?.bareInk {
-                    SurfaceLayer(content: content, ink: cut, size: surfaceSize, plan: isLoading ? nil : plan)
+                    SurfaceLayer(content: content, ink: cut, size: surfaceSize, plan: isLoading ? nil : plan, fixed: fixed,
+                                 still: isLoading || surfaceInk == nil ? nil : surfaceStill)
                         .frame(height: pinnedHeight, alignment: .top)
                         .modifier(FrameFadeMask(fade: fade, fadingIn: true))
                 }
@@ -173,7 +186,7 @@ struct SkeletonRegion<Content: View, Placeholder: View>: View {
                         // While a reload fades the content off, the content keeps `progress` at 1 under
                         // its own fade, and the skeleton is already fully up under its own.
                         .modifier(RevealLayer(progress: fade?.fadesOutContent == true ? 0 : progress, role: .outgoing, spec: spec, plan: plan, shimmerAxis: shimmerAxis))
-                        .modifier(FrameFadeMask(fade: fade, fadingIn: true, leads: true))
+                        .modifier(FrameFadeMask(fade: fade, fadingIn: true))
                 }
             }
             .overlay {
@@ -197,6 +210,10 @@ struct SkeletonRegion<Content: View, Placeholder: View>: View {
             .onChange(of: frame.size) { _, size in
                 if isLoading, held, !Self.same(size, surfaceSize) { traceSurfaces() }
             }
+            // Every trace is drawn in the page's colours: when they change, so must the traces,
+            // or what stays put while loading no longer matches the content it stands for.
+            .onChange(of: environment.colorScheme) { retraceForNewColours() }
+            .onChange(of: environment.colorSchemeContrast) { retraceForNewColours() }
             .task(id: isLoading) { await waitOutHold() }
             .onChange(of: isLoading) { _, loading in
                 if loading { startLoading() } else { finishLoading() }
@@ -243,7 +260,7 @@ struct SkeletonRegion<Content: View, Placeholder: View>: View {
 
     /// - Parameter fadingOutContent: On a reload, the content fades off as the skeleton comes up.
     private func showSkeleton(fadingOutContent: Bool = false) {
-        if surfaceInk == nil || !Self.same(surfaceSize, frame.size) {
+        if surfaceInk == nil || !Self.same(surfaceSize, frame.size) || (variant != nil && !tracedWhileLoading) {
             // On screen the surfaces come with the skeleton; below it they can wait.
             if frame.intersects(ScreenBounds.current) { traceSurfaces() } else { traceWhenIdle() }
         } else if variant != nil, frame.intersects(ScreenBounds.current) {
@@ -279,6 +296,7 @@ struct SkeletonRegion<Content: View, Placeholder: View>: View {
         // fringe of the picture or control it stands for.
         let scale = min(environment.displayScale, 2)
         surfaceSize = frame.size
+        tracedWhileLoading = isLoading
         tracedSkeleton = nil
         steady = findSteady()
         // Only when the offscreen trace drew something: otherwise the live shape draws the skeleton.
@@ -294,6 +312,7 @@ struct SkeletonRegion<Content: View, Placeholder: View>: View {
             }
         }
         #endif
+        surfaceStill = SurfaceLayer<Content>.still(of: content, size: frame.size, environment: environment, scale: scale)
         surfaceInk = PieceTracer.bareRender(of: content, size: frame.size, environment: environment, scale: scale)
             .flatMap { PieceTracer.coverage(of: $0, page: environment.colorScheme == .dark ? 0 : 1, grow: 1) }
             .map { Image(decorative: $0, scale: scale) }
@@ -311,17 +330,42 @@ struct SkeletonRegion<Content: View, Placeholder: View>: View {
         let size = frame.size
         guard let a = PieceTracer.inkRender(of: content, size: size, environment: environment, scale: 1),
               let b = PieceTracer.inkRender(of: variant, size: size, environment: environment, scale: 1) else { return [] }
+        steadyBase = a
         let pieces = tracePieces(of: content, size: size)
         // A line of text reaches past its bar (ascenders, descenders); a picture or a control
         // doesn't, and growing it would take in whatever sits beside it.
         let areas = pieces.map { PieceTracer.isTextBar($0) ? RevealMask.area(of: $0) : $0.insetBy(dx: -2, dy: -2) }
-        return PieceTracer.unchanged(areas, a: a, b: b)
+        // A picture that runs to the region's edge may carry on past it (a bleed, a soft fade),
+        // which no trace of the region can see: show it past that edge too.
+        let bounds = CGRect(origin: .zero, size: size)
+        let o = RevealMask.overflow
+        return PieceTracer.unchanged(areas, a: a, b: b).map { area in
+            guard !PieceTracer.isTextBar(area) else { return area }
+            var r = area
+            if r.minX <= bounds.minX + 2 { r.origin.x -= o; r.size.width += o }
+            if r.maxX >= bounds.maxX - 2 { r.size.width += o }
+            if r.minY <= bounds.minY + 2 { r.origin.y -= o; r.size.height += o }
+            if r.maxY >= bounds.maxY - 2 { r.size.height += o }
+            return r
+        }
+    }
+
+    private func retraceForNewColours() {
+        if isLoading, held {
+            traceSurfaces()
+        } else {
+            // Traced again when the skeleton next shows.
+            surfaceInk = nil
+            surfaceStill = nil
+            steady = []
+            steadyBase = nil
+        }
     }
 
     private func traceWhenIdle() {
         let id = revealID
         IdleWork.enqueue {
-            guard id == revealID, surfaceInk == nil || !Self.same(surfaceSize, frame.size) else { return false }
+            guard id == revealID, surfaceInk == nil || !Self.same(surfaceSize, frame.size) || (variant != nil && !tracedWhileLoading) else { return false }
             traceSurfaces()
             return true
         }
@@ -355,8 +399,49 @@ struct SkeletonRegion<Content: View, Placeholder: View>: View {
     // MARK: Revealing
 
     private func finishLoading() {
+        // Data back while a reload is still fading the old content off: let that fade land
+        // first, so nothing is cut off halfway, and reveal from the skeleton as always.
+        if let leaving = fade, leaving.fadesOutContent, leaving.clock.elapsed < leaving.duration {
+            let id = revealID
+            waitingOutFade = true
+            Task { @MainActor in
+                // Never longer than the fade itself, give or take a frame or two, should its
+                // layers stop being drawn.
+                let giveUp = leaving.start.addingTimeInterval(leaving.duration + 0.1)
+                while fade === leaving, Date() < giveUp {
+                    try? await Task.sleep(for: .seconds(0.02))
+                }
+                guard id == revealID, !isLoading else { return }
+                if fade === leaving {
+                    var transaction = Transaction()
+                    transaction.disablesAnimations = true
+                    withTransaction(transaction) {
+                        progress = 0
+                        fade = nil
+                    }
+                }
+                revealArrived()
+            }
+            return
+        }
+        revealArrived()
+    }
+
+    private func revealArrived() {
+        waitingOutFade = false
         let wasShowing = held
         fade = nil
+        // What looked fixed in the stand-in stays fixed only if the real content there looks the
+        // same; an image or value that arrived with the data joins the reveal instead.
+        // Held at the skeleton's height until the reveal lets it go, the content may run past
+        // that: trace all of it, so whatever lands below waits for its turn too.
+        let contentSize = CGSize(
+            width: frame.width,
+            height: max(frame.height, PieceTracer.fittingSize(of: content, width: frame.width, environment: environment)?.height ?? 0)
+        )
+        if !steady.isEmpty, let base = steadyBase,
+           let real = PieceTracer.inkRender(of: content, size: contentSize, environment: environment, scale: 1) {
+        }
         // A place in the page's batch, taken before any tracing, so regions arriving together
         // cascade together however long each takes to trace.
         let ticket = RevealBatch.reserve()
@@ -408,13 +493,13 @@ struct SkeletonRegion<Content: View, Placeholder: View>: View {
             // Ordered: hold the skeleton until every reveal landing alongside this one is in,
             // then each piece wipes in on one cascade down the page.
             let region = frame
-            let contentPieces = tracePieces(of: content, size: frame.size)
+            let contentPieces = tracePieces(of: content, size: contentSize)
             let fixedAreas = fixed
             // One pixel a point is enough: the ink is grown past the letters' edges, and the wipe
             // is feathered.
             let inkScale: CGFloat = 1
-            let inkRender = PieceTracer.inkRender(of: content, size: frame.size, environment: environment, scale: inkScale)
-            let bareRender = PieceTracer.bareRender(of: content, size: frame.size, environment: environment, scale: inkScale)
+            let inkRender = PieceTracer.inkRender(of: content, size: contentSize, environment: environment, scale: inkScale)
+            let bareRender = PieceTracer.bareRender(of: content, size: contentSize, environment: environment, scale: inkScale)
             let page: Double = environment.colorScheme == .dark ? 0 : 1
             var transaction = Transaction()
             transaction.disablesAnimations = true
@@ -450,12 +535,14 @@ struct SkeletonRegion<Content: View, Placeholder: View>: View {
                 )
                 next.ink = inkMask.map { Image(decorative: $0, scale: inkScale) }
                 // On a refetch the surfaces were traced from this same data: their cut is sharper.
-                next.bareInk = isRefetch && Self.same(surfaceSize, region.size) ? surfaceInk : bareCut.map { Image(decorative: $0, scale: inkScale) }
-                next.inkSize = region.size
+                next.bareInk = isRefetch && !tracedWhileLoading && Self.same(surfaceSize, contentSize) ? surfaceInk : bareCut.map { Image(decorative: $0, scale: inkScale) }
+                next.inkSize = contentSize
                 RevealBatch.queue(&next, region: region, batch: batch)
+                let still = stillForEntrance(resolved.enter, size: contentSize)
                 withTransaction(transaction) {
                     plan = next
                     progress = 1
+                    restingStill = still
                     enterRest = resolved.enter == .none ? 0 : 1
                 }
                 if resolved.enter != .none {
@@ -492,9 +579,11 @@ struct SkeletonRegion<Content: View, Placeholder: View>: View {
         }
         var transaction = Transaction()
         transaction.disablesAnimations = true
+        let still = stillForEntrance(chosen.enter, size: contentSize)
         withTransaction(transaction) {
             spec = chosen
             plan = nil
+            restingStill = still
             enterRest = chosen.enter == .none ? 0 : 1
             isRevealing = true
         }
@@ -507,6 +596,14 @@ struct SkeletonRegion<Content: View, Placeholder: View>: View {
             guard id == revealID else { return }
             finish(id: id)
         }
+    }
+
+    /// What stays put can't move with an entrance that blurs, scales, turns or slides the
+    /// content: it's drawn from a still of the content at rest instead.
+    private func stillForEntrance(_ enter: SkeletonReveal.Enter, size: CGSize) -> Image? {
+        let moves = enter.blur != 0 || enter.scale != 1 || enter.rotation != .zero || enter.offset != .zero
+        guard moves, !fixed.isEmpty else { return nil }
+        return PieceTracer.picture(of: content, size: size, environment: environment, scale: min(environment.displayScale, 3))
     }
 
     /// Lets the pinned height go, easing to the content's own.
@@ -526,6 +623,7 @@ struct SkeletonRegion<Content: View, Placeholder: View>: View {
             isRevealing = false
             held = false
             plan = nil
+            restingStill = nil
         }
         done(id: id, revealed: true)
     }
@@ -583,10 +681,10 @@ final class FrameFade {
         self.fadesOutContent = fadesOutContent
     }
 
-    /// - Parameter leads: The skeleton's own frames move the fade on; the others follow, so the
-    ///   content never fades ahead of a skeleton that hasn't been drawn yet.
-    func amount(at date: Date, leads: Bool) -> Double {
-        let t = leads ? clock.time(at: date, start: start) : clock.elapsed
+    /// Every layer the fade draws on moves it on, so it never waits on one that isn't drawing;
+    /// the clock counts each frame once however many layers ask.
+    func amount(at date: Date) -> Double {
+        let t = clock.time(at: date, start: start)
         let x = min(max(t / duration, 0), 1)
         return x * x * (3 - 2 * x)
     }
@@ -596,17 +694,16 @@ final class FrameFade {
 struct FrameFadeMask: ViewModifier {
     var fade: FrameFade?
     var fadingIn: Bool
-    var leads = false
 
     func body(content: Content) -> some View {
         content.mask {
             if let fade {
                 TimelineView(.animation) { timeline in
-                    let shown = fade.amount(at: timeline.date, leads: leads)
-                    Rectangle().fill(.black).opacity(fadingIn ? shown : 1 - shown)
+                    let shown = fade.amount(at: timeline.date)
+                    Rectangle().fill(.black).padding(-RevealMask.overflow).opacity(fadingIn ? shown : 1 - shown)
                 }
             } else {
-                Rectangle().fill(.black)
+                Rectangle().fill(.black).padding(-RevealMask.overflow)
             }
         }
     }

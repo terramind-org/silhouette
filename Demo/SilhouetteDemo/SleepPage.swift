@@ -143,9 +143,8 @@ private struct SleepHero: View {
             }
             Text(night.underGoal).font(.system(size: 13)).foregroundStyle(Night.quiet)
             Sleeper()
-                .frame(height: 250)
+                .frame(height: 240)
                 .frame(maxWidth: .infinity)
-                .padding(.horizontal, -24)
                 .padding(.top, 4)
         }
     }
@@ -156,14 +155,20 @@ private struct Sleeper: View {
     @Environment(\.colorScheme) private var scheme
 
     var body: some View {
-        if let photo = UIImage(named: "Sleeper.jpg") {
+        if let photo = UIImage(named: "Sleeper.jpg"), let matte = UIImage(named: "SleeperMatte.png") {
+            // Cut out with its matte, so it sits on the page in either scheme, then softened
+            // where the bedding runs off the frame.
             Image(uiImage: photo)
                 .resizable()
                 .scaledToFill()
-                .brightness(scheme == .dark ? -0.18 : 0)
-                .mask(EllipticalGradient(colors: [.black, .black, .clear], center: UnitPoint(x: 0.5, y: 0.52), startRadiusFraction: 0, endRadiusFraction: 0.5))
-                // A photograph waits as one shape, whatever its light and dark parts.
-                .skeletonShape { Ellipse().padding(.horizontal, 30).padding(.vertical, 18) }
+                .brightness(scheme == .dark ? -0.08 : 0)
+                .mask { Image(uiImage: matte).resizable().scaledToFill().luminanceToAlpha() }
+                .frame(maxWidth: .infinity, maxHeight: .infinity)
+                .clipped()
+                .mask(LinearGradient(stops: [.init(color: .clear, location: 0), .init(color: .black, location: 0.12), .init(color: .black, location: 0.82), .init(color: .clear, location: 1)], startPoint: .leading, endPoint: .trailing))
+                .mask(LinearGradient(stops: [.init(color: .black, location: 0.7), .init(color: .clear, location: 1)], startPoint: .top, endPoint: .bottom))
+                // Bundled with the app: it never waits for data.
+                .skeletonKeep()
                 .accessibilityHidden(true)
         }
     }
@@ -276,7 +281,7 @@ private struct OvernightSection: View {
         VStack(alignment: .leading, spacing: 18) {
             Text("Overnight").font(.system(size: 15, weight: .medium)).foregroundStyle(Night.ink)
             LazyVGrid(columns: [GridItem(.flexible(), spacing: 20), GridItem(.flexible(), spacing: 20)], alignment: .leading, spacing: 22) {
-                ForEach(overnight.readings, id: \.self) { r in
+                ForEach(Array(overnight.readings.enumerated()), id: \.offset) { _, r in
                     VStack(alignment: .leading, spacing: 4) {
                         HStack(spacing: 5) {
                             Circle().fill(Night.tones[r.tone]).frame(width: 6, height: 6)

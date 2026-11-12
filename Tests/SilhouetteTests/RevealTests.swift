@@ -303,4 +303,47 @@ final class RevealTests: XCTestCase {
         let value = CGRect(x: 0, y: 46, width: 160, height: 22)
         XCTAssertEqual(PieceTracer.unchanged([label, value], a: a, b: b), [label])
     }
+
+    @MainActor
+    func testSteadyHoldsWhenTheRealContentComesOutNarrowerOrShorter() throws {
+        func page(_ value: String, _ size: CGSize) -> some View {
+            VStack(alignment: .leading, spacing: 20) {
+                Text("Fourteen nights").font(.system(size: 20))
+                Text(value).font(.system(size: 20))
+            }
+            .frame(width: size.width, height: size.height, alignment: .topLeading)
+        }
+        var env = EnvironmentValues()
+        env.colorScheme = .dark
+        let wide = CGSize(width: 252, height: 90), narrow = CGSize(width: 240, height: 80)
+        let a = try XCTUnwrap(PieceTracer.inkRender(of: page("Average 6h 59m", wide), size: wide, environment: env, scale: 1))
+        let b = try XCTUnwrap(PieceTracer.inkRender(of: page("Nnaaaaa 0n 00n", narrow), size: narrow, environment: env, scale: 1))
+        let label = CGRect(x: 0, y: 2, width: 160, height: 22)
+        let value = CGRect(x: 0, y: 46, width: 160, height: 22)
+        XCTAssertEqual(PieceTracer.unchanged([label, value], a: a, b: b), [label])
+    }
+
+    @MainActor
+    func testTracesInOtherColoursNeverMatch() throws {
+        // A stand-in traced before the page turned dark can't vouch for the dark content: the
+        // region traces again when the colours change.
+        func page(_ scheme: ColorScheme) -> CGImage? {
+            var env = EnvironmentValues()
+            env.colorScheme = scheme
+            return PieceTracer.inkRender(of: Text("Fourteen nights").font(.system(size: 20)).frame(width: 240, height: 30, alignment: .topLeading), size: CGSize(width: 240, height: 30), environment: env, scale: 1)
+        }
+        let label = CGRect(x: 0, y: 2, width: 160, height: 22)
+        XCTAssertEqual(PieceTracer.unchanged([label], a: try XCTUnwrap(page(.light)), b: try XCTUnwrap(page(.dark))), [])
+        XCTAssertEqual(PieceTracer.unchanged([label], a: try XCTUnwrap(page(.dark)), b: try XCTUnwrap(page(.dark))), [label])
+    }
+
+    @MainActor
+    func testContentThatArrivesTallerIsTracedWhole() throws {
+        // Held at its skeleton's height, a region's real content can run past it: the reveal
+        // measures and traces all of it, so what lands below waits its turn too.
+        let six = VStack(spacing: 10) { ForEach(0..<6, id: \.self) { _ in Color.gray.frame(height: 40) } }
+        let size = try XCTUnwrap(PieceTracer.fittingSize(of: six, width: 200, environment: EnvironmentValues()))
+        XCTAssertEqual(size.width, 200, accuracy: 0.5)
+        XCTAssertEqual(size.height, 290, accuracy: 0.5)
+    }
 }

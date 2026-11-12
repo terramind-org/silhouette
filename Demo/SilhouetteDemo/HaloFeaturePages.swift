@@ -77,7 +77,7 @@ struct PlatesMemoryPage: View {
             // The sample has two plates; once six have shown, the next skeleton has six.
             Skeleton(data.value, sample: PlatesData(upNext: "", energy: "", protein: "", water: "", plates: Array(PlatesData.sample.plates.prefix(2))), id: "studio.plates") { data in
                 LazyVGrid(columns: [GridItem(.flexible(), spacing: 16), GridItem(.flexible(), spacing: 16)], spacing: 20) {
-                    ForEach(data.plates, id: \.self) { plate in
+                    ForEach(Array(data.plates.enumerated()), id: \.offset) { _, plate in
                         VStack(spacing: 8) {
                             Group {
                                 if let photo = Studio.photo(plate.photo) {

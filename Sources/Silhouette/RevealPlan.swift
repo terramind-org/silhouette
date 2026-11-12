@@ -32,6 +32,34 @@ enum PieceTracer {
         inkMask(of: view, size: size, environment: environment, scale: scale).map { Image(decorative: $0, scale: scale) }
     }
 
+    /// The view as it draws, in its own colours, on nothing.
+    @MainActor
+    static func picture<V: View>(of view: V, size: CGSize, environment: EnvironmentValues, scale: CGFloat) -> Image? {
+        guard size.width >= 1, size.height >= 1, size.width * size.height * scale * scale < 24_000_000 else { return nil }
+        let renderer = ImageRenderer(content: view
+            .id(UUID())
+            .environment(\.self, environment)
+            .frame(width: size.width, height: size.height, alignment: .topLeading))
+        renderer.proposedSize = ProposedViewSize(size)
+        renderer.scale = scale
+        let dark = environment.colorScheme == .dark
+        return inAppearance(dark: dark) { renderer.cgImage }.map { Image(decorative: $0, scale: scale) }
+    }
+
+    /// The size the view takes at this width, left free to be as tall as it likes. A region is
+    /// held at its skeleton's height while it loads, so the content that arrives can run past it.
+    @MainActor
+    static func fittingSize<V: View>(of view: V, width: CGFloat, environment: EnvironmentValues) -> CGSize? {
+        guard width >= 1 else { return nil }
+        var env = environment
+        env.isDrawingSkeleton = true
+        let renderer = ImageRenderer(content: view.environment(\.self, env).frame(width: width, alignment: .topLeading))
+        renderer.proposedSize = ProposedViewSize(width: width, height: nil)
+        var size: CGSize?
+        renderer.render { measured, _ in size = measured }
+        return size
+    }
+
     /// The content drawn in the opposite of the page, over the page, for ``coverage(of:page:)``.
     @MainActor
     static func inkRender<V: View>(of view: V, size: CGSize, environment: EnvironmentValues, scale: CGFloat) -> CGImage? {
@@ -153,13 +181,16 @@ enum PieceTracer {
 
     /// The areas that look the same in two renders of one size, at one pixel a point.
     nonisolated static func unchanged(_ areas: [CGRect], a: CGImage, b: CGImage) -> [CGRect] {
-        guard a.width == b.width, a.height == b.height else { return [] }
-        let w = a.width, h = a.height
+        // A region that hugs its content may come out a little narrower or shorter with real
+        // data; both are drawn from the top leading corner, so compare where they overlap.
+        let w = min(a.width, b.width), h = min(a.height, b.height)
+        guard w > 0, h > 0 else { return [] }
         func pixels(_ image: CGImage) -> [UInt8]? {
             var bytes = [UInt8](repeating: 0, count: w * h * 4)
             guard let context = CGContext(data: &bytes, width: w, height: h, bitsPerComponent: 8, bytesPerRow: w * 4,
                                           space: CGColorSpaceCreateDeviceRGB(), bitmapInfo: CGImageAlphaInfo.premultipliedLast.rawValue) else { return nil }
-            context.draw(image, in: CGRect(x: 0, y: 0, width: w, height: h))
+            // Top-left anchored: the context's origin is bottom-left.
+            context.draw(image, in: CGRect(x: 0, y: h - image.height, width: image.width, height: image.height))
             return bytes
         }
         guard let pa = pixels(a), let pb = pixels(b) else { return [] }
@@ -608,9 +639,14 @@ struct RevealMask: View {
         } else if let mask = WipeEffect.mask(spec: spec, progress: progress, role: role, shimmerAxis: shimmerAxis) {
             LinearGradient(stops: mask.stops, startPoint: mask.startPoint, endPoint: mask.endPoint)
         } else {
-            Rectangle().fill(.black).opacity(role == .incoming ? progress : 1 - progress)
+            // Past the frame too: a stroke's outer half, a shadow or a glow drawn beyond the
+            // content's bounds must never be cut off.
+            Rectangle().fill(.black).padding(-RevealMask.overflow).opacity(role == .incoming ? progress : 1 - progress)
         }
     }
+
+    /// How far beyond its frame content may draw and still be shown.
+    static let overflow: CGFloat = 80
 
     private func drawWaitingInk(_ plan: RevealPlan, at t: Double, in context: inout GraphicsContext, size: CGSize) {
         let full = CGRect(origin: .zero, size: size)
@@ -706,12 +742,17 @@ struct SurfaceLayer<Content: View>: View {
     var size: CGSize
     /// While revealing, which pieces still wait.
     var plan: RevealPlan?
+    /// Areas the content itself shows throughout; drawing them here too would double anything
+    /// semi-transparent there, such as a picture's faded edge.
+    var fixed: [CGRect] = []
+    /// The stand-in's surfaces as they were traced. Once the data is in, `content` is the real
+    /// content, whose surfaces must wait for their wipe like everything else: until then the
+    /// waiting areas keep showing the stand-in's.
+    var still: Image? = nil
 
     var body: some View {
         if #available(iOS 18, macOS 15, tvOS 18, watchOS 11, visionOS 2, *) {
-            content
-                .textRenderer(InvisibleText())
-                .environment(\.isDrawingSkeleton, true)
+            surfaces
                 .mask(alignment: .topLeading) {
                     if let plan, plan.ink != nil {
                         TimelineView(.animation) { timeline in
@@ -724,7 +765,12 @@ struct SurfaceLayer<Content: View>: View {
                                     context.fill(Path(area), with: RevealMask.wipe(area: area, shown: shown, rightToLeft: plan.rightToLeft, showing: false))
                                 }
                                 context.blendMode = .destinationOut
-                                context.draw(plan.bareInk ?? ink, in: CGRect(origin: .zero, size: plan.inkSize))
+                                if still != nil {
+                                    context.draw(ink, in: CGRect(origin: .zero, size: size))
+                                } else {
+                                    context.draw(plan.bareInk ?? ink, in: CGRect(origin: .zero, size: plan.inkSize))
+                                }
+                                for rect in fixed { context.fill(Path(rect), with: .color(.black)) }
                             }
                         }
                     } else {
@@ -732,12 +778,34 @@ struct SurfaceLayer<Content: View>: View {
                             context.fill(Path(CGRect(origin: .zero, size: canvas)), with: .color(.black))
                             context.blendMode = .destinationOut
                             context.draw(ink, in: CGRect(origin: .zero, size: size))
+                            for rect in fixed { context.fill(Path(rect), with: .color(.black)) }
                         }
                     }
                 }
                 .allowsHitTesting(false)
                 .accessibilityHidden(true)
         }
+    }
+
+    @available(iOS 18, macOS 15, tvOS 18, watchOS 11, visionOS 2, *)
+    @ViewBuilder
+    private var surfaces: some View {
+        if let still {
+            still.frame(width: size.width, height: size.height, alignment: .topLeading)
+        } else {
+            content
+                .textRenderer(InvisibleText())
+                .environment(\.isDrawingSkeleton, true)
+        }
+    }
+
+    /// The stand-in's surfaces, drawn the way this layer draws them live.
+    @MainActor
+    static func still(of content: Content, size: CGSize, environment: EnvironmentValues, scale: CGFloat) -> Image? {
+        guard #available(iOS 18, macOS 15, tvOS 18, watchOS 11, visionOS 2, *) else { return nil }
+        var env = environment
+        env.isDrawingSkeleton = true
+        return PieceTracer.picture(of: content.textRenderer(InvisibleText()), size: size, environment: env, scale: scale)
     }
 }
 
@@ -752,28 +820,79 @@ struct EnterEffect: ViewModifier, Animatable {
     var enter: SkeletonReveal.Enter
     /// 1 at the start of the entrance, 0 once arrived.
     var rest: Double
+    /// What was showing before the data came: an entrance moves only what arrives.
+    var fixed: [CGRect] = []
+    /// The content as it will rest, for the fixed areas while the rest of it moves.
+    var still: Image? = nil
 
     nonisolated var animatableData: Double {
         get { rest }
         set { rest = newValue }
     }
 
+    private var moves: Bool {
+        enter.blur != 0 || enter.scale != 1 || enter.rotation != .zero || enter.offset != .zero
+    }
+
     func body(content: Content) -> some View {
-        let shown = 1 - rest
-        let edge = enter.clip
+        let holding = rest > 0 && !fixed.isEmpty
         content
             .blur(radius: enter.blur * rest)
             .scaleEffect(1 + (enter.scale - 1) * rest)
             .rotationEffect(enter.rotation * rest)
             .offset(x: enter.offset.width * rest, y: enter.offset.height * rest)
             // Always masked, so the content keeps its identity whichever entrance is in use.
-            .mask {
-                Rectangle().fill(.black).scaleEffect(
-                    x: edge == .leading || edge == .trailing ? shown : 1,
-                    y: edge == .top || edge == .bottom ? shown : 1,
-                    anchor: Self.anchor(for: edge)
-                )
+            .mask(alignment: .topLeading) {
+                if holding {
+                    Canvas(opaque: false, rendersAsynchronously: false) { context, canvas in
+                        let o = RevealMask.overflow
+                        let size = CGSize(width: canvas.width - 2 * o, height: canvas.height - 2 * o)
+                        context.fill(Path(clip(in: size).offsetBy(dx: o, dy: o)), with: .color(.black))
+                        if moves {
+                            // Shown from the still instead, where it rests.
+                            guard still != nil else { return }
+                            context.blendMode = .destinationOut
+                        }
+                        for rect in fixed { context.fill(Path(rect.offsetBy(dx: o, dy: o)), with: .color(.black)) }
+                    }
+                    .padding(-RevealMask.overflow)
+                } else {
+                    Rectangle().fill(.black)
+                        .frame(maxWidth: .infinity, maxHeight: .infinity)
+                        .scaleEffect(
+                            x: enter.clip == .leading || enter.clip == .trailing ? 1 - rest : 1,
+                            y: enter.clip == .top || enter.clip == .bottom ? 1 - rest : 1,
+                            anchor: Self.anchor(for: enter.clip)
+                        )
+                        .padding(enter.clip == nil ? -RevealMask.overflow : 0)
+                }
             }
+            .overlay(alignment: .topLeading) {
+                if holding, moves, let still {
+                    still.mask(alignment: .topLeading) {
+                        Canvas(opaque: false, rendersAsynchronously: false) { context, _ in
+                            let o = RevealMask.overflow
+                            for rect in fixed { context.fill(Path(rect.offsetBy(dx: o, dy: o)), with: .color(.black)) }
+                        }
+                        .padding(-RevealMask.overflow)
+                    }
+                    .allowsHitTesting(false)
+                    .accessibilityHidden(true)
+                }
+            }
+    }
+
+    /// The part of the frame the clip has uncovered so far.
+    private func clip(in size: CGSize) -> CGRect {
+        let shown = 1 - rest
+        let o = RevealMask.overflow
+        switch enter.clip {
+        case .top: return CGRect(x: 0, y: 0, width: size.width, height: size.height * shown)
+        case .bottom: return CGRect(x: 0, y: size.height * rest, width: size.width, height: size.height * shown)
+        case .leading: return CGRect(x: 0, y: 0, width: size.width * shown, height: size.height)
+        case .trailing: return CGRect(x: size.width * rest, y: 0, width: size.width * shown, height: size.height)
+        case nil: return CGRect(x: -o, y: -o, width: size.width + 2 * o, height: size.height + 2 * o)
+        }
     }
 
     static func anchor(for edge: Edge?) -> UnitPoint {
@@ -819,9 +938,12 @@ struct RevealLayer: ViewModifier, Animatable {
                 ZStack(alignment: .topLeading) {
                     RevealMask(role: role, progress: min(max(progress, 0), 1), spec: spec, plan: plan, shimmerAxis: shimmerAxis)
                     if role == .incoming, !fixed.isEmpty {
+                        // Drawn past the frame too, for what's shown beyond it.
                         Canvas(opaque: false, rendersAsynchronously: false) { context, _ in
-                            for rect in fixed { context.fill(Path(rect), with: .color(.black)) }
+                            let o = RevealMask.overflow
+                            for rect in fixed { context.fill(Path(rect.offsetBy(dx: o, dy: o)), with: .color(.black)) }
                         }
+                        .padding(-RevealMask.overflow)
                     }
                 }
             }

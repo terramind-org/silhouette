@@ -114,7 +114,7 @@ private struct WeekStrip: View {
                     Text(day).font(.system(size: 10, weight: .medium)).foregroundStyle(Studio.faint)
                     Text("\(date)")
                         .font(.system(size: 15, weight: date == 11 ? .semibold : .regular))
-                        .foregroundStyle(date == 11 ? Color.white : Studio.ink)
+                        .foregroundStyle(date == 11 ? Color.adaptive(light: .white, dark: .black) : Studio.ink)
                         .frame(width: 34, height: 34)
                         .background(Circle().fill(date == 11 ? Studio.ink : .clear))
                     HStack(spacing: 3) {
@@ -135,13 +135,14 @@ private struct TodayHero: View {
 
     var body: some View {
         ZStack(alignment: .topLeading) {
-            if let hero = Studio.photo("Hero.jpg") {
+            if let hero = Studio.photo("Hero.jpg"), let matte = UIImage(named: "HeroMatte.png") {
+                // Cut out with its matte and faded at the waist, so the figure stands on the page.
                 hero.resizable().scaledToFill()
+                    .mask { Image(uiImage: matte).resizable().scaledToFill().luminanceToAlpha() }
                     .frame(width: 250, height: 380)
                     .clipped()
-                    .mask(LinearGradient(colors: [.black, .black, .clear], startPoint: .top, endPoint: .bottom))
-                    .mask(LinearGradient(colors: [.clear, .black, .black], startPoint: .leading, endPoint: .trailing))
-                    .skeletonShape { RoundedRectangle(cornerRadius: 28, style: .continuous).padding(.leading, 40).padding(.bottom, 60) }
+                    .mask(LinearGradient(stops: [.init(color: .black, location: 0.6), .init(color: .clear, location: 1)], startPoint: .top, endPoint: .bottom))
+                    .skeletonKeep()
                     .frame(maxWidth: .infinity, alignment: .trailing)
                     .padding(.trailing, -24)
                     .padding(.top, 40)
@@ -228,7 +229,7 @@ private struct PlatesHero: View {
                 Text(data.upNext).font(.system(size: 20, weight: .light)).foregroundStyle(Studio.ink)
             }
             Spacer()
-            PlatePhoto(name: "plate-edamame.jpg").frame(width: 130, height: 130)
+            PlatePhoto(name: "plate-edamame.jpg").frame(width: 130, height: 130).skeletonKeep()
         }
     }
 }
@@ -292,7 +293,7 @@ private struct PlateGrid: View {
         VStack(alignment: .leading, spacing: 14) {
             Text("Today's plates").font(.system(size: 15, weight: .medium)).foregroundStyle(Studio.ink)
             LazyVGrid(columns: [GridItem(.flexible(), spacing: 16), GridItem(.flexible(), spacing: 16)], spacing: 20) {
-                ForEach(data.plates, id: \.self) { plate in
+                ForEach(Array(data.plates.enumerated()), id: \.offset) { _, plate in
                     VStack(spacing: 8) {
                         PlatePhoto(name: plate.photo).frame(width: 120, height: 120)
                         Text(plate.name).font(.system(size: 14)).foregroundStyle(Studio.ink)
