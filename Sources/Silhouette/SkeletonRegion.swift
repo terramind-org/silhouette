@@ -99,13 +99,13 @@ struct SkeletonRegion<Content: View, Placeholder: View>: View {
 
     /// A stand-in for a view that only draws in place: a ViewModifier's content or a Group
     /// subview. Neither can be rendered offscreen, so neither can be traced.
-    static func isProxy(_ type: Any.Type) -> Bool {
+    nonisolated static func isProxy(_ type: Any.Type) -> Bool {
         let name = String(reflecting: type)
         return name.contains("_ViewModifier_Content") || name.contains("SwiftUI.Subview")
     }
 
     /// Sizes that differ by less than half a point trace the same.
-    static func same(_ a: CGSize, _ b: CGSize) -> Bool {
+    nonisolated static func same(_ a: CGSize, _ b: CGSize) -> Bool {
         abs(a.width - b.width) < 0.5 && abs(a.height - b.height) < 0.5
     }
 
