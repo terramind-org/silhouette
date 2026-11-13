@@ -4,7 +4,7 @@ Skeleton loading states for SwiftUI, traced from your real layout.
 
 While your data loads, Silhouette lays out your own view with sample data, unseen, and draws a skeleton in exactly its shape: a bar for each line of text as it wraps, a block for each image, control and painted shape. Every skeleton on screen shimmers in step. When the data arrives, the content replaces its skeleton in place, so nothing on the page moves.
 
-<p align="center"><sub>Screens styled after <a href="https://tmnd.link/22sx1GlC">Halo</a>, built with Silhouette.</sub></p>
+<p align="center"><sub>Screens styled after <a href="https://halo.terramind.io/?utm_source=github&utm_medium=readme&utm_campaign=silhouette">Halo</a>, built with Silhouette.</sub></p>
 
 <p align="center">
   <img src="docs/media/loading-to-loaded.gif" width="300" alt="A sleep page loading four times, once per reveal mode: together, sequence, smart and sweep. Its title, moon, stages chart and readings each wait as skeletons in their own shape.">
@@ -266,7 +266,7 @@ Skeletons are hidden from accessibility, so UI tests that query by accessibility
 
 ## The demo app
 
-`Demo/` has an app with a page for every feature. Its screens are styled after [Halo](https://tmnd.link/22sx1GlC), Terramind's health app, which uses Silhouette for its loading states, and use Halo's photographs with permission. Open `Demo/SilhouetteDemo.xcodeproj` and run it on an iPhone simulator or a Mac. The project is generated from `Demo/project.yml` with [XcodeGen](https://github.com/yonaskolb/XcodeGen); CI checks it's up to date.
+`Demo/` has an app with a page for every feature. Its screens are styled after [Halo](https://halo.terramind.io/?utm_source=github&utm_medium=readme&utm_campaign=silhouette), Terramind's health app, which uses Silhouette for its loading states, and use Halo's photographs with permission. Open `Demo/SilhouetteDemo.xcodeproj` and run it on an iPhone simulator or a Mac. The project is generated from `Demo/project.yml` with [XcodeGen](https://github.com/yonaskolb/XcodeGen); CI checks it's up to date.
 
 ## How it works
 
@@ -292,5 +292,5 @@ MIT. See [LICENSE](LICENSE).
 
 <p>
   <img src="docs/assets/terramind-mark.png" width="16" height="16" alt="">
-  Silhouette by <a href="https://tmnd.link/O5UfLjI8">Terramind</a>. Designed and built in <a href="https://tmnd.link/MptXVvgz">Nucleus</a>, Terramind's agent workspace. Loading states in <a href="https://tmnd.link/22sx1GlC">Halo</a> are built with it. Inspired by <a href="https://skullet.lochie.me">Skullet</a>.
+  Silhouette by <a href="https://terramind.com/?utm_source=github&utm_medium=readme&utm_campaign=silhouette">Terramind</a>. Designed and built in <a href="https://terramind.com/nucleus?utm_source=github&utm_medium=readme&utm_campaign=silhouette">Nucleus</a>, Terramind's agent workspace. Loading states in <a href="https://halo.terramind.io/?utm_source=github&utm_medium=readme&utm_campaign=silhouette">Halo</a> are built with it. Inspired by <a href="https://skullet.lochie.me">Skullet</a>.
 </p>
