@@ -16,10 +16,22 @@
   <link rel="icon" href="assets/mark.svg" type="image/svg+xml">
   <link rel="preload" href="assets/fonts/geist.woff2" as="font" type="font/woff2" crossorigin>
   <link rel="preload" href="assets/fonts/geist-mono.woff2" as="font" type="font/woff2" crossorigin>
-  <link rel="stylesheet" href="assets/landing.css?v=16">
+  <link rel="stylesheet" href="assets/landing.css?v=17">
   <script>if (!matchMedia("(prefers-reduced-motion: reduce)").matches) { document.documentElement.classList.add("waiting"); setTimeout(() => document.documentElement.classList.remove("waiting"), 2500); }</script>
+  <script>
+    // Consent Mode v2 defaults before Tag Manager: denied in the EEA, IS, LI, NO, GB and CH until the visitor chooses (assets/analytics.js), granted elsewhere.
+    window.dataLayer = window.dataLayer || [];
+    function gtag() { dataLayer.push(arguments); }
+    gtag("consent", "default", { ad_storage: "denied", ad_user_data: "denied", ad_personalization: "denied", analytics_storage: "denied", region: ["AT","BE","BG","HR","CY","CZ","DK","EE","FI","FR","DE","GR","HU","IE","IT","LV","LT","LU","MT","NL","PL","PT","RO","SK","SI","ES","SE","IS","LI","NO","GB","CH"], wait_for_update: 500 });
+    gtag("consent", "default", { ad_storage: "granted", ad_user_data: "granted", ad_personalization: "granted", analytics_storage: "granted" });
+    try { var c = localStorage.getItem("sil:consent"); if (c) gtag("consent", "update", { ad_storage: c, ad_user_data: c, ad_personalization: c, analytics_storage: c }); } catch (e) {}
+    (function(w,d,s,l,i){w[l]=w[l]||[];w[l].push({'gtm.start':new Date().getTime(),event:'gtm.js'});var f=d.getElementsByTagName(s)[0],j=d.createElement(s),dl=l!='dataLayer'?'&l='+l:'';j.async=true;j.src='https://www.googletagmanager.com/gtm.js?id='+i+dl;f.parentNode.insertBefore(j,f);})(window,document,'script','dataLayer','GTM-WWGHW69G');
+  </script>
+  <script src="assets/analytics.js" defer></script>
 </head>
 <body>
+<noscript><iframe src="https://www.googletagmanager.com/ns.html?id=GTM-WWGHW69G" height="0" width="0" style="display:none;visibility:hidden"></iframe></noscript>
+
   <header class="bar">
     <a class="brand" href="./" aria-label="Silhouette home">
       <svg viewBox="0 0 26 26" aria-hidden="true"><circle cx="7.5" cy="13" r="5.5"/><rect x="15" y="8" width="10" height="3.4" rx="1.7"/><rect x="15" y="14.6" width="6.5" height="3.4" rx="1.7"/></svg>
@@ -27,9 +39,9 @@
     </a>
     <nav>
       <a href="docs/">Docs</a>
-      <a href="https://tmnd.link/22sx1GlC">Halo</a>
-      <a href="https://tmnd.link/O5UfLjI8">Terramind</a>
-      <a href="https://github.com/terramind-org/silhouette">GitHub</a>
+      <a href="https://tmnd.link/Y6IItPqX" data-placement="landing-nav" data-destination="halo">Halo</a>
+      <a href="https://tmnd.link/hL79LZHU" data-placement="landing-nav" data-destination="terramind">Terramind</a>
+      <a href="https://tmnd.link/agEJ4yXr" data-placement="landing-nav" data-destination="github">GitHub</a>
     </nav>
   </header>
 
@@ -40,7 +52,7 @@
       <div class="install"><code>github.com/terramind-org/silhouette</code><button type="button" class="copy">Copy</button></div>
       <div class="go">
         <a class="button dark" href="docs/">Read the docs</a>
-        <a class="button" href="https://github.com/terramind-org/silhouette">GitHub</a>
+        <a class="button" href="https://tmnd.link/kA7bc5sh" data-placement="landing-hero" data-destination="github">GitHub</a>
       </div>
     </div>
 
@@ -149,8 +161,8 @@
   </main>
 
   <footer class="foot">
-    <span>Inspired by <a href="https://skullet.lochie.me">Skullet</a> by Lochie Axon, which loads this page on the web. Silhouette does it in SwiftUI, in <a href="https://tmnd.link/22sx1GlC">Halo</a>.</span>
-    <span>By <a href="https://tmnd.link/O5UfLjI8">Terramind</a>. Designed and built in <a href="https://tmnd.link/MptXVvgz">Nucleus</a>.</span>
+    <span>Inspired by <a href="https://skullet.lochie.me">Skullet</a> by Lochie Axon, which loads this page on the web. Silhouette does it in SwiftUI, in <a href="https://tmnd.link/37FaO0gi" data-placement="landing-footer" data-destination="halo">Halo</a>.</span>
+    <span>By <a href="https://tmnd.link/pIzXlWSo" data-placement="landing-footer" data-destination="terramind">Terramind</a>. Designed and built in <a href="https://tmnd.link/V64fwabu" data-placement="landing-footer" data-destination="nucleus">Nucleus</a>.</span>
   </footer>
 
   <script type="module" src="assets/landing.js?v=13"></script>

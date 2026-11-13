@@ -274,3 +274,11 @@ img { display: block; max-width: 100%; }
   .dial { width: 96px; height: 96px; }
   .dial .big { font-size: 32px; }
 }
+
+/* Cookie banner (assets/analytics.js): a quiet card, bottom right; a bottom sheet on phones. */
+.consent { position: fixed; z-index: 50; right: 16px; bottom: 16px; max-width: 360px; padding: 16px; border-radius: 16px; background: rgb(28 28 31 / 0.88); backdrop-filter: blur(16px); -webkit-backdrop-filter: blur(16px); border: 1px solid rgb(255 255 255 / 0.08); color: #f2f0ec; font: 14px/1.5 "Geist", -apple-system, system-ui, sans-serif; }
+.consent p { margin: 0 0 12px; color: rgb(242 240 236 / 0.72); }
+.consent div { display: flex; gap: 8px; }
+.consent button { flex: 1; height: 36px; border-radius: 999px; border: 1px solid rgb(255 255 255 / 0.1); background: rgb(255 255 255 / 0.06); color: inherit; font: inherit; font-weight: 500; cursor: pointer; }
+.consent button[data-c="1"] { background: #f2f0ec; color: #000; border-color: transparent; }
+@media (max-width: 520px) { .consent { left: 8px; right: 8px; bottom: 8px; max-width: none; } }
