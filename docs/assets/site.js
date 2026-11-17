@@ -213,6 +213,17 @@
       v.removeAttribute("autoplay");
       v.controls = true;
       v.pause();
+    } else {
+      // A recording plays on its own, so it can be paused: click it, or tab to it and press Enter or Space.
+      v.tabIndex = 0;
+      var toggle = function () {
+        v.dataset.held = v.paused ? "" : "1";
+        if (v.paused) { var p = v.play(); if (p && p.catch) p.catch(function () {}); } else v.pause();
+      };
+      v.addEventListener("click", toggle);
+      v.addEventListener("keydown", function (e) {
+        if (e.key === "Enter" || e.key === " ") { e.preventDefault(); toggle(); }
+      });
     }
   });
   if ("IntersectionObserver" in window && !reduce.matches) {
@@ -220,6 +231,7 @@
       entries.forEach(function (entry) {
         var v = entry.target;
         if (entry.isIntersecting) {
+          if (v.dataset.held) return;
           var p = v.play();
           if (p && p.catch) p.catch(function () {});
         } else {
@@ -246,6 +258,7 @@
         choice[group.dataset.key] = button.dataset.value;
         var src = panel.dataset.clips.replace(/\{(\w+)\}/g, function (_, key) { return choice[key]; });
         video.src = src;
+        delete video.dataset.held;
         video.play().catch(function () {});
       });
     });
